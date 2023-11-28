@@ -1,0 +1,44 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Identity {
+  slack     String     @id @unique
+  inventory Instance[]
+}
+
+model Item {
+  name        String     @id @unique
+  image       String
+  description String?
+  reaction    String?
+  commodity   Boolean    @default(false)
+  tradable    Boolean    @default(true)
+  instances   Instance[]
+}
+
+model Instance {
+  id              Int      @id @default(autoincrement())
+  itemId          String
+  identityId      String
+  item            Item     @relation(fields: [itemId], references: [name])
+  identity        Identity @relation(fields: [identityId], references: [slack])
+  quantity        Int      @default(0)
+  metadata        Json?
+  initiatedTrades Trade[]
+}
+
+model Trade {
+  id                  Int        @id @default(autoincrement())
+  initiatorIdentityId String
+  receiverIdentityId  String
+  initiatorItems      Instance[]
+}

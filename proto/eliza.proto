@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package connectrpc.eliza.v1;
+
+service ElizaService {
+  // Response to request
+  rpc Say(SayRequest) returns (SayResponse) {}
+}
+
+// What a SayRequest looks like
+message SayRequest {
+  string request = 1;
+}
+
+// What a SayResponse looks like
+message SayResponse {
+  string response = 1;
+}

@@ -1,9 +1,14 @@
 import config from './config'
 import express from 'express'
-import { App } from '@slack/bolt'
+import { App, SlackCommandMiddlewareArgs, AllMiddlewareArgs } from '@slack/bolt'
+import { StringIndexed } from '@slack/bolt/dist/types/helpers'
 import prisma from './db/client'
 
 const app = express()
+
+app.get('/', async (_, res) => {
+  res.send('Hello, world!')
+})
 
 const slack = new App({
   token: config.SLACK_BOT_TOKEN,
@@ -13,6 +18,7 @@ const slack = new App({
 })
 
 const execute = async (props, func) => {
+  // Execute wrapper around
   const { ack, logger } = props
 
   await ack()
@@ -24,9 +30,12 @@ const execute = async (props, func) => {
 }
 
 slack.command('/about', async props => {
-  await execute(props, async ({ respond }) => {
-    await respond('hi')
-  })
+  await execute(
+    props,
+    async ({
+      logger
+    }: SlackCommandMiddlewareArgs & AllMiddlewareArgs<StringIndexed>) => {}
+  )
 })
 
 // @prettier-ignore

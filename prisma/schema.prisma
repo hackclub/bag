@@ -7,11 +7,22 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum PermissionLevels {
+  ADMIN
+  READ
+}
+
+model App {
+  id          String           @id @unique // Unique UUID as key
+  permissions PermissionLevels @default(value: READ)
+}
+
 model Identity {
-  slack           String     @id @unique // Slack ID
+  slack           String           @id @unique // Slack ID
   inventory       Instance[] // Instance IDs (ref)
-  initiatorTrades Trade[]    @relation("initiator")
-  receiverTrades  Trade[]    @relation("receiver")
+  permissions     PermissionLevels @default(value: READ)
+  initiatorTrades Trade[]          @relation("initiator")
+  receiverTrades  Trade[]          @relation("receiver")
 }
 
 model Item {
@@ -44,14 +55,4 @@ model Trade {
   receiver            Identity   @relation("receiver", fields: [receiverIdentityId], references: [slack])
   initiatorTrades     Instance[] @relation("initiatorTrades")
   receiverTrades      Instance[] @relation("receiverTrades")
-}
-
-enum PermissionLevels {
-  ADMIN
-  READ
-}
-
-model Permissions {
-  id          String             @id @unique // Unique UUID as key
-  permissions PermissionLevels[] // Can have multiple permission levels
 }

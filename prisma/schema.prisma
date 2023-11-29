@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,34 +8,50 @@ datasource db {
 }
 
 model Identity {
-  slack     String     @id @unique
-  inventory Instance[]
+  slack           String     @id @unique // Slack ID
+  inventory       Instance[] // Instance IDs (ref)
+  initiatorTrades Trade[]    @relation("initiator")
+  receiverTrades  Trade[]    @relation("receiver")
 }
 
 model Item {
-  name        String     @id @unique
-  image       String
-  description String?
-  reaction    String?
-  commodity   Boolean    @default(false)
-  tradable    Boolean    @default(true)
-  instances   Instance[]
+  name        String     @id @unique // Name
+  image       String // Image
+  description String? // Description
+  reaction    String? // Slack reaction tag
+  commodity   Boolean    @default(false) // Commodity
+  tradable    Boolean    @default(true) // Tradable
+  instances   Instance[] // Instance IDs (ref)
 }
 
 model Instance {
   id              Int      @id @default(autoincrement())
-  itemId          String
-  identityId      String
+  itemId          String // Item ID (ref)
+  identityId      String // Identity ID (ref)
   item            Item     @relation(fields: [itemId], references: [name])
   identity        Identity @relation(fields: [identityId], references: [slack])
-  quantity        Int      @default(0)
-  metadata        Json?
-  initiatedTrades Trade[]
+  quantity        Int      @default(0) // Quantity (if item.commodity == true)
+  metadata        Json? // Optional metadata (JSON)
+  initiatorTrades Trade[]  @relation("initiatorTrades")
+  receiverTrades  Trade[]  @relation("receiverTrades")
 }
 
 model Trade {
   id                  Int        @id @default(autoincrement())
   initiatorIdentityId String
   receiverIdentityId  String
-  initiatorItems      Instance[]
+  initiator           Identity   @relation("initiator", fields: [initiatorIdentityId], references: [slack])
+  receiver            Identity   @relation("receiver", fields: [receiverIdentityId], references: [slack])
+  initiatorTrades     Instance[] @relation("initiatorTrades")
+  receiverTrades      Instance[] @relation("receiverTrades")
+}
+
+enum PermissionLevels {
+  ADMIN
+  READ
+}
+
+model Permissions {
+  id          String             @id @unique // Unique UUID as key
+  permissions PermissionLevels[] // Can have multiple permission levels
 }

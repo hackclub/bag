@@ -1,6 +1,7 @@
 import config from './config'
 import express from 'express'
 import { App } from '@slack/bolt'
+import prisma from './db/client'
 
 const app = express()
 
@@ -27,7 +28,22 @@ slack.command('/about', async props => {
     await respond('hi')
   })
 })
+
+// @prettier-ignore
 ;(async () => {
+  // Shutdown signal - shutdown Prisma client
+  process.on('SIGINT', async () => {
+    await prisma.$disconnect()
+  })
+
+  process.on('SIGQUIT', async () => {
+    await prisma.$disconnect()
+  })
+
+  process.on('SIGTERM', async () => {
+    await prisma.$disconnect()
+  })
+
   await slack.start(config.PORT)
   console.log('⚡️ Bolt app is running!')
 })()

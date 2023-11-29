@@ -6,6 +6,15 @@ export async function cleanup() {
   await prisma.$disconnect()
 }
 
-// TODO: Include starting
+export async function createSlackUser(id: string) {
+  const user = await prisma.identity.create({
+    data: {
+      slack: id
+    }
+  })
+  return user
+}
+
+export class Identity {}
 
 export default prisma

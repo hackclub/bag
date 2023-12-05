@@ -1,9 +1,7 @@
+import { app } from './lib/api/init'
 import config from './config'
-import express from 'express'
 import prisma from './db/client'
 import slack from './lib/slack/routes'
-
-const app = express()
 
 // @prettier-ignore
 ;(async () => {
@@ -21,5 +19,5 @@ const app = express()
   })
 
   await slack.start(config.PORT)
-  console.log('⚡️ Bolt app is running!')
+  console.log(`⚡️ Bolt app is running on port ${config.PORT}!`)
 })()

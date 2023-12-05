@@ -9,12 +9,15 @@ datasource db {
 
 enum PermissionLevels {
   ADMIN
+  WRITE
+  WRITE_SPECIFIC
   READ
 }
 
 model App {
   id          String           @id @unique // Unique UUID as key
   permissions PermissionLevels @default(value: READ)
+  specific    String[]
 }
 
 model Identity {

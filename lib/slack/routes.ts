@@ -1,5 +1,6 @@
 import {
   App,
+  ExpressReceiver,
   View,
   SlackCommandMiddlewareArgs,
   SlackViewMiddlewareArgs,
@@ -15,12 +16,18 @@ import views from './views'
 import { mappedPermissionValues } from '../permissions'
 import { Item } from '@prisma/client'
 import { err, log } from '../logger'
+import { app } from '../api/init'
+
+const receiver = new ExpressReceiver({
+  signingSecret: config.SLACK_SIGNING_SECRET,
+  app
+})
 
 const slack = new App({
   token: config.SLACK_BOT_TOKEN,
   appToken: config.SLACK_APP_TOKEN,
   signingSecret: config.SLACK_SIGNING_SECRET,
-  socketMode: config.NODE_ENV === 'development' ? true : false
+  receiver
 })
 
 // ! A bunch of function overloads, I know
@@ -33,22 +40,22 @@ type ViewMiddleware = SlackViewMiddlewareArgs<SlackViewAction> &
 type Middleware = CommandMiddleware | EventMiddleware | ViewMiddleware
 
 // @ts-expect-error
-async function execute(
+export async function execute(
   props: CommandMiddleware,
   func: (props: CommandMiddleware) => any,
   permission?: number
 )
-async function execute(
+export async function execute(
   props: EventMiddleware,
   func: (props: EventMiddleware) => any,
   permission?: number
 )
-async function execute(
+export async function execute(
   props: ViewMiddleware,
   func: (props: ViewMiddleware) => any,
   permission?: number
 )
-async function execute(
+export async function execute(
   props: Middleware,
   func: (props: Middleware) => any,
   permission: number = mappedPermissionValues.READ
@@ -91,9 +98,6 @@ slack.command('/create', async props => {
   await execute(
     props,
     async props => {
-      const userId = props.context.userId
-      const user = await Identities.find(userId)
-
       // Open a view for creating item
       await props.client.views.open({
         trigger_id: props.body.trigger_id,
@@ -108,8 +112,6 @@ slack.view('create', async props => {
   await execute(
     props,
     async props => {
-      await props.ack()
-
       let fields = {}
       for (let field of Object.values(props.view.state.values)) {
         fields[Object.keys(field)[0]] = field[Object.keys(field)[0]].value || ''
@@ -121,6 +123,10 @@ slack.view('create', async props => {
     },
     mappedPermissionValues.ADMIN
   )
+})
+
+slack.command('/find-item', async props => {
+  await execute(props, async props => {}, mappedPermissionValues.ADMIN)
 })
 
 slack.event('app_mention', async props => {

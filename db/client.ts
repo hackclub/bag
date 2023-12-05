@@ -1,12 +1,9 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, PermissionLevels } from '@prisma/client'
+import slack from '../lib/slack/routes'
 
 const prisma = new PrismaClient()
 
 export class Identities {
-  static async valid(id: string) {
-    // Validate Slack ID
-  }
-
   // C
   static async create(id: string) {
     return await prisma.identity.create({
@@ -70,10 +67,17 @@ export class Items {
       }
     })
   }
+
+  static async find(options: Item) {
+    return await prisma.item
+  }
 }
 
 export class App {
   // Class for managing permissions for apps that might extend from this
+  static async create(permission: PermissionLevels, identityRef?: string) {
+    return permission
+  }
 }
 
 export default prisma

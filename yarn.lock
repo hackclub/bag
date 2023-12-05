@@ -44,7 +44,7 @@
     "@bufbuild/buf-win32-arm64" "1.28.1"
     "@bufbuild/buf-win32-x64" "1.28.1"
 
-"@bufbuild/protobuf@1.5.0", "@bufbuild/protobuf@^1.5.0":
+"@bufbuild/protobuf@1.5.0", "@bufbuild/protobuf@^1.4.2", "@bufbuild/protobuf@^1.5.0":
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/@bufbuild/protobuf/-/protobuf-1.5.0.tgz#6d119e2a562da48aa8cd93f1c0297b9bb32a9c93"
   integrity sha512-0Jg+B7Vl8YGCi7c3iZ8/38iTbZrwdU7or6QZlsA9lhSrhumaXOTMsGO8gqwDuus/THEkTiY3Uxn+PEJwgsLt0w==
@@ -57,7 +57,7 @@
     "@bufbuild/protobuf" "^1.5.0"
     "@bufbuild/protoplugin" "1.5.0"
 
-"@bufbuild/protoplugin@1.5.0":
+"@bufbuild/protoplugin@1.5.0", "@bufbuild/protoplugin@^1.4.1":
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/@bufbuild/protoplugin/-/protoplugin-1.5.0.tgz#5cee6c3071519a239f2f049ae4d8b99d73d0a426"
   integrity sha512-b07uxUfWUHm91PrN7dMMSmO+2RH21kPo+EhczGDR3PDh2t80e4XCZhf3Z/6SM/+ajhVpbl/WNK+z645jsSnGPg==
@@ -66,10 +66,32 @@
     "@typescript/vfs" "^1.4.0"
     typescript "4.5.2"
 
+"@connectrpc/connect-express@^1.1.3":
+  version "1.1.3"
+  resolved "https://registry.yarnpkg.com/@connectrpc/connect-express/-/connect-express-1.1.3.tgz#bde50161ab521643139464265d69be476947f3f7"
+  integrity sha512-tNx7cIgc6+nHdEd2UWyfWcn6KLWJwECMS/5nFudJg/gGdQ0aCdA9jeBbpGefy4OvXUbxJF/CrTSnM7J/O0jqTA==
+  dependencies:
+    "@types/express" "^4.17.18"
+
+"@connectrpc/connect-node@^1.1.4":
+  version "1.1.4"
+  resolved "https://registry.yarnpkg.com/@connectrpc/connect-node/-/connect-node-1.1.4.tgz#30003547aaa7bf7341d40b3fa7dcd1f15f3a447b"
+  integrity sha512-1Pv4PSTh7k6+c8kNjVx9wZiWm8dChexsq+hW4EKcYItjSqvyKpmTfLBTl12y6W+RBQ9vCuFCu3xT79outhNY9g==
+  dependencies:
+    undici "^5.26.2"
+
 "@connectrpc/connect@^1.1.3":
   version "1.1.3"
   resolved "https://registry.npmjs.org/@connectrpc/connect/-/connect-1.1.3.tgz"
   integrity sha512-AXkbsLQe2Nm7VuoN5nqp05GEb9mPa/f5oFzDqTbHME4i8TghTrlY03uefbhuAq4wjsnfDnmuxHZvn6ndlgXmbg==
+
+"@connectrpc/protoc-gen-connect-es@^1.1.4":
+  version "1.1.4"
+  resolved "https://registry.yarnpkg.com/@connectrpc/protoc-gen-connect-es/-/protoc-gen-connect-es-1.1.4.tgz#92609e951c6f1de85b22d31897d4020b100a6dff"
+  integrity sha512-q+leRn9Bd1FzEbthN1qWHwYaGYGc84rLXy/hEkDlMCiWrqz2zxb4Ijy37gOMlE8eRfwYRwn08XcEhV+Y/1jlyA==
+  dependencies:
+    "@bufbuild/protobuf" "^1.4.2"
+    "@bufbuild/protoplugin" "^1.4.1"
 
 "@cspotcode/source-map-support@^0.8.0":
   version "0.8.1"
@@ -187,6 +209,11 @@
   version "0.18.20"
   resolved "https://registry.yarnpkg.com/@esbuild/win32-x64/-/win32-x64-0.18.20.tgz#786c5f41f043b07afb1af37683d7c33668858f6d"
   integrity sha512-kTdfRcSiDfQca/y9QIkng02avJ+NCaQvrMejlsB3RRv5sE9rRoeBPISaZpKxHELzRxZyLvNts1P27W3wV+8geQ==
+
+"@fastify/busboy@^2.0.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@fastify/busboy/-/busboy-2.1.0.tgz#0709e9f4cb252351c609c6e6d8d6779a8d25edff"
+  integrity sha512-+KpH+QxZU7O4675t3mnkQKcZZg56u+K/Ct2K+N2AZYNVK8kyeo/bI18tI8aPm3tvNNRyTWfj6s5tnGNlcbQRsA==
 
 "@jridgewell/resolve-uri@^3.0.3":
   version "3.1.1"
@@ -353,7 +380,7 @@
     "@types/range-parser" "*"
     "@types/send" "*"
 
-"@types/express@^4.16.1":
+"@types/express@^4.16.1", "@types/express@^4.17.18":
   version "4.17.21"
   resolved "https://registry.npmjs.org/@types/express/-/express-4.17.21.tgz"
   integrity sha512-ejlPM315qwLpaQlQDTjPdsUFSc6ZsP4AN6AlWnogPjQ7CVi7PYF3YVz+CY3jE2pwYf7E/7HlDAN0rV2GxTG0HQ==
@@ -1743,6 +1770,13 @@ undici-types@~5.26.4:
   version "5.26.5"
   resolved "https://registry.npmjs.org/undici-types/-/undici-types-5.26.5.tgz"
   integrity sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==
+
+undici@^5.26.2:
+  version "5.28.2"
+  resolved "https://registry.yarnpkg.com/undici/-/undici-5.28.2.tgz#fea200eac65fc7ecaff80a023d1a0543423b4c91"
+  integrity sha512-wh1pHJHnUeQV5Xa8/kyQhO7WFa8M34l026L5P/+2TYiakvGy5Rdc8jWZVyG7ieht/0WgJLEd3kcU5gKx+6GC8w==
+  dependencies:
+    "@fastify/busboy" "^2.0.0"
 
 unpipe@1.0.0, unpipe@~1.0.0:
   version "1.0.0"

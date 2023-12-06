@@ -1,4 +1,3 @@
-import { app } from './lib/api/init'
 import config from './config'
 import prisma from './db/client'
 import slack from './lib/slack/routes'

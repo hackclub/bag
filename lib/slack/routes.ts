@@ -10,13 +10,14 @@ import {
 } from '@slack/bolt'
 import { StringIndexed } from '@slack/bolt/dist/types/helpers'
 import config from '../../config'
-import { Identities, Items } from '../../db/client'
+import { Identities, Items, Apps } from '../../db/client'
 import messages from './messages'
 import views from './views'
 import { mappedPermissionValues } from '../permissions'
-import { Item } from '@prisma/client'
+import { Item, PermissionLevels, Prisma } from '@prisma/client'
 import { err, log } from '../logger'
 import { app } from '../api/init'
+import { v4 as uuid } from 'uuid'
 
 const receiver = new ExpressReceiver({
   signingSecret: config.SLACK_SIGNING_SECRET,
@@ -61,6 +62,7 @@ export async function execute(
   permission: number = mappedPermissionValues.READ
 ) {
   try {
+    // if (config.NODE_ENV === 'development') log(JSON.stringify(props.body))
     if (props.ack) await props.ack()
 
     // Ensure there are enough permissions to continue running
@@ -69,6 +71,13 @@ export async function execute(
     if (!user) {
       // Not in database yet... create user
       user = await Identities.create(props.context.userId)
+
+      // For now, temporarily block if it's not me
+      return await props.client.chat.postMessage({
+        channel: user.slack,
+        user: user.slack,
+        text: "You found something... but it's not quite ready yet."
+      })
     }
 
     const permissionLevel = mappedPermissionValues[user.permissions]
@@ -94,7 +103,7 @@ slack.command('/about', async props => {
   })
 })
 
-slack.command('/create', async props => {
+slack.command('/create-item', async props => {
   await execute(
     props,
     async props => {
@@ -108,7 +117,7 @@ slack.command('/create', async props => {
   )
 })
 
-slack.view('create', async props => {
+slack.view('create-item', async props => {
   await execute(
     props,
     async props => {
@@ -123,6 +132,75 @@ slack.view('create', async props => {
     },
     mappedPermissionValues.ADMIN
   )
+})
+
+slack.command('/create-app', async props => {
+  await execute(props, async props => {
+    const user = await Identities.find(props.context.userId)
+    await props.client.views.open({
+      trigger_id: props.body.trigger_id,
+      view: views.createApp(user.permissions)
+    })
+  })
+})
+
+slack.view('create-app', async props => {
+  await execute(props, async props => {
+    let fields: {
+      name: string
+      description: string
+      permissions: PermissionLevels
+    } = {
+      name: '',
+      description: '',
+      permissions: undefined
+    }
+    for (let field of Object.values(props.view.state.values)) {
+      fields[Object.keys(field)[0]] = field[Object.keys(field)[0]].value || ''
+    }
+
+    // Apps, by default, can read everything that's public
+    // But, if they're created by an admin, you can pass in any option
+    // Response lets you request change in permissions
+    const userId = props.context.userId
+    const user = await Identities.find(userId)
+
+    console.log(fields.permissions)
+
+    // Create app
+    let uuid: string
+    try {
+      const app = await Apps.create(
+        fields?.name,
+        fields?.description,
+        fields?.permissions
+      )
+      uuid = app.key
+    } catch (err) {
+      return await props.client.chat.postMessage({
+        channel: userId,
+        blocks: views.error(
+          `Oops, there was an error trying to deploy your app:
+\`\`\`${err.toString()}.
+\`\`\`
+Try again?`
+        )
+      })
+    }
+
+    return await props.client.chat.postMessage({
+      channel: userId,
+      blocks: views.requestPerms(fields?.name, uuid, user.permissions)
+    })
+  })
+})
+
+slack.view('request-perms', async props => {
+  await execute(props, async props => {})
+})
+
+slack.command('/edit-app', async props => {
+  await execute(props, async props => {})
 })
 
 slack.command('/find-item', async props => {

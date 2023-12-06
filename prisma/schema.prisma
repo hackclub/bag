@@ -11,13 +11,18 @@ enum PermissionLevels {
   ADMIN
   WRITE
   WRITE_SPECIFIC
+  READ_PRIVATE
   READ
 }
 
 model App {
-  id          String           @id @unique // Unique UUID as key
+  id          Int              @id @default(autoincrement())
+  name        String           @unique
+  key         String           @unique // Unique UUID as key
+  description String?
   permissions PermissionLevels @default(value: READ)
   specific    String[]
+  public      Boolean          @default(false)
 }
 
 model Identity {
@@ -36,6 +41,7 @@ model Item {
   commodity   Boolean    @default(false) // Commodity
   tradable    Boolean    @default(true) // Tradable
   instances   Instance[] // Instance IDs (ref)
+  public      Boolean    @default(false)
 }
 
 model Instance {
@@ -48,6 +54,7 @@ model Instance {
   metadata        Json? // Optional metadata (JSON)
   initiatorTrades Trade[]  @relation("initiatorTrades")
   receiverTrades  Trade[]  @relation("receiverTrades")
+  public          Boolean  @default(true)
 }
 
 model Trade {
@@ -58,4 +65,5 @@ model Trade {
   receiver            Identity   @relation("receiver", fields: [receiverIdentityId], references: [slack])
   initiatorTrades     Instance[] @relation("initiatorTrades")
   receiverTrades      Instance[] @relation("receiverTrades")
+  public              Boolean    @default(true)
 }

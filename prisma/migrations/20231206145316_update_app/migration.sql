@@ -1,9 +1,23 @@
 -- CreateEnum
-CREATE TYPE "PermissionLevels" AS ENUM ('ADMIN', 'READ');
+CREATE TYPE "PermissionLevels" AS ENUM ('ADMIN', 'WRITE', 'WRITE_SPECIFIC', 'READ_PRIVATE', 'READ');
+
+-- CreateTable
+CREATE TABLE "App" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
+    "description" TEXT,
+    "permissions" "PermissionLevels" NOT NULL DEFAULT 'READ',
+    "specific" TEXT[],
+    "public" BOOLEAN NOT NULL DEFAULT false,
+
+    CONSTRAINT "App_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable
 CREATE TABLE "Identity" (
     "slack" TEXT NOT NULL,
+    "permissions" "PermissionLevels" NOT NULL DEFAULT 'READ',
 
     CONSTRAINT "Identity_pkey" PRIMARY KEY ("slack")
 );
@@ -16,6 +30,7 @@ CREATE TABLE "Item" (
     "reaction" TEXT,
     "commodity" BOOLEAN NOT NULL DEFAULT false,
     "tradable" BOOLEAN NOT NULL DEFAULT true,
+    "public" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "Item_pkey" PRIMARY KEY ("name")
 );
@@ -27,6 +42,7 @@ CREATE TABLE "Instance" (
     "identityId" TEXT NOT NULL,
     "quantity" INTEGER NOT NULL DEFAULT 0,
     "metadata" JSONB,
+    "public" BOOLEAN NOT NULL DEFAULT true,
 
     CONSTRAINT "Instance_pkey" PRIMARY KEY ("id")
 );
@@ -36,16 +52,9 @@ CREATE TABLE "Trade" (
     "id" SERIAL NOT NULL,
     "initiatorIdentityId" TEXT NOT NULL,
     "receiverIdentityId" TEXT NOT NULL,
+    "public" BOOLEAN NOT NULL DEFAULT true,
 
     CONSTRAINT "Trade_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "Permissions" (
-    "id" TEXT NOT NULL,
-    "permissions" "PermissionLevels"[],
-
-    CONSTRAINT "Permissions_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -61,13 +70,16 @@ CREATE TABLE "_receiverTrades" (
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "App_name_key" ON "App"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "App_key_key" ON "App"("key");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Identity_slack_key" ON "Identity"("slack");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Item_name_key" ON "Item"("name");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Permissions_id_key" ON "Permissions"("id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "_initiatorTrades_AB_unique" ON "_initiatorTrades"("A", "B");

@@ -1,5 +1,5 @@
-import { PrismaClient, PermissionLevels } from '@prisma/client'
-import slack from '../lib/slack/routes'
+import { PrismaClient, PermissionLevels, App } from '@prisma/client'
+import { v4 as uuid } from 'uuid'
 
 const prisma = new PrismaClient()
 
@@ -42,13 +42,14 @@ export class Identities {
   }
 }
 
-interface Item {
+export interface Item {
   name: string
   image: string
   description: string
   reaction: string
   commodity: boolean
   tradable: boolean
+  public: boolean
 }
 
 export class Items {
@@ -73,10 +74,35 @@ export class Items {
   }
 }
 
-export class App {
-  // Class for managing permissions for apps that might extend from this
-  static async create(permission: PermissionLevels, identityRef?: string) {
-    return permission
+export class Apps {
+  // Class for managing permission for apps that might extend from this
+  static async create(
+    name: string,
+    description: string = '',
+    permission: PermissionLevels = PermissionLevels.READ
+  ) {
+    if (await Apps.find({ name })) throw new Error('Name is already being used')
+
+    let key = uuid()
+    while (await Apps.find({ key })) {
+      // Keep generating UUID until we find a unique one
+      key = uuid()
+    }
+
+    return await prisma.app.create({
+      data: {
+        key,
+        name,
+        description,
+        permissions: permission
+      }
+    })
+  }
+
+  static async find(options) {
+    return await prisma.app.findUnique({
+      where: options
+    })
   }
 }
 

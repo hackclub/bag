@@ -1,19 +1,30 @@
-// Easter Egg app
 import { createPromiseClient } from '@connectrpc/connect'
+import { createGrpcTransport } from '@connectrpc/connect-node'
 import { ElizaService } from '../gen/proto/eliza_connect'
-import { subtype } from '@slack/bolt'
+import 'dotenv/config'
 
-const transport = createConnectTrans
+async function app() {
+  const transport = createGrpcTransport({
+    baseUrl: 'http://localhost:3000',
+    httpVersion: '1.1'
+  })
 
-// Must pass in key somewhere that defines permission
-// In our case, the easter egg bot should have the permission to give away a specific instance and also be able to read info, but not edit anything else
-const client = createPromiseClient(ElizaService)
+  const client = createPromiseClient(ElizaService, transport)
+  const key = process.env.TEST_APP_KEY // App key for Easter Egg is stored at TEST_APP_KEY, for the sake of testing
 
-client.addSlackAction('message', subtype('message_me'), ({ event, logger }) => {
-  /*
-    if (event.channelId == channelId("#baggie") && event.message == "Hello world!") {
-      award(Items.find("(id of easter egg)"))
-      logToChannel("Hm... it's an egg, I wonder what it'll hatch into?")
-    }
-   */
-})
+  // Now I'm going to add a custom Slack action that listens for a response of "Hello, world!" in the #baggie channel.
+  // When we receive a response, my app will assign the user a Easter Egg badge.
+  // We created the Easter Egg badge by?
+  const response = await client.addSlackAction(
+    {
+      key // Pass in key first
+    },
+    {}
+  )
+  const response = await client.addSlackAction({ key }, '', '', async props => {
+    // How much should we expose?
+    props.assignItem
+  })
+}
+
+app()

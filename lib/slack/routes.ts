@@ -94,13 +94,8 @@ export async function execute(
   }
 }
 
-slack.command('/about', async props => {
-  await execute(props, async props => {
-    await props.client.chat.postMessage({
-      channel: props.context.userId,
-      text: 'No secrets are coming out of the #baggie!'
-    })
-  })
+slack.error(async error => {
+  err(error)
 })
 
 slack.command('/create-item', async props => {
@@ -195,6 +190,8 @@ Try again?`
   })
 })
 
+slack.command('/request-perms', async props => {})
+
 slack.view('request-perms', async props => {
   await execute(props, async props => {})
 })
@@ -207,6 +204,8 @@ slack.command('/find-item', async props => {
   await execute(props, async props => {}, mappedPermissionValues.ADMIN)
 })
 
+slack.command('/bag-apps', async props => {})
+
 slack.event('app_mention', async props => {
   await execute(props, async props => {
     const removeUser = (text: string) => {
@@ -217,19 +216,67 @@ slack.event('app_mention', async props => {
 
     const message = removeUser(props.event.text)
     switch (message) {
+      case 'help':
+        await props.client.chat.postEphemeral({
+          channel: props.event.channel,
+          user: props.context.userId,
+          blocks: views.helpDialog
+        })
+        break
+      case 'about':
+        await props.client.chat.postEphemeral({
+          channel: props.event.channel,
+          user: props.context.userId,
+          text: await views.heehee()
+        })
+        break
       case 'me':
         const userId = props.context.userId
         const user = await Identities.find(userId)
 
         await props.client.chat.postMessage({
           channel: props.event.channel,
-          text: `<@${userId}>${
-            user.permissions === 'ADMIN' ? ' is an admin.' : ''
-          }`
+          blocks: views.showInventory(user)
         })
+
         break
+      default:
+        if (message.startsWith('<@')) {
+          // Mentioning user
+          const mentionId = message.slice(2, message.length - 1) // Remove the formatted ID
+          const mention = await Identities.find(mentionId, true)
+
+          await props.client.chat.postMessage({
+            channel: props.event.channel,
+            blocks: views.showInventory(mention)
+          })
+
+          break
+        }
+        await props.client.chat.postEphemeral({
+          channel: props.event.channel,
+          user: props.context.userId,
+          blocks: [
+            {
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text: "Sorry, can't help you with that, I'm just a measly bag, it's the stuff inside that's useful... maybe this is helpful? :point_down:"
+              }
+            },
+            ...views.helpDialog
+          ]
+        })
     }
   })
+})
+
+slack.event('message', async props => {
+  const channel = props.event.channel
+  const easterEggChannels = ['C067VEFCV7Y', 'C067FH4PHFH']
+  if (easterEggChannels.includes(channel)) {
+    const user = await Identities.find(props.context.userId)
+  }
 })
 
 export default slack

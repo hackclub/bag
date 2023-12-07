@@ -1,6 +1,8 @@
 import { PermissionLevels } from '@prisma/client'
 import { View, PlainTextOption, Block, KnownBlock } from '@slack/bolt'
 import { mappedPermissionValues } from '../permissions'
+import config from '../../config'
+import { Identities } from '../../db/client'
 
 const error = (err: string) => {
   return [
@@ -74,6 +76,98 @@ const createItem: View = {
         type: 'plain_text',
         text: 'Description',
         emoji: true
+      }
+    },
+    {
+      type: 'input',
+      element: {
+        type: 'static_select',
+        placeholder: {
+          type: 'plain_text',
+          text: 'Commodity'
+        },
+        options: [
+          {
+            text: {
+              type: 'plain_text',
+              text: 'Is a commodity'
+            },
+            value: 'true'
+          },
+          {
+            text: {
+              type: 'plain_text',
+              text: 'Is not a commodity'
+            },
+            value: 'false'
+          }
+        ]
+      },
+      label: {
+        type: 'plain_text',
+        text: 'Is this considered a common item?'
+      }
+    },
+    {
+      type: 'input',
+      element: {
+        type: 'static_select',
+        placeholder: {
+          type: 'plain_text',
+          text: 'Tradable'
+        },
+        options: [
+          {
+            text: {
+              type: 'plain_text',
+              text: 'Can be traded',
+              emoji: true
+            },
+            value: 'true'
+          },
+          {
+            text: {
+              type: 'plain_text',
+              text: "Can't be traded",
+              emoji: true
+            },
+            value: 'false'
+          }
+        ]
+      },
+      label: {
+        type: 'plain_text',
+        text: 'Is this item tradable?'
+      }
+    },
+    {
+      type: 'input',
+      element: {
+        type: 'static_select',
+        placeholder: {
+          type: 'plain_text',
+          text: 'Public'
+        },
+        options: [
+          {
+            text: {
+              type: 'plain_text',
+              text: 'Is public'
+            },
+            value: 'true'
+          },
+          {
+            text: {
+              type: 'plain_text',
+              text: 'Is private'
+            },
+            value: 'false'
+          }
+        ]
+      },
+      label: {
+        type: 'plain_text',
+        text: '(Can be viewed by everyone)'
       }
     }
   ]
@@ -203,29 +297,104 @@ const requestPerms = (
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `${name} created, your app token is \`${uuid}\`. (Don't share it with anyone unless they're also working on the app!) Your app can: .\n\nTo change, request an admin review:`
+        text: `${name} created, your app token is \`${uuid}\`. (Don't share it with anyone unless they're also working on the app!) Your app can: .\n\nTo edit your app/request a permission level, run \`/edit-app ${name} ${uuid}\``
       }
-    },
+    }
+    // {
+    //   type: 'section',
+    //   text: {
+    //     type: 'mrkdwn',
+    //     text: 'Request a permission level'
+    //   },
+    //   accessory: {
+    //     type: 'static_select',
+    //     placeholder: {
+    //       type: 'plain_text',
+    //       text: 'Set permission level',
+    //       emoji: true
+    //     },
+    //     options: cascadingPermissions
+    //       .reverse()
+    //       .slice(
+    //         0,
+    //         mappedPermissionValues[permission] + 1
+    //       ) as Array<PlainTextOption>,
+    //     action_id: 'request-perms'
+    //   }
+    // }
+  ]
+}
+
+const helpDialog: (Block | KnownBlock)[] = [
+  {
+    type: 'section',
+    text: {
+      type: 'mrkdwn',
+      text: `Hi! I am a bag. Here's a list of available commands.
+
+\`/create-item\`: Lets you create an item, if you're an admin. (I know, I know, but we have to have rules somewhere.)
+\`/create-app\`: Lets you create an app. Most apps will, by default, start out in readonly public mode, and be private by default. You'll receive a DM from @bag with your app key, as well as the ability to request a change in permission levels, and other settings.
+\`/request-perms\`: Request permissions for yourself. 
+\`/edit-app <id> <key>\`: Lets you edit an app and its settings, given you have the key.
+\`/get-app <name>\`: Lets you get info about an app, including its ID, given its name.
+
+And of course, if you ever mention me, the @bag, I will help in any way possible! (Although I am just a measly bag.) Here is a list of things you can call me for:
+
+* \`help\`: Call me for help!
+* \`about\`: More on me. (And maybe a jingle?)
+* \`me\`: Check out your inventory! This will list all public items. You can also list private items with \`me private\` instead.
+* \`@<person>\`: Check out another Hack Clubber's inventory! This will list all their public items.
+
+By the way, I come with a bunch of ~magic tricks~ apps! You can check out all the (public) apps by calling \`/bag-apps\`. *Interested in writing an app? Check out this super cool jam!*`
+    }
+  }
+]
+
+const heehee = async () => {
+  const jingle = await (
+    await fetch('https://jamsapi.hackclub.dev/openai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${config.OPENAI_TOKEN}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'user',
+            content:
+              "Write a poem jingle about a plastic bag that thinks it's measly from a first person point of view. Short, three sentences max."
+          }
+        ]
+      })
+    })
+  ).json()
+
+  return `No secrets are coming out of the <#C067VEFCV7Y>!
+  
+Fine... you can have this:
+\n> ${jingle.choices[0].message.content.split('\n').join('\n> ')}`
+}
+
+const showInventory = (user: Identities): (Block | KnownBlock)[] => {
+  let text = []
+  if (user.permissions === 'ADMIN')
+    text.push(`<@${user.slack}> is an admin and has:`)
+  else text.push(`<@${user.slack}> has:`)
+
+  if (!user.inventory.length)
+    text.push(
+      ' nothing. Nothing? The bag is empty? Are you sure? Time to go out and do some stuff.'
+    )
+  else text.push(user.inventory) // TODO: Format
+
+  return [
     {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: 'Request a permission level'
-      },
-      accessory: {
-        type: 'static_select',
-        placeholder: {
-          type: 'plain_text',
-          text: 'Set permission level',
-          emoji: true
-        },
-        options: cascadingPermissions
-          .reverse()
-          .slice(
-            0,
-            mappedPermissionValues[permission] + 1
-          ) as Array<PlainTextOption>,
-        action_id: 'request-perms'
+        text: text.join('')
       }
     }
   ]
@@ -235,5 +404,8 @@ export default {
   error,
   createItem,
   createApp,
-  requestPerms
+  requestPerms,
+  helpDialog,
+  heehee,
+  showInventory
 }

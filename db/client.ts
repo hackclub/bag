@@ -1,16 +1,35 @@
-import { PrismaClient, PermissionLevels, App } from '@prisma/client'
+import { PrismaClient, PermissionLevels, Instance } from '@prisma/client'
 import { v4 as uuid } from 'uuid'
 
 const prisma = new PrismaClient()
 
 export class Identities {
+  slack: string
+  permissions: PermissionLevels
+  inventory: Instance[]
+
+  constructor(identity: {
+    slack: string
+    permissions: PermissionLevels
+    inventory: Instance[]
+  }) {
+    this.slack = identity.slack
+    this.permissions = identity.permissions
+    this.inventory = identity.inventory
+  }
+
   // C
   static async create(id: string) {
-    return await prisma.identity.create({
-      data: {
-        slack: id
-      }
-    })
+    return new Identities(
+      await prisma.identity.create({
+        data: {
+          slack: id
+        },
+        include: {
+          inventory: true
+        }
+      })
+    )
   }
 
   static async createMany(ids: Array<string>) {
@@ -20,12 +39,19 @@ export class Identities {
   }
 
   // R
-  static async find(id: string) {
-    return await prisma.identity.findUnique({
-      where: {
-        slack: id
-      }
-    })
+  static async find(id: string, create: boolean = false) {
+    const result = new Identities(
+      (await prisma.identity.findUnique({
+        where: {
+          slack: id
+        },
+        include: {
+          inventory: true
+        }
+      })) ||
+        (create === true && (await Identities.create(id)))
+    )
+    return result
   }
 
   static async all() {
@@ -40,6 +66,8 @@ export class Identities {
       }
     })
   }
+
+  async giveInstance(instanceId: string) {}
 }
 
 export interface Item {

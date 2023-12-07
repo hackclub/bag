@@ -11,20 +11,11 @@ async function app() {
 
   const client = createPromiseClient(ElizaService, transport)
   const key = process.env.TEST_APP_KEY // App key for Easter Egg is stored at TEST_APP_KEY, for the sake of testing
+  console.log(client, key)
 
   // Now I'm going to add a custom Slack action that listens for a response of "Hello, world!" in the #baggie channel.
   // When we receive a response, my app will assign the user a Easter Egg badge.
-  // We created the Easter Egg badge by?
-  const response = await client.addSlackAction(
-    {
-      key // Pass in key first
-    },
-    {}
-  )
-  const response = await client.addSlackAction({ key }, '', '', async props => {
-    // How much should we expose?
-    props.assignItem
-  })
+  // Now someone should be able to post a message into #baggie and get the Easter Egg badge
 }
 
 app()

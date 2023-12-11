@@ -6,7 +6,8 @@ import {
   SlackViewMiddlewareArgs,
   SlackViewAction,
   AllMiddlewareArgs,
-  SlackEventMiddlewareArgs
+  SlackEventMiddlewareArgs,
+  SlackActionMiddlewareArgs
 } from '@slack/bolt'
 import { StringIndexed } from '@slack/bolt/dist/types/helpers'
 import config from '../../config'
@@ -18,6 +19,7 @@ import { Item, PermissionLevels, Prisma } from '@prisma/client'
 import { err, log } from '../logger'
 import { app } from '../api/init'
 import { v4 as uuid } from 'uuid'
+import { maintainers } from '../utils'
 
 const receiver = new ExpressReceiver({
   signingSecret: config.SLACK_SIGNING_SECRET,
@@ -42,23 +44,31 @@ type Middleware = CommandMiddleware | EventMiddleware | ViewMiddleware
 
 // @ts-expect-error
 export async function execute(
+  props: SlackActionMiddlewareArgs,
+  func: (
+    props: SlackActionMiddlewareArgs,
+    permission?: PermissionLevels
+  ) => any,
+  permission?: number
+)
+export async function execute(
   props: CommandMiddleware,
-  func: (props: CommandMiddleware) => any,
+  func: (props: CommandMiddleware, permission?: number) => any,
   permission?: number
 )
 export async function execute(
   props: EventMiddleware,
-  func: (props: EventMiddleware) => any,
+  func: (props: EventMiddleware, permission?: number) => any,
   permission?: number
 )
 export async function execute(
   props: ViewMiddleware,
-  func: (props: ViewMiddleware) => any,
+  func: (props: ViewMiddleware, permission?: number) => any,
   permission?: number
 )
 export async function execute(
   props: Middleware,
-  func: (props: Middleware) => any,
+  func: (props: Middleware, permission?: number) => any,
   permission: number = mappedPermissionValues.READ
 ) {
   try {
@@ -68,16 +78,21 @@ export async function execute(
     // Ensure there are enough permissions to continue running
     let user = await Identities.find(props.context.userId)
 
-    if (!user) {
+    if (Object.values(user).includes(undefined)) {
       // Not in database yet... create user
       user = await Identities.create(props.context.userId)
 
-      // For now, temporarily block if it's not me
-      return await props.client.chat.postMessage({
-        channel: user.slack,
-        user: user.slack,
-        text: "You found something... but it's not quite ready yet."
-      })
+      // For now, temporarily block if it's not in whitelist
+      if (
+        !['U03MNFDRSGJ', 'UDK5M9Y13', 'U032A2PMSE9', 'U05TXCSCK7E'].includes(
+          user.slack
+        )
+      )
+        return await props.client.chat.postMessage({
+          channel: user.slack,
+          user: user.slack,
+          text: "You found something... but it's not quite ready yet."
+        })
     }
 
     const permissionLevel = mappedPermissionValues[user.permissions]
@@ -88,9 +103,18 @@ export async function execute(
         text: messages.invalidPerms
       })
 
-    await func(props)
+    await func(props, mappedPermissionValues[user.permissions])
   } catch (error) {
     err(error)
+    props.client.chat.postMessage({
+      channel: props.context.userId,
+      user: props.context.userId,
+      blocks: views.error(`Oops, there was an error:
+\`\`\`
+${error}
+\`\`\`
+Try again?`)
+    })
   }
 }
 
@@ -185,19 +209,94 @@ Try again?`
 
     return await props.client.chat.postMessage({
       channel: userId,
-      blocks: views.requestPerms(fields?.name, uuid, user.permissions)
+      blocks: views.createdApp(fields?.name, uuid, user.permissions)
     })
   })
 })
 
-slack.command('/request-perms', async props => {})
+slack.command('/request-perms', async props => {
+  await execute(props, async props => {
+    // Let user request permissions
+    const user = await Identities.find(props.context.userId)
+    return await props.client.views.open({
+      trigger_id: props.body.trigger_id,
+      view: views.requestPerms(user)
+    })
+  })
+})
 
 slack.view('request-perms', async props => {
+  await execute(props, async props => {
+    let permission = Object.values(props.view.state.values)[0].permission
+      .selected_option.value
+    for (let maintainer of maintainers) {
+      await props.client.chat.postMessage({
+        channel: maintainer.slack,
+        user: maintainer.slack,
+        blocks: views.approveOrDenyPerms(
+          props.context.userId,
+          permission as PermissionLevels
+        )
+      })
+    }
+  })
+})
+
+slack.action('approve-perms', async props => {
+  await execute(props, async props => {
+    // Approve user
+    // console.log(props.action.value)
+  })
+})
+
+slack.action('deny-perms', async props => {
   await execute(props, async props => {})
 })
 
 slack.command('/edit-app', async props => {
-  await execute(props, async props => {})
+  await execute(props, async props => {
+    const [id, key] = props.body.text.split(' ')
+    if (Number.isNaN(Number(id)))
+      return await props.client.chat.postEphemeral({
+        channel: props.body.channel_id,
+        user: props.context.userId,
+        text: 'Oh no! Looks like you provided an invalid ID for the app.'
+      })
+    const app = await Apps.find({
+      id: Number(id),
+      AND: [{ key }]
+    })
+    if (!app)
+      return await props.client.chat.postEphemeral({
+        channel: props.body.channel_id,
+        user: props.context.userId,
+        text: 'Oh no! App not found, or an incorrect key was used.'
+      })
+    return await props.client.views.open({
+      trigger_id: props.body.trigger_id,
+      view: views.editApp(app)
+    })
+  })
+})
+
+slack.command('/get-app', async props => {
+  await execute(props, async (props, permission) => {
+    const app = await Apps.find({
+      name: props.command.text
+    })
+    if (!app || permission < mappedPermissionValues.READ_PRIVATE)
+      return await slack.client.chat.postEphemeral({
+        channel: props.body.channel_id,
+        user: props.context.userId,
+        text: `Oh no! Looks like \`${props.command.text}\` doesn't exist.`
+      })
+
+    return await slack.client.chat.postEphemeral({
+      channel: props.body.channel_id,
+      user: props.context.userId,
+      blocks: views.getApp(app)
+    })
+  })
 })
 
 slack.command('/find-item', async props => {

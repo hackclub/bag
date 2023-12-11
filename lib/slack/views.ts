@@ -1,4 +1,4 @@
-import { PermissionLevels } from '@prisma/client'
+import { App, PermissionLevels } from '@prisma/client'
 import { View, PlainTextOption, Block, KnownBlock } from '@slack/bolt'
 import { mappedPermissionValues } from '../permissions'
 import config from '../../config'
@@ -287,7 +287,94 @@ const createApp = (permission: PermissionLevels): View => {
   }
 }
 
-const requestPerms = (
+const editApp = (app: App): View => {
+  return {
+    callback_id: 'edit-app',
+    title: {
+      type: 'plain_text',
+      text: 'Edit app'
+    },
+    submit: {
+      type: 'plain_text',
+      text: 'Update app'
+    },
+    type: 'modal',
+    blocks: [
+      {
+        type: 'input',
+        element: {
+          type: 'plain_text_input',
+          action_id: 'name',
+          placeholder: {
+            type: 'plain_text',
+            text: 'Name of app'
+          },
+          initial_value: app.name
+        },
+        label: {
+          type: 'plain_text',
+          text: 'App name',
+          emoji: true
+        }
+      },
+      {
+        type: 'input',
+        element: {
+          type: 'plain_text_input',
+          action_id: 'description',
+          placeholder: {
+            type: 'plain_text',
+            text: 'Description'
+          },
+          initial_value: app.description,
+          multiline: true
+        },
+        label: {
+          type: 'plain_text',
+          text: 'What does this do?',
+          emoji: true
+        }
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: app.public
+            ? 'Make app private: this is useful when in development and good for surprises.'
+            : 'Make app public: make sure your app works before toggling this!'
+        },
+        accessory: {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: app.public ? 'Set to private' : 'Set to public'
+          },
+          value: !app.public,
+          action_id: 'toggle-app-privacy'
+        }
+      }
+    ]
+  }
+}
+
+const getApp = (app: App): (Block | KnownBlock)[] => {
+  return [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `Here's \`${app.name}\`:
+
+ID: ${app.id}
+Description: ${app.description}
+Permissions: ${app.permissions}
+Public: ${app.public}`
+      }
+    }
+  ]
+}
+
+const createdApp = (
   name: string,
   uuid: string,
   permission: PermissionLevels
@@ -297,7 +384,7 @@ const requestPerms = (
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `${name} created, your app token is \`${uuid}\`. (Don't share it with anyone unless they're also working on the app!) Your app can: .\n\nTo edit your app/request a permission level, run \`/edit-app ${name} ${uuid}\``
+        text: `*${name}* created, your app token is \`${uuid}\`. (Don't share it with anyone unless they're also working on the app!) Your app can: .\n\nTo edit your app/request a permission level, run \`/edit-app ${name} ${uuid}\``
       }
     }
     // {
@@ -325,6 +412,80 @@ const requestPerms = (
   ]
 }
 
+const requestPerms = (user: Identities): View => {
+  return {
+    callback_id: 'request-perms',
+    title: {
+      type: 'plain_text',
+      text: 'Request permissions'
+    },
+    submit: {
+      type: 'plain_text',
+      text: 'Request permissons'
+    },
+    type: 'modal',
+    blocks: [
+      {
+        type: 'input',
+        element: {
+          type: 'static_select',
+          placeholder: {
+            type: 'plain_text',
+            text: 'Permission'
+          },
+          options: cascadingPermissions as Array<PlainTextOption>,
+          action_id: 'permission'
+        },
+        label: {
+          type: 'plain_text',
+          text: 'Select a personal permission level',
+          emoji: true
+        }
+      }
+    ]
+  }
+}
+
+const approveOrDenyPerms = (
+  user: string,
+  permission: PermissionLevels
+): (Block | KnownBlock)[] => {
+  return [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `<@${user}> just asked for ${permission} permissions. Accept or deny:`
+      }
+    },
+    {
+      type: 'actions',
+      elements: [
+        {
+          type: 'button',
+          style: 'primary',
+          text: {
+            type: 'plain_text',
+            text: 'Approve'
+          },
+          value: permission,
+          action_id: 'approve-perms'
+        },
+        {
+          type: 'button',
+          style: 'danger',
+          text: {
+            type: 'plain_text',
+            text: 'Deny'
+          },
+          value: permission,
+          action_id: 'deny-perms'
+        }
+      ]
+    }
+  ]
+}
+
 const helpDialog: (Block | KnownBlock)[] = [
   {
     type: 'section',
@@ -333,7 +494,7 @@ const helpDialog: (Block | KnownBlock)[] = [
       text: `Hi! I am a bag. Here's a list of available commands.
 
 \`/create-item\`: Lets you create an item, if you're an admin. (I know, I know, but we have to have rules somewhere.)
-\`/create-app\`: Lets you create an app. Most apps will, by default, start out in readonly public mode, and be private by default. You'll receive a DM from @bag with your app key, as well as the ability to request a change in permission levels, and other settings.
+\`/create-app\`: Lets you create an app. Most apps will, by default, start out in readonly public mode, and be private by default. You'll receive a DM from @bag with your app key, as well as the ability to edit app settings.
 \`/request-perms\`: Request permissions for yourself. 
 \`/edit-app <id> <key>\`: Lets you edit an app and its settings, given you have the key.
 \`/get-app <name>\`: Lets you get info about an app, including its ID, given its name.
@@ -404,7 +565,11 @@ export default {
   error,
   createItem,
   createApp,
+  createdApp,
+  editApp,
+  getApp,
   requestPerms,
+  approveOrDenyPerms,
   helpDialog,
   heehee,
   showInventory

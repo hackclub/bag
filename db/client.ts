@@ -1,4 +1,4 @@
-import { PrismaClient, PermissionLevels, Instance } from '@prisma/client'
+import { PrismaClient, PermissionLevels, Instance, App } from '@prisma/client'
 import { v4 as uuid } from 'uuid'
 
 const prisma = new PrismaClient()
@@ -104,10 +104,16 @@ export class Items {
 
 export class Apps {
   // Class for managing permission for apps that might extend from this
+  name: string
+  description: string
+  permissions: PermissionLevels
+
+  constructor(app: App) {}
+
   static async create(
     name: string,
     description: string = '',
-    permission: PermissionLevels = PermissionLevels.READ
+    permissions: PermissionLevels = PermissionLevels.READ
   ) {
     if (await Apps.find({ name })) throw new Error('Name is already being used')
 
@@ -122,7 +128,7 @@ export class Apps {
         key,
         name,
         description,
-        permissions: permission
+        permissions
       }
     })
   }

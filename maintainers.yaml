@@ -1,0 +1,3 @@
+# Admins that are allowed to allow or deny certain requests, among other privileges
+- id: jc
+  slack: U03MNFDRSGJ

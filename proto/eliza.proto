@@ -5,12 +5,12 @@ package connectrpc.eliza.v1;
 service ElizaService {
   // Response to request
   rpc Say(SayRequest) returns (SayResponse) {}
-  rpc BidiSay(stream SayRequest) returns (stream SayResponse);
   rpc AddSlackAction(stream SlackActionRequest) returns (stream SlackActionResponse);
 }
 
 message SlackActionRequest {
-  string key = 1;
+  string action = 1;
+  string value = 2;
 }
 
 message SlackActionResponse {

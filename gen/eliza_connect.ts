@@ -24,15 +24,6 @@ export const ElizaService = {
       kind: MethodKind.Unary,
     },
     /**
-     * @generated from rpc connectrpc.eliza.v1.ElizaService.BidirectionalRPC
-     */
-    bidirectionalRPC: {
-      name: "BidirectionalRPC",
-      I: SayRequest,
-      O: SayResponse,
-      kind: MethodKind.BiDiStreaming,
-    },
-    /**
      * @generated from rpc connectrpc.eliza.v1.ElizaService.AddSlackAction
      */
     addSlackAction: {

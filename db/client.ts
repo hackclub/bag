@@ -145,6 +145,10 @@ export class Apps {
     })
   }
 
+  static async all() {
+    return await prisma.app.findMany()
+  }
+
   static async find(options) {
     return await prisma.app.findUnique({
       where: options

@@ -69,3 +69,9 @@ model Trade {
   receiverTrades      Instance[] @relation("receiverTrades")
   public              Boolean    @default(true)
 }
+
+// model Recipe {
+//   id Int @id @default(autoincrement())
+//   inputIds String[]
+//   inputs Item[] @relation(fields: [inputIds], references: [name])
+// }

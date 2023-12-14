@@ -11,9 +11,14 @@ import { Message, proto3 } from "@bufbuild/protobuf";
  */
 export class SlackActionRequest extends Message<SlackActionRequest> {
   /**
-   * @generated from field: string key = 1;
+   * @generated from field: string action = 1;
    */
-  key = "";
+  action = "";
+
+  /**
+   * @generated from field: string value = 2;
+   */
+  value = "";
 
   constructor(data?: PartialMessage<SlackActionRequest>) {
     super();
@@ -23,7 +28,8 @@ export class SlackActionRequest extends Message<SlackActionRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.SlackActionRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "action", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "value", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SlackActionRequest {

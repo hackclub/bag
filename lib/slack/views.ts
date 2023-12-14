@@ -79,13 +79,13 @@ const createItem: View = {
       }
     },
     {
-      type: 'input',
-      element: {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: '(i.e., like a coin with a predefined value that is always the same as other items of the same value)'
+      },
+      accessory: {
         type: 'static_select',
-        placeholder: {
-          type: 'plain_text',
-          text: 'Commodity'
-        },
         options: [
           {
             text: {
@@ -102,10 +102,6 @@ const createItem: View = {
             value: 'false'
           }
         ]
-      },
-      label: {
-        type: 'plain_text',
-        text: 'Is this considered a common item?'
       }
     },
     {
@@ -339,19 +335,32 @@ const editApp = (app: App): View => {
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: app.public
-            ? 'Make app private: this is useful when in development and good for surprises.'
-            : 'Make app public: make sure your app works before toggling this!'
+          text: ''
         }
-        // accessory: {
-        //   type: 'button',
-        //   text: {
-        //     type: 'plain_text',
-        //     text: app.public ? 'Set to private' : 'Set to public'
-        //   },
-        //   value: !app.public,
-        //   action_id: 'toggle-app-privacy'
-        // }
+      },
+      {
+        type: 'actions',
+        elements: [
+          {
+            type: 'radio_buttons',
+            options: [
+              {
+                text: {
+                  type: 'plain_text',
+                  text: 'Private'
+                },
+                value: 'private'
+              },
+              {
+                text: {
+                  type: 'plain_text',
+                  text: 'Public'
+                },
+                value: 'public'
+              }
+            ]
+          }
+        ]
       }
     ]
   }

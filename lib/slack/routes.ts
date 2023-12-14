@@ -127,6 +127,7 @@ slack.command('/create-item', async props => {
     props,
     async props => {
       // Open a view for creating item
+      // Missing: reaction emoji (should post item and have user react to it),
       await props.client.views.open({
         trigger_id: props.body.trigger_id,
         view: views.createItem
@@ -250,6 +251,8 @@ slack.view('request-perms', async props => {
 slack.action('approve-perms', async props => {
   await execute(props, async props => {
     try {
+      console.log(props)
+      return
       // @ts-expect-error
       const { user: userId, permission } = JSON.parse(props.action.value)
       // Approve user
@@ -268,7 +271,20 @@ slack.action('approve-perms', async props => {
 
 slack.action('deny-perms', async props => {
   await execute(props, async props => {
-    console.log(props)
+    try {
+      // @ts-expect-error
+      const { user: userId, permission } = JSON.parse(props.action.value)
+      // Deny user
+      const user = await Identities.find(userId)
+      await user.updatePermissions(permission)
+      await props.say(
+        `${
+          permission[0].toUpperCase() + permission.slice(1)
+        } for <@${userId}> approved.`
+      )
+    } catch {
+      return await props.say('Permissions already applied.')
+    }
   })
 })
 
@@ -323,7 +339,17 @@ slack.command('/find-item', async props => {
 })
 
 slack.command('/bag-apps', async props => {
-  await execute(props, async props => {})
+  await execute(props, async (props, permission) => {
+    let apps = await Apps.all()
+    if (permission < mappedPermissionValues.READ_PRIVATE)
+      apps = apps.filter(app => app.public)
+    console.log(apps.map(app => [...views.getApp(app)]))
+    await props.client.chat.postEphemeral({
+      channel: props.body.channel_id,
+      user: props.context.userId,
+      text: ''
+    })
+  })
 })
 
 slack.event('app_mention', async props => {
@@ -350,17 +376,20 @@ slack.event('app_mention', async props => {
           text: await views.heehee()
         })
         break
-      case 'me':
-        const userId = props.context.userId
-        const user = await Identities.find(userId)
-
-        await props.client.chat.postMessage({
-          channel: props.event.channel,
-          blocks: views.showInventory(user)
-        })
-
-        break
       default:
+        if (message.startsWith('me')) {
+          const userId = props.context.userId
+          const user = await Identities.find(userId)
+          if (message !== 'me private')
+            user.inventory = user.inventory.filter(item => item.public)
+
+          await props.client.chat.postMessage({
+            channel: props.event.channel,
+            blocks: views.showInventory(user)
+          })
+
+          break
+        }
         if (message.startsWith('<@')) {
           // Mentioning user
           const mentionId = message.slice(2, message.length - 1) // Remove the formatted ID

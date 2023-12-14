@@ -31,6 +31,7 @@ model Identity {
   permissions     PermissionLevels @default(value: READ)
   initiatorTrades Trade[]          @relation("initiator")
   receiverTrades  Trade[]          @relation("receiver")
+  metadata        Json? // Optional metadata (JSON)
 }
 
 model Item {
@@ -42,6 +43,7 @@ model Item {
   tradable    Boolean    @default(true) // Tradable
   instances   Instance[] // Instance IDs (ref)
   public      Boolean    @default(false)
+  metadata    Json? // Optional metadata (JSON)
 }
 
 model Instance {

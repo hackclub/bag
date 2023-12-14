@@ -342,16 +342,16 @@ const editApp = (app: App): View => {
           text: app.public
             ? 'Make app private: this is useful when in development and good for surprises.'
             : 'Make app public: make sure your app works before toggling this!'
-        },
-        accessory: {
-          type: 'button',
-          text: {
-            type: 'plain_text',
-            text: app.public ? 'Set to private' : 'Set to public'
-          },
-          value: !app.public,
-          action_id: 'toggle-app-privacy'
         }
+        // accessory: {
+        //   type: 'button',
+        //   text: {
+        //     type: 'plain_text',
+        //     text: app.public ? 'Set to private' : 'Set to public'
+        //   },
+        //   value: !app.public,
+        //   action_id: 'toggle-app-privacy'
+        // }
       }
     ]
   }
@@ -455,7 +455,7 @@ const approveOrDenyPerms = (
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `<@${user}> just asked for ${permission} permissions. Accept or deny:`
+        text: `<@${user}> just asked for ${permission.toLowerCase()} permissions. Accept or deny:`
       }
     },
     {
@@ -468,7 +468,10 @@ const approveOrDenyPerms = (
             type: 'plain_text',
             text: 'Approve'
           },
-          value: permission,
+          value: JSON.stringify({
+            user,
+            permission
+          }),
           action_id: 'approve-perms'
         },
         {
@@ -478,7 +481,10 @@ const approveOrDenyPerms = (
             type: 'plain_text',
             text: 'Deny'
           },
-          value: permission,
+          value: JSON.stringify({
+            user,
+            permission
+          }),
           action_id: 'deny-perms'
         }
       ]

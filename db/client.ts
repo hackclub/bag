@@ -18,6 +18,18 @@ export class Identities {
     this.inventory = identity.inventory
   }
 
+  async updatePermissions(permissions: PermissionLevels) {
+    this.permissions = permissions
+    await prisma.identity.update({
+      where: {
+        slack: this.slack
+      },
+      data: {
+        permissions
+      }
+    })
+  }
+
   // C
   static async create(id: string) {
     return new Identities(

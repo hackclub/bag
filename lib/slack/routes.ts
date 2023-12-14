@@ -239,18 +239,37 @@ slack.view('request-perms', async props => {
         )
       })
     }
+    await props.client.chat.postEphemeral({
+      channel: props.context.userId,
+      user: props.context.userId,
+      text: 'Permission request made! You should get a response sometime if the next 24 hours if today is a weekday, and 72 hours otherwise!'
+    })
   })
 })
 
 slack.action('approve-perms', async props => {
   await execute(props, async props => {
-    // Approve user
-    // console.log(props.action.value)
+    try {
+      // @ts-expect-error
+      const { user: userId, permission } = JSON.parse(props.action.value)
+      // Approve user
+      const user = await Identities.find(userId)
+      await user.updatePermissions(permission)
+      await props.say(
+        `${
+          permission[0].toUpperCase() + permission.slice(1)
+        } for <@${userId}> approved.`
+      )
+    } catch {
+      return await props.say('Permissions already applied.')
+    }
   })
 })
 
 slack.action('deny-perms', async props => {
-  await execute(props, async props => {})
+  await execute(props, async props => {
+    console.log(props)
+  })
 })
 
 slack.command('/edit-app', async props => {
@@ -303,7 +322,9 @@ slack.command('/find-item', async props => {
   await execute(props, async props => {}, mappedPermissionValues.ADMIN)
 })
 
-slack.command('/bag-apps', async props => {})
+slack.command('/bag-apps', async props => {
+  await execute(props, async props => {})
+})
 
 slack.event('app_mention', async props => {
   await execute(props, async props => {

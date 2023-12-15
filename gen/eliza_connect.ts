@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { SayRequest, SayResponse, SlackActionRequest, SlackActionResponse } from "./eliza_pb.js";
+import { InstanceWithUserRequest, InstanceWithUserResponse } from "./eliza_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -15,22 +15,13 @@ export const ElizaService = {
     /**
      * Response to request
      *
-     * @generated from rpc connectrpc.eliza.v1.ElizaService.Say
+     * @generated from rpc connectrpc.eliza.v1.ElizaService.CreateInstance
      */
-    say: {
-      name: "Say",
-      I: SayRequest,
-      O: SayResponse,
+    createInstance: {
+      name: "CreateInstance",
+      I: InstanceWithUserRequest,
+      O: InstanceWithUserResponse,
       kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc connectrpc.eliza.v1.ElizaService.AddSlackAction
-     */
-    addSlackAction: {
-      name: "AddSlackAction",
-      I: SlackActionRequest,
-      O: SlackActionResponse,
-      kind: MethodKind.BiDiStreaming,
     },
   }
 } as const;

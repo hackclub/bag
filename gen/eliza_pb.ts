@@ -7,160 +7,151 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3 } from "@bufbuild/protobuf";
 
 /**
- * @generated from message connectrpc.eliza.v1.SlackActionRequest
+ * ! All requests should come with an appId and a key
+ *
+ * @generated from message connectrpc.eliza.v1.Instance
  */
-export class SlackActionRequest extends Message<SlackActionRequest> {
+export class Instance extends Message<Instance> {
   /**
-   * @generated from field: string action = 1;
+   * @generated from field: int32 id = 1;
    */
-  action = "";
+  id = 0;
 
   /**
-   * @generated from field: string value = 2;
+   * @generated from field: string itemId = 2;
    */
-  value = "";
+  itemId = "";
 
-  constructor(data?: PartialMessage<SlackActionRequest>) {
+  /**
+   * @generated from field: string identityId = 3;
+   */
+  identityId = "";
+
+  constructor(data?: PartialMessage<Instance>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "connectrpc.eliza.v1.SlackActionRequest";
+  static readonly typeName = "connectrpc.eliza.v1.Instance";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "action", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "value", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "itemId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "identityId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SlackActionRequest {
-    return new SlackActionRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Instance {
+    return new Instance().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SlackActionRequest {
-    return new SlackActionRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Instance {
+    return new Instance().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SlackActionRequest {
-    return new SlackActionRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Instance {
+    return new Instance().fromJsonString(jsonString, options);
   }
 
-  static equals(a: SlackActionRequest | PlainMessage<SlackActionRequest> | undefined, b: SlackActionRequest | PlainMessage<SlackActionRequest> | undefined): boolean {
-    return proto3.util.equals(SlackActionRequest, a, b);
+  static equals(a: Instance | PlainMessage<Instance> | undefined, b: Instance | PlainMessage<Instance> | undefined): boolean {
+    return proto3.util.equals(Instance, a, b);
   }
 }
 
 /**
- * @generated from message connectrpc.eliza.v1.SlackActionResponse
+ * @generated from message connectrpc.eliza.v1.InstanceWithUserRequest
  */
-export class SlackActionResponse extends Message<SlackActionResponse> {
+export class InstanceWithUserRequest extends Message<InstanceWithUserRequest> {
+  /**
+   * @generated from field: int32 appId = 1;
+   */
+  appId = 0;
+
+  /**
+   * @generated from field: string key = 2;
+   */
+  key = "";
+
+  /**
+   * @generated from field: string itemId = 3;
+   */
+  itemId = "";
+
+  /**
+   * @generated from field: string identityId = 4;
+   */
+  identityId = "";
+
+  constructor(data?: PartialMessage<InstanceWithUserRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "connectrpc.eliza.v1.InstanceWithUserRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "itemId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "identityId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): InstanceWithUserRequest {
+    return new InstanceWithUserRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): InstanceWithUserRequest {
+    return new InstanceWithUserRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): InstanceWithUserRequest {
+    return new InstanceWithUserRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: InstanceWithUserRequest | PlainMessage<InstanceWithUserRequest> | undefined, b: InstanceWithUserRequest | PlainMessage<InstanceWithUserRequest> | undefined): boolean {
+    return proto3.util.equals(InstanceWithUserRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message connectrpc.eliza.v1.InstanceWithUserResponse
+ */
+export class InstanceWithUserResponse extends Message<InstanceWithUserResponse> {
   /**
    * @generated from field: string response = 1;
    */
   response = "";
 
-  constructor(data?: PartialMessage<SlackActionResponse>) {
+  /**
+   * @generated from field: connectrpc.eliza.v1.Instance instance = 2;
+   */
+  instance?: Instance;
+
+  constructor(data?: PartialMessage<InstanceWithUserResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "connectrpc.eliza.v1.SlackActionResponse";
+  static readonly typeName = "connectrpc.eliza.v1.InstanceWithUserResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "instance", kind: "message", T: Instance },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SlackActionResponse {
-    return new SlackActionResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): InstanceWithUserResponse {
+    return new InstanceWithUserResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SlackActionResponse {
-    return new SlackActionResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): InstanceWithUserResponse {
+    return new InstanceWithUserResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SlackActionResponse {
-    return new SlackActionResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): InstanceWithUserResponse {
+    return new InstanceWithUserResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: SlackActionResponse | PlainMessage<SlackActionResponse> | undefined, b: SlackActionResponse | PlainMessage<SlackActionResponse> | undefined): boolean {
-    return proto3.util.equals(SlackActionResponse, a, b);
-  }
-}
-
-/**
- * What a SayRequest looks like
- *
- * @generated from message connectrpc.eliza.v1.SayRequest
- */
-export class SayRequest extends Message<SayRequest> {
-  /**
-   * @generated from field: string request = 1;
-   */
-  request = "";
-
-  constructor(data?: PartialMessage<SayRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "connectrpc.eliza.v1.SayRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "request", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SayRequest {
-    return new SayRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SayRequest {
-    return new SayRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SayRequest {
-    return new SayRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: SayRequest | PlainMessage<SayRequest> | undefined, b: SayRequest | PlainMessage<SayRequest> | undefined): boolean {
-    return proto3.util.equals(SayRequest, a, b);
-  }
-}
-
-/**
- * What a SayResponse looks like
- *
- * @generated from message connectrpc.eliza.v1.SayResponse
- */
-export class SayResponse extends Message<SayResponse> {
-  /**
-   * @generated from field: string response = 1;
-   */
-  response = "";
-
-  constructor(data?: PartialMessage<SayResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "connectrpc.eliza.v1.SayResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SayResponse {
-    return new SayResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SayResponse {
-    return new SayResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SayResponse {
-    return new SayResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: SayResponse | PlainMessage<SayResponse> | undefined, b: SayResponse | PlainMessage<SayResponse> | undefined): boolean {
-    return proto3.util.equals(SayResponse, a, b);
+  static equals(a: InstanceWithUserResponse | PlainMessage<InstanceWithUserResponse> | undefined, b: InstanceWithUserResponse | PlainMessage<InstanceWithUserResponse> | undefined): boolean {
+    return proto3.util.equals(InstanceWithUserResponse, a, b);
   }
 }
 

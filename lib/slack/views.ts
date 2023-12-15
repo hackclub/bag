@@ -79,13 +79,14 @@ const createItem: View = {
       }
     },
     {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: '(i.e., like a coin with a predefined value that is always the same as other items of the same value)'
-      },
-      accessory: {
+      type: 'input',
+      element: {
+        action_id: 'commodity',
         type: 'static_select',
+        placeholder: {
+          type: 'plain_text',
+          text: 'Commodity'
+        },
         options: [
           {
             text: {
@@ -102,11 +103,16 @@ const createItem: View = {
             value: 'false'
           }
         ]
+      },
+      label: {
+        type: 'plain_text',
+        text: 'Is this considered a common item?'
       }
     },
     {
       type: 'input',
       element: {
+        action_id: 'tradable',
         type: 'static_select',
         placeholder: {
           type: 'plain_text',
@@ -139,6 +145,7 @@ const createItem: View = {
     {
       type: 'input',
       element: {
+        action_id: 'public',
         type: 'static_select',
         placeholder: {
           type: 'plain_text',
@@ -286,6 +293,9 @@ const createApp = (permission: PermissionLevels): View => {
 const editApp = (app: App): View => {
   return {
     callback_id: 'edit-app',
+    private_metadata: JSON.stringify({
+      prevName: app.name
+    }),
     title: {
       type: 'plain_text',
       text: 'Edit app'
@@ -330,37 +340,6 @@ const editApp = (app: App): View => {
           text: 'What does this do?',
           emoji: true
         }
-      },
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: ''
-        }
-      },
-      {
-        type: 'actions',
-        elements: [
-          {
-            type: 'radio_buttons',
-            options: [
-              {
-                text: {
-                  type: 'plain_text',
-                  text: 'Private'
-                },
-                value: 'private'
-              },
-              {
-                text: {
-                  type: 'plain_text',
-                  text: 'Public'
-                },
-                value: 'public'
-              }
-            ]
-          }
-        ]
       }
     ]
   }

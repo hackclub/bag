@@ -4,25 +4,43 @@ package connectrpc.eliza.v1;
 
 service ElizaService {
   // Response to request
-  rpc Say(SayRequest) returns (SayResponse) {}
-  rpc AddSlackAction(stream SlackActionRequest) returns (stream SlackActionResponse);
+  rpc CreateApp() returns () {}  // Should be able to create apps as an admin
+  rpc CreateInstance(InstanceWithUserRequest) returns (InstanceWithUserResponse) {}  // Should be able to create and assign instances, depending on permissions
+  rpc CreateItem() returns () {}  // Should be able to create items, depending on permissions
+  rpc CreateRecipe() returns () {}  // Should be able to create recipes that include items the app has access to
+  rpc CreateTrade() returns () {}  // Should be able to initiate trades that include items
+  rpc ReadIdentity() returns () {}  // Should be able to read info about a Slack user
+  rpc ReadInventory() returns () {}  // Should be able to read inventory of a user, including access to private items the app has access to
+  rpc ReadItem() returns () {}  // Should be able to read item info, including access to private items the app has access to
+  rpc ReadInstance() returns () {}  // Should be able to read instances
+  rpc ReadApp() returns () {}  // Should be able to read other public apps, as well as itself
+  rpc ReadTrade () returns () {} // Should be able to read public trades as well as trades the app has initiated
+  rpc ReadRecipe() returns () {}  // Should be able to read recipes that include items the app has access to
+  rpc UpdateIdentityMetadata() returns () {}  // Only things apps should be able to update - metadata 
+  rpc UpdateInstance() returns () {}  // Should be able to update instances that are instances of items the app has access to
+  rpc UpdateItem() returns () {}  // Should be able to update items the app has access to
+  rpc UpdateApp() returns () {}  // Should be able to update own data
+  rpc UpdateTrade() returns () {}  // Should be able to update trades the app has access to
+  rpc UpdateRecipe () returns () {} // Should be able to update recipes the app has access to
+  rpc DeleteInstance() returns {}  // Should be able to delete instances that the app has access to
+  rpc CloseTrade() returns {} // Should be able to close instances that the app has access to
 }
 
-message SlackActionRequest {
-  string action = 1;
-  string value = 2;
+// ! All requests should come with an appId and a key
+message Instance {
+  int32 id = 1;
+  string itemId = 2;
+  string identityId = 3;
 }
 
-message SlackActionResponse {
+message InstanceWithUserRequest {
+  int32 appId = 1;
+  string key = 2;
+  string itemId = 3;
+  string identityId = 4;
+}
+
+message InstanceWithUserResponse {
   string response = 1;
-}
-
-// What a SayRequest looks like
-message SayRequest {
-  string request = 1;
-}
-
-// What a SayResponse looks like
-message SayResponse {
-  string response = 1;
+  Instance instance = 2;
 }

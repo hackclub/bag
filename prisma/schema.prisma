@@ -23,6 +23,7 @@ model App {
   permissions PermissionLevels @default(value: READ)
   specific    String[]
   public      Boolean          @default(false)
+  metadata    Json? // Optional metadata (JSON)
 }
 
 model Identity {
@@ -68,10 +69,13 @@ model Trade {
   initiatorTrades     Instance[] @relation("initiatorTrades")
   receiverTrades      Instance[] @relation("receiverTrades")
   public              Boolean    @default(true)
+  closed              Boolean    @default(false)
 }
 
 // model Recipe {
 //   id Int @id @default(autoincrement())
 //   inputIds String[]
 //   inputs Item[] @relation(fields: [inputIds], references: [name])
+//   outputIds String[]
+//   outputs Item[]
 // }

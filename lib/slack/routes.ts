@@ -143,12 +143,20 @@ slack.view('create-item', async props => {
     async props => {
       let fields = {}
       for (let field of Object.values(props.view.state.values)) {
-        fields[Object.keys(field)[0]] = field[Object.keys(field)[0]].value || ''
+        fields[Object.keys(field)[0]] =
+          field[Object.keys(field)[0]].value ||
+          Object.values(field)[0].selected_option.value ||
+          ''
       }
+
+      Object.keys(fields).map(field => {
+        if (fields[field] === 'true') fields[field] = true
+        else if (fields[field] === 'false') fields[field] = false
+      })
 
       // Create item
       const item = await Items.create(fields as Item)
-      log('New item created: ', item)
+      log('New item created: ', item.name)
     },
     mappedPermissionValues.ADMIN
   )
@@ -311,6 +319,28 @@ slack.command('/edit-app', async props => {
       trigger_id: props.body.trigger_id,
       view: views.editApp(app)
     })
+  })
+})
+
+slack.view('edit-app', async props => {
+  await execute(props, async props => {
+    let fields = {}
+    for (let field of Object.values(props.view.state.values)) {
+      fields[Object.keys(field)[0]] =
+        field[Object.keys(field)[0]].value ||
+        Object.values(field)[0].selected_option.value ||
+        ''
+    }
+
+    Object.keys(fields).map(field => {
+      if (fields[field] === 'true') fields[field] = true
+      else if (fields[field] === 'false') fields[field] = false
+    })
+
+    console.log()
+
+    // Update app
+    // let app = await Apps.find({})
   })
 })
 

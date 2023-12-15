@@ -109,8 +109,14 @@ export class Items {
     })
   }
 
-  static async find(options: Item) {
-    return await prisma.item
+  static async find(options) {
+    return await prisma.item.findUnique({
+      where: options
+    })
+  }
+
+  static async all() {
+    return await prisma.item.findMany()
   }
 }
 
@@ -119,8 +125,19 @@ export class Apps {
   name: string
   description: string
   permissions: PermissionLevels
+  specific: string[]
 
-  constructor(app: App) {}
+  constructor(app: {
+    name: string
+    description: string
+    permissions: PermissionLevels
+    specific: string[]
+  }) {
+    this.name = app.name
+    this.description = app.description
+    this.permissions = app.permissions
+    this.specific = app.specific
+  }
 
   static async create(
     name: string,
@@ -155,5 +172,12 @@ export class Apps {
     })
   }
 }
+
+let appUpdateProxy = new Proxy(Apps, {
+  set: function (target, key, value) {
+    console.log(`${key} set to ${value}`)
+    return true
+  }
+})
 
 export default prisma

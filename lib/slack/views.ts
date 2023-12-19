@@ -2,7 +2,7 @@ import { App, PermissionLevels } from '@prisma/client'
 import { View, PlainTextOption, Block, KnownBlock } from '@slack/bolt'
 import { mappedPermissionValues } from '../permissions'
 import config from '../../config'
-import { Identities } from '../../db/client'
+import { Apps, Identities } from '../../db/client'
 
 const error = (err: string) => {
   return [
@@ -290,7 +290,7 @@ const createApp = (permission: PermissionLevels): View => {
   }
 }
 
-const editApp = (app: App): View => {
+const editApp = (app: Apps): View => {
   return {
     callback_id: 'edit-app',
     private_metadata: JSON.stringify({
@@ -340,12 +340,67 @@ const editApp = (app: App): View => {
           text: 'What does this do?',
           emoji: true
         }
+      },
+      {
+        type: 'input',
+        element: {
+          type: 'radio_buttons',
+          options: [
+            {
+              text: {
+                type: 'plain_text',
+                text: 'Public'
+              },
+              value: 'true'
+            },
+            {
+              text: {
+                type: 'plain_text',
+                text: 'Private'
+              },
+              value: 'false'
+            }
+          ],
+          action_id: 'public',
+          initial_option: {
+            text: {
+              type: 'plain_text',
+              text: app.public ? 'Public' : 'Private'
+            },
+            value: app.public ? 'true' : 'false'
+          }
+        },
+        label: {
+          type: 'plain_text',
+          text: 'Visibility'
+        }
+      },
+      {
+        type: 'input',
+        element: {
+          type: 'static_select',
+          placeholder: {
+            type: 'plain_text',
+            text: 'Request permissons',
+            emoji: true
+          },
+          options: cascadingPermissions as Array<PlainTextOption>,
+          action_id: 'permissions',
+          initial_option: cascadingPermissions[
+            mappedPermissionValues[app.permissions]
+          ] as PlainTextOption
+        },
+        label: {
+          type: 'plain_text',
+          text: 'Select a permission level',
+          emoji: true
+        }
       }
     ]
   }
 }
 
-const getApp = (app: App): (Block | KnownBlock)[] => {
+const getApp = (app: Apps): (Block | KnownBlock)[] => {
   return [
     {
       type: 'section',

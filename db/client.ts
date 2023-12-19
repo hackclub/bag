@@ -122,21 +122,39 @@ export class Items {
 
 export class Apps {
   // Class for managing permission for apps that might extend from this
+  id: number
   name: string
   description: string
   permissions: PermissionLevels
   specific: string[]
+  public: boolean
 
   constructor(app: {
+    id: number
     name: string
     description: string
     permissions: PermissionLevels
     specific: string[]
+    public: boolean
   }) {
+    this.id = app.id
     this.name = app.name
     this.description = app.description
     this.permissions = app.permissions
     this.specific = app.specific
+    this.public = app.public
+  }
+
+  async update(options: { name?: string; description?: string }) {
+    await prisma.app.update({
+      where: {
+        name: this.name
+      },
+      data: options
+    })
+
+    this.name = options.name
+    this.description = options.description
   }
 
   static async create(
@@ -167,17 +185,12 @@ export class Apps {
   }
 
   static async find(options) {
-    return await prisma.app.findUnique({
-      where: options
-    })
+    return new Apps(
+      await prisma.app.findUnique({
+        where: options
+      })
+    )
   }
 }
-
-let appUpdateProxy = new Proxy(Apps, {
-  set: function (target, key, value) {
-    console.log(`${key} set to ${value}`)
-    return true
-  }
-})
 
 export default prisma

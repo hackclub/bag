@@ -4,33 +4,69 @@ package connectrpc.eliza.v1;
 
 service ElizaService {
   // Response to request
-  rpc CreateApp() returns () {}  // Should be able to create apps as an admin
+  rpc CreateApp(CreateAppRequest) returns (CreateAppResponse) {}  // Should be able to create apps as an admin
   rpc CreateInstance(InstanceWithUserRequest) returns (InstanceWithUserResponse) {}  // Should be able to create and assign instances, depending on permissions
-  rpc CreateItem() returns () {}  // Should be able to create items, depending on permissions
-  rpc CreateRecipe() returns () {}  // Should be able to create recipes that include items the app has access to
-  rpc CreateTrade() returns () {}  // Should be able to initiate trades that include items
-  rpc ReadIdentity() returns () {}  // Should be able to read info about a Slack user
-  rpc ReadInventory() returns () {}  // Should be able to read inventory of a user, including access to private items the app has access to
-  rpc ReadItem() returns () {}  // Should be able to read item info, including access to private items the app has access to
-  rpc ReadInstance() returns () {}  // Should be able to read instances
-  rpc ReadApp() returns () {}  // Should be able to read other public apps, as well as itself
-  rpc ReadTrade () returns () {} // Should be able to read public trades as well as trades the app has initiated
-  rpc ReadRecipe() returns () {}  // Should be able to read recipes that include items the app has access to
-  rpc UpdateIdentityMetadata() returns () {}  // Only things apps should be able to update - metadata 
-  rpc UpdateInstance() returns () {}  // Should be able to update instances that are instances of items the app has access to
-  rpc UpdateItem() returns () {}  // Should be able to update items the app has access to
-  rpc UpdateApp() returns () {}  // Should be able to update own data
-  rpc UpdateTrade() returns () {}  // Should be able to update trades the app has access to
-  rpc UpdateRecipe () returns () {} // Should be able to update recipes the app has access to
-  rpc DeleteInstance() returns {}  // Should be able to delete instances that the app has access to
-  rpc CloseTrade() returns {} // Should be able to close instances that the app has access to
+  rpc CreateItem(CreateItemRequest) returns (CreateItemResponse) {}  // Should be able to create items, depending on permissions
+  rpc CreateRecipe(CreateRecipeRequest) returns (CreateRecipeResponse) {}  // Should be able to create recipes that include items the app has access to
+  rpc CreateTrade(CreateTradeRequest) returns (CreateTradeResponse) {}  // Should be able to initiate trades that include items
+  rpc ReadIdentity(ReadIdentityRequest) returns (ReadIdentityResponse) {}  // Should be able to read info about a Slack user
+  rpc ReadInventory(ReadInventoryRequest) returns (ReadInventoryResponse) {}  // Should be able to read inventory of a user, including access to private items the app has access to
+  rpc ReadItem(ReadItemRequest) returns (ReadItemResponse) {}  // Should be able to read item info, including access to private items the app has access to
+  rpc ReadInstance(ReadInstanceRequest) returns (ReadInstanceResponse) {}  // Should be able to read instances
+  rpc ReadApp(ReadAppRequest) returns (ReadAppResponse) {}  // Should be able to read other public apps, as well as itself
+  rpc ReadTrade(ReadTradeRequest) returns (ReadTradeResponse) {} // Should be able to read public trades as well as trades the app has initiated
+  rpc ReadRecipe(ReadRecipeRequest) returns (ReadRecipeResponse) {}  // Should be able to read recipes that include items the app has access to
+  rpc UpdateIdentityMetadata(UpdateIdentityMetadataRequest) returns (UpdateIdentityMetadataResponse) {}  // Only things apps should be able to update - metadata 
+  rpc UpdateInstance(UpdateInstanceRequest) returns (UpdateInstanceResponse) {}  // Should be able to update instances that are instances of items the app has access to
+  rpc UpdateItem(UpdateItemRequest) returns (UpdateItemResponse) {}  // Should be able to update items the app has access to
+  rpc UpdateApp(UpdateAppRequest) returns (UpdateAppResponse) {}  // Should be able to update own data
+  rpc UpdateTrade(UpdateTradeRequest) returns (UpdateTradeResponse) {}  // Should be able to update trades the app has access to
+  rpc UpdateRecipe (UpdateRecipeRequest) returns (UpdateRecipeResponse) {} // Should be able to update recipes the app has access to
+  rpc DeleteInstance(DeleteInstanceRequest) returns (DeleteInstanceResponse) {}  // Should be able to delete instances that the app has access to
+  rpc CloseTrade(CloseTradeRequest) returns (CloseTradeResponse) {} // Should be able to close instances that the app has access to
 }
 
 // ! All requests should come with an appId and a key
-message Instance {
+message AppResponse {
+  int32 id = 1;
+  string name = 2;
+  string description = 3;
+  bool public  = 4;
+  string metadata = 5;
+}
+
+message IdentityResponse {
+  string slack = 1;
+  string metadata = 2;
+}
+
+message ItemResponse {
+  string name = 1;
+  string image = 2;
+  string description = 3;
+  string reaction = 4;
+  bool commodity = 5;
+  bool tradable = 6;
+  bool public = 7;
+  string metadata = 8;
+}
+
+message InstanceResponse {
   int32 id = 1;
   string itemId = 2;
   string identityId = 3;
+}
+
+message RecipeResponse {
+  int32 id = 1;
+}
+
+message TradeResponse {
+  int32 id = 1;
+  string initiatorIdentityId = 2;
+  string receiverIdentityId = 3;
+  bool public = 4;
+  bool closed = 5;
 }
 
 message InstanceWithUserRequest {
@@ -42,5 +78,182 @@ message InstanceWithUserRequest {
 
 message InstanceWithUserResponse {
   string response = 1;
-  Instance instance = 2;
+  InstanceResponse instance = 2;
+}
+
+message CreateAppRequest {
+  int32 appId = 1;
+  string key = 2;
+  string name = 3;
+  string description = 4;
+  bool public = 5;
+  string metadata = 6;
+}
+
+message CreateAppResponse {
+  string response = 1;
+  AppResponse app = 2;
+}
+
+message CreateItemRequest {
+  int32 appId = 1;
+  string key = 2;
+}
+
+message CreateItemResponse {
+  string response = 1;
+  ItemResponse item = 2;
+}
+
+message CreateRecipeRequest {
+  int32 appId = 1;
+  string key = 2;
+}
+
+message CreateRecipeResponse {
+  string response = 1;
+}
+
+message CreateTradeRequest {
+  int32 appId = 1;
+  string key = 2;
+}
+
+message CreateTradeResponse {
+  string response = 1;
+}
+
+message ReadIdentityRequest {
+  int32 appId = 1;
+  string key = 2;
+}
+
+message ReadIdentityResponse {
+  string response = 1;
+}
+
+message ReadInventoryRequest {
+  int32 appId = 1;
+  string key = 2;
+}
+
+message ReadInventoryResponse {
+  string response = 1;
+}
+
+message ReadItemRequest {
+  int32 appId = 1;
+  string key = 2;
+}
+
+message ReadItemResponse {
+  string response = 1;
+}
+
+message ReadInstanceRequest {
+  int32 appId = 1;
+  string key = 2;
+}
+
+message ReadInstanceResponse {
+  string response = 1;
+}
+
+message ReadAppRequest {
+  int32 appId = 1;
+  string key = 2;
+}
+
+message ReadAppResponse {
+  string response = 1;
+}
+
+message ReadTradeRequest {
+  int32 appId = 1;
+  string key = 2;
+}
+
+message ReadTradeResponse {
+  string response = 1;
+}
+
+message ReadRecipeRequest {
+  int32 appId = 1;
+  string key = 2;
+}
+
+message ReadRecipeResponse {
+  string response = 1;
+}
+
+message UpdateIdentityMetadataRequest {
+  int32 appId = 1;
+  string key = 2;
+}
+
+message UpdateIdentityMetadataResponse {
+  string response = 1;
+}
+
+message UpdateInstanceRequest {
+  int32 appId = 1;
+  string key = 2;
+}
+
+message UpdateInstanceResponse {
+  string response = 1;
+}
+
+message UpdateItemRequest {
+  int32 appId = 1;
+  string key = 2;
+}
+
+message UpdateItemResponse {
+  string response = 1;
+}
+
+message UpdateAppRequest {
+  int32 appId = 1;
+  string key = 2;
+}
+
+message UpdateAppResponse {
+  string response = 1;
+}
+
+message UpdateTradeRequest {
+  int32 appId = 1;
+  string key = 2;
+}
+
+message UpdateTradeResponse {
+  string response = 1;
+}
+
+message UpdateRecipeRequest {
+  int32 appId = 1;
+  string key = 2;
+}
+
+message UpdateRecipeResponse {
+  string response = 1;
+}
+
+message DeleteInstanceRequest {
+  int32 appId = 1;
+  string key = 2;
+}
+
+message DeleteInstanceResponse {
+  string response = 1;
+}
+
+message CloseTradeRequest {
+  int32 appId = 1;
+  string key = 2;
+}
+
+message CloseTradeResponse {
+  string response = 1;
 }

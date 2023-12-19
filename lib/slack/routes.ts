@@ -15,7 +15,7 @@ import { Identities, Items, Apps } from '../../db/client'
 import messages from './messages'
 import views from './views'
 import { mappedPermissionValues } from '../permissions'
-import { Item, PermissionLevels, Prisma } from '@prisma/client'
+import { App as DbApp, Item, PermissionLevels, Prisma } from '@prisma/client'
 import { err, log } from '../logger'
 import { app } from '../api/init'
 import { v4 as uuid } from 'uuid'
@@ -337,10 +337,29 @@ slack.view('edit-app', async props => {
       else if (fields[field] === 'false') fields[field] = false
     })
 
-    console.log()
+    const { prevName } = JSON.parse(props.view.private_metadata)
 
     // Update app
-    // let app = await Apps.find({})
+    let app = await Apps.find({ name: prevName })
+
+    // Request permissions if changed
+    if (
+      mappedPermissionValues[app.permissions] !==
+      mappedPermissionValues[(fields as DbApp).permissions]
+    ) {
+      for (let maintainer of maintainers) {
+        await props.client.chat.postMessage({
+          channel: maintainer.slack,
+          user: maintainer.slack,
+          blocks: []
+        })
+      }
+    }
+
+    delete (fields as DbApp).permissions
+    console.log(fields)
+    return
+    await app.update(fields as DbApp)
   })
 })
 
@@ -373,7 +392,7 @@ slack.command('/bag-apps', async props => {
     let apps = await Apps.all()
     if (permission < mappedPermissionValues.READ_PRIVATE)
       apps = apps.filter(app => app.public)
-    console.log(apps.map(app => [...views.getApp(app)]))
+    // console.log(apps.map(app => [...views.getApp(app)]))
     await props.client.chat.postEphemeral({
       channel: props.body.channel_id,
       user: props.context.userId,

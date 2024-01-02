@@ -13,7 +13,7 @@ async function app() {
   })
 
   const client = createPromiseClient(ElizaService, transport)
-  const key = process.env.TEST_APP_KEY // App key for Easter Egg is stored at TEST_APP_KEY, for the sake of testing
+  const key = process.env.EASTEREGG_APP_KEY // App key for Easter Egg is stored at TEST_APP_KEY, for the sake of testing
 
   // Send an Easter egg to me
   const response = await client.createInstance({

@@ -22,6 +22,7 @@ service ElizaService {
   rpc UpdateApp(UpdateAppRequest) returns (UpdateAppResponse) {}  // Should be able to update own data
   rpc UpdateTrade(UpdateTradeRequest) returns (UpdateTradeResponse) {}  // Should be able to update trades the app has access to
   rpc UpdateRecipe (UpdateRecipeRequest) returns (UpdateRecipeResponse) {} // Should be able to update recipes the app has access to
+  rpc DeleteApp(DeleteAppRequest) returns (DeleteAppResponse) {} // Should be able to delete apps as a admin
   rpc DeleteInstance(DeleteInstanceRequest) returns (DeleteInstanceResponse) {}  // Should be able to delete instances that the app has access to
   rpc CloseTrade(CloseTradeRequest) returns (CloseTradeResponse) {} // Should be able to close instances that the app has access to
 }
@@ -31,7 +32,7 @@ message AppResponse {
   int32 id = 1;
   string name = 2;
   string description = 3;
-  bool public  = 4;
+  bool public = 4;
   string metadata = 5;
 }
 
@@ -86,8 +87,9 @@ message CreateAppRequest {
   string key = 2;
   string name = 3;
   string description = 4;
-  bool public = 5;
-  string metadata = 6;
+  int32 permissions = 5;
+  bool public = 6;
+  string metadata = 7;
 }
 
 message CreateAppResponse {
@@ -162,10 +164,12 @@ message ReadInstanceResponse {
 message ReadAppRequest {
   int32 appId = 1;
   string key = 2;
+  int32 optAppId = 3;
 }
 
 message ReadAppResponse {
   string response = 1;
+  AppResponse app = 2;
 }
 
 message ReadTradeRequest {
@@ -237,6 +241,16 @@ message UpdateRecipeRequest {
 }
 
 message UpdateRecipeResponse {
+  string response = 1;
+}
+
+message DeleteAppRequest {
+  int32 appId = 1;
+  string key = 2;
+  int32 deleteAppId = 3;
+}
+
+message DeleteAppResponse {
   string response = 1;
 }
 

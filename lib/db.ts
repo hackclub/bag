@@ -124,28 +124,41 @@ export class Apps {
   // Class for managing permission for apps that might extend from this
   id: number
   name: string
+  key: string
   description: string
   permissions: PermissionLevels
   specific: string[]
   public: boolean
+  metadata: object
 
   constructor(app: {
     id: number
     name: string
+    key: string
     description: string
     permissions: PermissionLevels
     specific: string[]
     public: boolean
+    metadata: object
   }) {
     this.id = app.id
     this.name = app.name
+    this.key = app.key
     this.description = app.description
     this.permissions = app.permissions
     this.specific = app.specific
     this.public = app.public
+    this.metadata = app.metadata
   }
 
-  async update(options: { name?: string; description?: string }) {
+  async update(options: {
+    name?: string
+    description?: string
+    permissions?: PermissionLevels
+    specific?: string[]
+    public?: boolean
+    metadata?: object
+  }) {
     await prisma.app.update({
       where: {
         name: this.name
@@ -170,14 +183,16 @@ export class Apps {
       key = uuid()
     }
 
-    return await prisma.app.create({
-      data: {
-        key,
-        name,
-        description,
-        permissions
-      }
-    })
+    return new Apps(
+      await prisma.app.create({
+        data: {
+          key,
+          name,
+          description,
+          permissions
+        }
+      })
+    )
   }
 
   static async all() {
@@ -185,11 +200,11 @@ export class Apps {
   }
 
   static async find(options) {
-    return new Apps(
-      await prisma.app.findUnique({
-        where: options
-      })
-    )
+    const results = await prisma.app.findUnique({
+      where: options
+    })
+    if (results) return new Apps(results)
+    return undefined
   }
 }
 

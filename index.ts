@@ -1,5 +1,5 @@
 import config from './config'
-import prisma from './db/client'
+import prisma from './lib/db'
 import slack from './lib/slack/routes'
 
 // @prettier-ignore

@@ -11,7 +11,7 @@ import {
 } from '@slack/bolt'
 import { StringIndexed } from '@slack/bolt/dist/types/helpers'
 import config from '../../config'
-import { Identities, Items, Apps } from '../../db/client'
+import { Identities, Items, Apps } from '../db'
 import messages from './messages'
 import views from './views'
 import { mappedPermissionValues } from '../permissions'
@@ -184,7 +184,10 @@ slack.view('create-app', async props => {
       permissions: undefined
     }
     for (let field of Object.values(props.view.state.values)) {
-      fields[Object.keys(field)[0]] = field[Object.keys(field)[0]].value || ''
+      fields[Object.keys(field)[0]] =
+        field[Object.keys(field)[0]].value ||
+        Object.values(field)[0].selected_option.value ||
+        ''
     }
 
     // Apps, by default, can read everything that's public
@@ -192,8 +195,6 @@ slack.view('create-app', async props => {
     // Response lets you request change in permissions
     const userId = props.context.userId
     const user = await Identities.find(userId)
-
-    console.log(fields.permissions)
 
     // Create app
     let uuid: string
@@ -204,6 +205,10 @@ slack.view('create-app', async props => {
         fields?.permissions
       )
       uuid = app.key
+      return await props.client.chat.postMessage({
+        channel: userId,
+        blocks: views.createdApp(app)
+      })
     } catch (err) {
       return await props.client.chat.postMessage({
         channel: userId,
@@ -215,11 +220,6 @@ Try again?`
         )
       })
     }
-
-    return await props.client.chat.postMessage({
-      channel: userId,
-      blocks: views.createdApp(fields?.name, uuid, user.permissions)
-    })
   })
 })
 
@@ -259,10 +259,9 @@ slack.view('request-perms', async props => {
 slack.action('approve-perms', async props => {
   await execute(props, async props => {
     try {
-      console.log(props)
-      return
       // @ts-expect-error
       const { user: userId, permission } = JSON.parse(props.action.value)
+
       // Approve user
       const user = await Identities.find(userId)
       await user.updatePermissions(permission)
@@ -271,6 +270,15 @@ slack.action('approve-perms', async props => {
           permission[0].toUpperCase() + permission.slice(1)
         } for <@${userId}> approved.`
       )
+
+      // Let user know
+      // @ts-expect-error
+      await props.client.chat.postMessage({
+        channel: userId,
+        text: `Your request for ${
+          permission[0].toUpperCase() + permission.slice(1)
+        } permissions was approved!`
+      })
     } catch {
       return await props.say('Permissions already applied.')
     }
@@ -298,33 +306,51 @@ slack.action('deny-perms', async props => {
 
 slack.command('/edit-app', async props => {
   await execute(props, async props => {
-    const [id, key] = props.body.text.split(' ')
-    if (Number.isNaN(Number(id)))
+    try {
+      const [id, key] = props.body.text.split(' ')
+      if (Number.isNaN(Number(id)))
+        return await props.client.chat.postEphemeral({
+          channel: props.body.channel_id,
+          user: props.context.userId,
+          text: 'Oh no! Looks like you provided an invalid ID for the app.'
+        })
+      const app = await Apps.find({
+        id: Number(id),
+        AND: [{ key }]
+      })
+      if (!app)
+        return await props.client.chat.postEphemeral({
+          channel: props.body.channel_id,
+          user: props.context.userId,
+          text: 'Oh no! App not found, or an incorrect key was used.'
+        })
+      return await props.client.views.open({
+        trigger_id: props.body.trigger_id,
+        view: views.editApp(app)
+      })
+    } catch (err) {
       return await props.client.chat.postEphemeral({
         channel: props.body.channel_id,
         user: props.context.userId,
-        text: 'Oh no! Looks like you provided an invalid ID for the app.'
+        text: "Oh no! To edit an app you'll need to provide an ID and key"
       })
-    const app = await Apps.find({
-      id: Number(id),
-      AND: [{ key }]
-    })
-    if (!app)
-      return await props.client.chat.postEphemeral({
-        channel: props.body.channel_id,
-        user: props.context.userId,
-        text: 'Oh no! App not found, or an incorrect key was used.'
-      })
-    return await props.client.views.open({
-      trigger_id: props.body.trigger_id,
-      view: views.editApp(app)
-    })
+    }
   })
 })
 
 slack.view('edit-app', async props => {
   await execute(props, async props => {
-    let fields = {}
+    let fields: {
+      name: string
+      description: string
+      public: boolean
+      permissions: PermissionLevels
+    } = {
+      name: '',
+      description: '',
+      public: false,
+      permissions: undefined
+    }
     for (let field of Object.values(props.view.state.values)) {
       fields[Object.keys(field)[0]] =
         field[Object.keys(field)[0]].value ||
@@ -351,15 +377,21 @@ slack.view('edit-app', async props => {
         await props.client.chat.postMessage({
           channel: maintainer.slack,
           user: maintainer.slack,
-          blocks: []
+          blocks: views.approveOrDenyPerms(
+            props.context.userId,
+            fields.permissions as PermissionLevels
+          )
         })
       }
     }
 
     delete (fields as DbApp).permissions
-    console.log(fields)
-    return
     await app.update(fields as DbApp)
+    await props.client.chat.postEphemeral({
+      channel: props.context.userId,
+      user: props.context.userId,
+      text: `Updated *${app.name}* successfully.`
+    })
   })
 })
 
@@ -412,7 +444,7 @@ slack.event('app_mention', async props => {
     const message = removeUser(props.event.text)
     switch (message) {
       case 'help':
-        await props.client.chat.postEphemeral({
+        await props.client.chat.postMessage({
           channel: props.event.channel,
           user: props.context.userId,
           blocks: views.helpDialog
@@ -451,7 +483,7 @@ slack.event('app_mention', async props => {
 
           break
         }
-        await props.client.chat.postEphemeral({
+        await props.client.chat.postMessage({
           channel: props.event.channel,
           user: props.context.userId,
           blocks: [

@@ -2,7 +2,7 @@ import { App, PermissionLevels } from '@prisma/client'
 import { View, PlainTextOption, Block, KnownBlock } from '@slack/bolt'
 import { mappedPermissionValues } from '../permissions'
 import config from '../../config'
-import { Apps, Identities } from '../../db/client'
+import { Apps, Identities } from '../db'
 
 const error = (err: string) => {
   return [
@@ -278,7 +278,7 @@ const createApp = (permission: PermissionLevels): View => {
             0,
             mappedPermissionValues[permission] + 1
           ) as Array<PlainTextOption>,
-          action_id: 'permission'
+          action_id: 'permissions'
         },
         label: {
           type: 'plain_text',
@@ -417,41 +417,30 @@ Public: ${app.public}`
   ]
 }
 
-const createdApp = (
-  name: string,
-  uuid: string,
-  permission: PermissionLevels
-): (Block | KnownBlock)[] => {
+const createdApp = (app: App): (Block | KnownBlock)[] => {
+  const permissionDesc = {
+    ADMIN:
+      'do everything, including creating, reading, updating, and deleting everything.',
+    WRITE: 'read and update everything.',
+    WRITE_SPECIFIC: 'read and write specific inventory items.',
+    READ_PRIVATE:
+      'read inventory items, including private ones the app has access to.',
+    READ: 'read public inventory items.'
+  }
   return [
     {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `*${name}* created, your app token is \`${uuid}\`. (Don't share it with anyone unless they're also working on the app!) Your app can: .\n\nTo edit your app/request a permission level, run \`/edit-app ${name} ${uuid}\``
+        text: `*${app.name}* created, your app token is \`${
+          app.key
+        }\`. (Don't share it with anyone unless they're also working on the app!) Your app can: ${
+          permissionDesc[app.permissions]
+        }\n\nTo edit your app/request a permission level, run \`/edit-app ${
+          app.id
+        } ${app.key}\``
       }
     }
-    // {
-    //   type: 'section',
-    //   text: {
-    //     type: 'mrkdwn',
-    //     text: 'Request a permission level'
-    //   },
-    //   accessory: {
-    //     type: 'static_select',
-    //     placeholder: {
-    //       type: 'plain_text',
-    //       text: 'Set permission level',
-    //       emoji: true
-    //     },
-    //     options: cascadingPermissions
-    //       .reverse()
-    //       .slice(
-    //         0,
-    //         mappedPermissionValues[permission] + 1
-    //       ) as Array<PlainTextOption>,
-    //     action_id: 'request-perms'
-    //   }
-    // }
   ]
 }
 
@@ -498,7 +487,7 @@ const approveOrDenyPerms = (
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `<@${user}> just asked for ${permission.toLowerCase()} permissions. Accept or deny:`
+        text: `<@${user}> just asked for ${permission} permissions. Accept or deny:`
       }
     },
     {
@@ -529,6 +518,54 @@ const approveOrDenyPerms = (
             permission
           }),
           action_id: 'deny-perms'
+        }
+      ]
+    }
+  ]
+}
+
+const approveOrDenyAppPerms = (
+  app: App,
+  permission: PermissionLevels
+): (Block | KnownBlock)[] => {
+  return [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `${
+          app.name
+        } just asked for ${permission.toLowerCase()} permissions. Accept or deny:`
+      }
+    },
+    {
+      type: 'actions',
+      elements: [
+        {
+          type: 'button',
+          style: 'primary',
+          text: {
+            type: 'plain_text',
+            text: 'Approve'
+          },
+          value: JSON.stringify({
+            app: app.id,
+            permission
+          }),
+          action_id: 'approve-app-perms'
+        },
+        {
+          type: 'button',
+          style: 'danger',
+          text: {
+            type: 'plain_text',
+            text: 'Deny'
+          },
+          value: JSON.stringify({
+            app: app.id,
+            permission
+          }),
+          action_id: 'deny-app-perms'
         }
       ]
     }
@@ -619,6 +656,7 @@ export default {
   getApp,
   requestPerms,
   approveOrDenyPerms,
+  approveOrDenyAppPerms,
   helpDialog,
   heehee,
   showInventory

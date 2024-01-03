@@ -5,7 +5,7 @@ package connectrpc.eliza.v1;
 service ElizaService {
   // Response to request
   rpc CreateApp(CreateAppRequest) returns (CreateAppResponse) {}  // Should be able to create apps as an admin
-  rpc CreateInstance(InstanceWithUserRequest) returns (InstanceWithUserResponse) {}  // Should be able to create and assign instances, depending on permissions
+  rpc CreateInstance(CreateInstanceRequest) returns (CreateInstanceResponse) {}  // Should be able to create and assign instances, depending on permissions
   rpc CreateItem(CreateItemRequest) returns (CreateItemResponse) {}  // Should be able to create items, depending on permissions
   rpc CreateRecipe(CreateRecipeRequest) returns (CreateRecipeResponse) {}  // Should be able to create recipes that include items the app has access to
   rpc CreateTrade(CreateTradeRequest) returns (CreateTradeResponse) {}  // Should be able to initiate trades that include items
@@ -28,20 +28,22 @@ service ElizaService {
 }
 
 // ! All requests should come with an appId and a key
-message AppResponse {
+message App  {
   int32 id = 1;
   string name = 2;
   string description = 3;
-  bool public = 4;
-  string metadata = 5;
+  string permissions = 4;
+  bool public = 5;
+  string metadata = 6;
 }
 
-message IdentityResponse {
+message Identity {
   string slack = 1;
-  string metadata = 2;
+  repeated Instance inventory = 2;
+  string metadata = 3;
 }
 
-message ItemResponse {
+message Item {
   string name = 1;
   string image = 2;
   string description = 3;
@@ -52,10 +54,11 @@ message ItemResponse {
   string metadata = 8;
 }
 
-message InstanceResponse {
+message Instance {
   int32 id = 1;
   string itemId = 2;
   string identityId = 3;
+  Item item = 4;
 }
 
 message RecipeResponse {
@@ -70,16 +73,17 @@ message TradeResponse {
   bool closed = 5;
 }
 
-message InstanceWithUserRequest {
+message CreateInstanceRequest {
   int32 appId = 1;
   string key = 2;
   string itemId = 3;
   string identityId = 4;
+  string note = 5;
 }
 
-message InstanceWithUserResponse {
+message CreateInstanceResponse {
   string response = 1;
-  InstanceResponse instance = 2;
+  Instance instance = 2;
 }
 
 message CreateAppRequest {
@@ -94,17 +98,18 @@ message CreateAppRequest {
 
 message CreateAppResponse {
   string response = 1;
-  AppResponse app = 2;
+  App app = 2;
 }
 
 message CreateItemRequest {
   int32 appId = 1;
   string key = 2;
+  Item item = 3;
 }
 
 message CreateItemResponse {
   string response = 1;
-  ItemResponse item = 2;
+  Item item = 2;
 }
 
 message CreateRecipeRequest {
@@ -128,37 +133,45 @@ message CreateTradeResponse {
 message ReadIdentityRequest {
   int32 appId = 1;
   string key = 2;
+  string identityId = 3;
 }
 
 message ReadIdentityResponse {
   string response = 1;
+  Identity identity = 2;
 }
 
 message ReadInventoryRequest {
   int32 appId = 1;
   string key = 2;
+  string identityId = 3;
 }
 
 message ReadInventoryResponse {
   string response = 1;
+  repeated Instance inventory = 2;
 }
 
 message ReadItemRequest {
   int32 appId = 1;
   string key = 2;
+  string query = 3;
 }
 
 message ReadItemResponse {
   string response = 1;
+  Item item = 2;
 }
 
 message ReadInstanceRequest {
   int32 appId = 1;
   string key = 2;
+  int32 instanceId = 3;
 }
 
 message ReadInstanceResponse {
   string response = 1;
+  Instance instance = 2;
 }
 
 message ReadAppRequest {
@@ -169,7 +182,7 @@ message ReadAppRequest {
 
 message ReadAppResponse {
   string response = 1;
-  AppResponse app = 2;
+  App app = 2;
 }
 
 message ReadTradeRequest {
@@ -211,19 +224,25 @@ message UpdateInstanceResponse {
 message UpdateItemRequest {
   int32 appId = 1;
   string key = 2;
+  string itemId = 3;
+  Item new = 4;
 }
 
 message UpdateItemResponse {
   string response = 1;
+  Item item = 2;
 }
 
 message UpdateAppRequest {
   int32 appId = 1;
   string key = 2;
+  int32 optAppId = 3;
+  App new = 4;
 }
 
 message UpdateAppResponse {
   string response = 1;
+  App app = 2;
 }
 
 message UpdateTradeRequest {
@@ -257,10 +276,12 @@ message DeleteAppResponse {
 message DeleteInstanceRequest {
   int32 appId = 1;
   string key = 2;
+  int32 instanceId = 3;
 }
 
 message DeleteInstanceResponse {
   string response = 1;
+  Instance deletedInstance = 2;
 }
 
 message CloseTradeRequest {

@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CloseTradeRequest, CloseTradeResponse, CreateAppRequest, CreateAppResponse, CreateItemRequest, CreateItemResponse, CreateRecipeRequest, CreateRecipeResponse, CreateTradeRequest, CreateTradeResponse, DeleteInstanceRequest, DeleteInstanceResponse, InstanceWithUserRequest, InstanceWithUserResponse, ReadAppRequest, ReadAppResponse, ReadIdentityRequest, ReadIdentityResponse, ReadInstanceRequest, ReadInstanceResponse, ReadInventoryRequest, ReadInventoryResponse, ReadItemRequest, ReadItemResponse, ReadRecipeRequest, ReadRecipeResponse, ReadTradeRequest, ReadTradeResponse, UpdateAppRequest, UpdateAppResponse, UpdateIdentityMetadataRequest, UpdateIdentityMetadataResponse, UpdateInstanceRequest, UpdateInstanceResponse, UpdateItemRequest, UpdateItemResponse, UpdateRecipeRequest, UpdateRecipeResponse, UpdateTradeRequest, UpdateTradeResponse } from "./eliza_pb.js";
+import { CloseTradeRequest, CloseTradeResponse, CreateAppRequest, CreateAppResponse, CreateInstanceRequest, CreateInstanceResponse, CreateItemRequest, CreateItemResponse, CreateRecipeRequest, CreateRecipeResponse, CreateTradeRequest, CreateTradeResponse, DeleteAppRequest, DeleteAppResponse, DeleteInstanceRequest, DeleteInstanceResponse, ReadAppRequest, ReadAppResponse, ReadIdentityRequest, ReadIdentityResponse, ReadInstanceRequest, ReadInstanceResponse, ReadInventoryRequest, ReadInventoryResponse, ReadItemRequest, ReadItemResponse, ReadRecipeRequest, ReadRecipeResponse, ReadTradeRequest, ReadTradeResponse, UpdateAppRequest, UpdateAppResponse, UpdateIdentityMetadataRequest, UpdateIdentityMetadataResponse, UpdateInstanceRequest, UpdateInstanceResponse, UpdateItemRequest, UpdateItemResponse, UpdateRecipeRequest, UpdateRecipeResponse, UpdateTradeRequest, UpdateTradeResponse } from "./eliza_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -28,8 +28,8 @@ export const ElizaService = {
      */
     createInstance: {
       name: "CreateInstance",
-      I: InstanceWithUserRequest,
-      O: InstanceWithUserResponse,
+      I: CreateInstanceRequest,
+      O: CreateInstanceResponse,
       kind: MethodKind.Unary,
     },
     /**
@@ -174,6 +174,15 @@ export const ElizaService = {
       name: "UpdateRecipe",
       I: UpdateRecipeRequest,
       O: UpdateRecipeResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc connectrpc.eliza.v1.ElizaService.DeleteApp
+     */
+    deleteApp: {
+      name: "DeleteApp",
+      I: DeleteAppRequest,
+      O: DeleteAppResponse,
       kind: MethodKind.Unary,
     },
     /**

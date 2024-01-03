@@ -1,4 +1,10 @@
-import { PrismaClient, PermissionLevels, Instance, App } from '@prisma/client'
+import {
+  PrismaClient,
+  PermissionLevels,
+  Instance,
+  Identity
+} from '@prisma/client'
+import { type JsonValue } from '@prisma/client/runtime/library'
 import { v4 as uuid } from 'uuid'
 
 const prisma = new PrismaClient()
@@ -6,149 +12,240 @@ const prisma = new PrismaClient()
 export class Identities {
   slack: string
   permissions: PermissionLevels
-  inventory: Instance[]
+  inventory: Instances[]
 
   constructor(identity: {
     slack: string
     permissions: PermissionLevels
-    inventory: Instance[]
+    inventory: Instances[]
   }) {
     this.slack = identity.slack
     this.permissions = identity.permissions
     this.inventory = identity.inventory
   }
 
-  async updatePermissions(permissions: PermissionLevels) {
-    this.permissions = permissions
+  async update(options: {
+    permissions?: PermissionLevels
+    inventory?: Instances[]
+  }) {
     await prisma.identity.update({
       where: {
         slack: this.slack
       },
+      // @ts-ignore-error
+      data: options  
+    })
+
+    if (options.permissions !== undefined)
+      this.permissions = options.permissions
+    if (options.inventory !== undefined) this.inventory = options.inventory
+  }
+
+  async giveInstance(itemId: string) {
+    // Give instance to user
+    const item = await Items.find({
+      name: itemId
+    })
+
+    // Create instance from item
+    // const instance = await Instances.create(this, item)
+    // this.inventory.push(instance)
+    // await prisma.identity.upsert({
+    //   where: {
+    //     slack: this.slack
+    //   },
+    //   create: {
+    //     inventory: { connect: instance.id }
+    //   }
+    // })
+  }
+
+  static async create(id: string): Promise<Identities> {
+    const identity = await prisma.identity.create({
       data: {
-        permissions
-      }
-    })
-  }
-
-  // C
-  static async create(id: string) {
-    return new Identities(
-      await prisma.identity.create({
-        data: {
-          slack: id
-        },
-        include: {
-          inventory: true
-        }
-      })
-    )
-  }
-
-  static async createMany(ids: Array<string>) {
-    for (let id of ids) {
-      return this.create(id)
-    }
-  }
-
-  // R
-  static async find(id: string, create: boolean = false) {
-    const result = new Identities(
-      (await prisma.identity.findUnique({
-        where: {
-          slack: id
-        },
-        include: {
-          inventory: true
-        }
-      })) ||
-        (create === true && (await Identities.create(id)))
-    )
-    return result
-  }
-
-  static async all() {
-    return await prisma.identity.findMany()
-  }
-
-  // D
-  static async del(id: string) {
-    return await prisma.identity.delete({
-      where: {
         slack: id
+      },
+      include: {
+        inventory: true
       }
+    })
+    return new Identities({
+      ...identity,
+      inventory: identity.inventory.map(instance => new Instances(instance))
     })
   }
 
-  async giveInstance(instanceId: string) {}
+  static async find() {}
+
+  static async all(): Promise<Identities[]> {
+    const identities = await prisma.identity.findMany({
+      include: {
+        inventory: true
+      }
+    })
+    return identities.map(identity => new Identities(identity))
+  }
 }
 
-export interface Item {
+export class Items {
   name: string
   image: string
   description: string
   reaction: string
   commodity: boolean
   tradable: boolean
+  instances: Instances[]
   public: boolean
+  metadata: JsonValue
+
+  constructor(item: {
+    name: string
+    image?: string
+    description?: string
+    reaction?: string
+    commodity: boolean
+    tradable: boolean
+    instances?: Instances[]
+    public: boolean
+    metadata?: JsonValue
+  }) {
+    this.name = item.name
+    this.image = item.image || ''
+    this.description = item.description || ''
+    this.reaction = item.reaction || ''
+    this.commodity = item.commodity
+    this.tradable = item.tradable
+    this.instances = item.instances || []
+    this.public = item.public
+    this.metadata = item.metadata || {}
+  }
+
+  async populate() {}
+
+  async update(options: {
+    name?: string
+    image?: string
+    description?: string
+    reaction?: string
+    commodity?: boolean
+    tradable?: boolean
+    instances?: Instances[]
+    public?: boolean
+    metadata?: JsonValue
+  }) {
+    await prisma.item.update({
+      where: {
+        name: this.name
+      },
+      data: 
+    })
+  }
+
+  static async create() {}
+
+  static async find() {}
+
+  static async all() {}
 }
 
-export class Items {
-  static async create(options: Item) {
-    return await prisma.item.create({
-      data: {
-        ...options
+export class Instances {
+  id: number
+  itemId: string
+  identityId: string
+  item: Items
+  identity: Identity
+  quantity: number
+  metadata: JsonValue
+  initiatorTrades: Trades[]
+  receiverTrades: Trades[]
+  public: boolean
+
+  constructor(instance: {
+    id: number
+    itemId: string
+    identityId: string
+    quantity?: number
+    metadata?: JsonValue
+    public: boolean
+  }) {
+    this.id = instance.id
+    this.itemId = instance.itemId
+    this.identityId = instance.identityId
+    this.quantity = instance.quantity || 1
+    this.metadata = instance.metadata || {}
+    this.public = instance.public
+  }
+
+  async populate() {
+    // Populate this.item and this.identity
+    // TODO
+  }
+
+  static async create(
+    identityId: string,
+    itemId: string,
+    quantity: number = 1
+  ): Promise<Instances> {
+    return new Instances(
+      await prisma.instance.create({
+        data: {
+          identityId,
+          itemId,
+          quantity
+        }
+      })
+    )
+  }
+
+  static async find(instanceId: number): Promise<Instances> {
+    const result = await prisma.instance.findUnique({
+      where: {
+        id: instanceId
+      },
+      include: {
+        identity: true,
+        item: true
       }
     })
+
+    if (result) return new Instances(result)
   }
 
-  static async createMany(items: Item[]) {
-    return await prisma.item.createMany({
-      data: {
-        ...items
+  static async deleteInstance(instanceId: number): Promise<Instances> {
+    const result = await prisma.instance.delete({
+      where: {
+        id: instanceId
       }
     })
-  }
 
-  static async find(options) {
-    return await prisma.item.findUnique({
-      where: options
-    })
-  }
-
-  static async all() {
-    return await prisma.item.findMany()
+    if (result) return new Instances(result)
   }
 }
 
 export class Apps {
-  // Class for managing permission for apps that might extend from this
   id: number
   name: string
-  key: string
   description: string
   permissions: PermissionLevels
   specific: string[]
   public: boolean
-  metadata: object
+  metadata: JsonValue
 
   constructor(app: {
     id: number
     name: string
-    key: string
-    description: string
-    permissions: PermissionLevels
-    specific: string[]
+    description?: string
+    permissions?: PermissionLevels
+    specific?: string[]
     public: boolean
-    metadata: object
+    metadata?: JsonValue
   }) {
     this.id = app.id
     this.name = app.name
-    this.key = app.key
-    this.description = app.description
-    this.permissions = app.permissions
-    this.specific = app.specific
+    this.description = app.description || ''
+    this.specific = app.specific || []
     this.public = app.public
-    this.metadata = app.metadata
+    this.metadata = app.metadata || {}
   }
 
   async update(options: {
@@ -157,7 +254,7 @@ export class Apps {
     permissions?: PermissionLevels
     specific?: string[]
     public?: boolean
-    metadata?: object
+    metadata?: JsonValue
   }) {
     await prisma.app.update({
       where: {
@@ -166,46 +263,38 @@ export class Apps {
       data: options
     })
 
-    this.name = options.name
-    this.description = options.description
+    if (options.name !== undefined) this.name = options.name
   }
 
-  static async create(
-    name: string,
-    description: string = '',
-    permissions: PermissionLevels = PermissionLevels.READ
-  ) {
-    if (await Apps.find({ name })) throw new Error('Name is already being used')
+  static async create() {}
 
-    let key = uuid()
-    while (await Apps.find({ key })) {
-      // Keep generating UUID until we find a unique one
-      key = uuid()
-    }
+  static async find() {}
 
-    return new Apps(
-      await prisma.app.create({
-        data: {
-          key,
-          name,
-          description,
-          permissions
-        }
-      })
-    )
-  }
-
-  static async all() {
-    return await prisma.app.findMany()
-  }
-
-  static async find(options) {
-    const results = await prisma.app.findUnique({
-      where: options
-    })
-    if (results) return new Apps(results)
-    return undefined
-  }
+  static async all() {}
 }
 
-export default prisma
+export class Trades {
+  id: number
+  initiatorIdentityId: string
+  receiverIdentityId: string
+  initiator: Identities
+  receiver: Identities
+  initiatorTrades: Instances[]
+  receiverTrades: Instance[]
+  public: boolean
+  closed: boolean
+
+  constructor() {}
+
+  async populate() {}
+
+  async update() {}
+
+  async close() {}
+
+  static async open() {}
+
+  static async find() {}
+
+  static async all() {}
+}

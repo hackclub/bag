@@ -80,11 +80,6 @@
   dependencies:
     undici "^5.26.2"
 
-"@connectrpc/connect-web@^1.2.0":
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/@connectrpc/connect-web/-/connect-web-1.2.0.tgz#b8a0e88eeac66c80e846fde5fb78dd4680baa2a1"
-  integrity sha512-vjFKTP/AzSnC8JvkGKRgpggZIB0v+Lv7U+/Tb/pRNGZI0WSElhGDXWgIn3xfcSNQWi079m45c5MlikszzIRsYg==
-
 "@connectrpc/connect@^1.1.3":
   version "1.1.3"
   resolved "https://registry.npmjs.org/@connectrpc/connect/-/connect-1.1.3.tgz"
@@ -318,6 +313,11 @@
     p-queue "^2.4.2"
     ws "^7.5.3"
 
+"@slack/types@^2.11.0":
+  version "2.11.0"
+  resolved "https://registry.yarnpkg.com/@slack/types/-/types-2.11.0.tgz#948c556081c3db977dfa8433490cc2ff41f47203"
+  integrity sha512-UlIrDWvuLaDly3QZhCPnwUSI/KYmV1N9LyhuH6EDKCRS1HWZhyTG3Ja46T3D0rYfqdltKYFXbJSSRPwZpwO0cQ==
+
 "@slack/types@^2.8.0", "@slack/types@^2.9.0":
   version "2.10.0"
   resolved "https://registry.npmjs.org/@slack/types/-/types-2.10.0.tgz"
@@ -330,6 +330,23 @@
   dependencies:
     "@slack/logger" "^3.0.0"
     "@slack/types" "^2.8.0"
+    "@types/is-stream" "^1.1.0"
+    "@types/node" ">=12.0.0"
+    axios "^1.6.0"
+    eventemitter3 "^3.1.0"
+    form-data "^2.5.0"
+    is-electron "2.2.2"
+    is-stream "^1.1.0"
+    p-queue "^6.6.1"
+    p-retry "^4.0.0"
+
+"@slack/web-api@^6.11.0":
+  version "6.11.0"
+  resolved "https://registry.yarnpkg.com/@slack/web-api/-/web-api-6.11.0.tgz#cb28d833df4452144f6d9942c36971db8c434028"
+  integrity sha512-DLShYUc2dE8QrhmrJZ7YuhAuh/VW88Dt3LL7s2KrkEOyxbdfjAtF9bzPOBMlXuWmO6nWLGVevPuhShcYyjwTEw==
+  dependencies:
+    "@slack/logger" "^3.0.0"
+    "@slack/types" "^2.11.0"
     "@types/is-stream" "^1.1.0"
     "@types/node" ">=12.0.0"
     axios "^1.6.0"

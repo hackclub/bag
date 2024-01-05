@@ -381,7 +381,17 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
   identityId = "";
 
   /**
-   * @generated from field: string note = 5;
+   * @generated from field: int32 quantity = 5;
+   */
+  quantity = 0;
+
+  /**
+   * @generated from field: string metadata = 6;
+   */
+  metadata = "";
+
+  /**
+   * @generated from field: string note = 7;
    */
   note = "";
 
@@ -397,7 +407,9 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "itemId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "identityId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "note", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "quantity", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 6, name: "metadata", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "note", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstanceRequest {

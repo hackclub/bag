@@ -1,8 +1,8 @@
-import { App, PermissionLevels } from '@prisma/client'
+import { App, Identity, PermissionLevels } from '@prisma/client'
 import { View, PlainTextOption, Block, KnownBlock } from '@slack/bolt'
+import { type IdentityWithInventory } from '../db'
 import { mappedPermissionValues } from '../permissions'
 import config from '../../config'
-import { Apps, Identities } from '../db'
 
 const error = (err: string) => {
   return [
@@ -290,7 +290,7 @@ const createApp = (permission: PermissionLevels): View => {
   }
 }
 
-const editApp = (app: Apps): View => {
+const editApp = (app: App): View => {
   return {
     callback_id: 'edit-app',
     private_metadata: JSON.stringify({
@@ -400,7 +400,7 @@ const editApp = (app: Apps): View => {
   }
 }
 
-const getApp = (app: Apps): (Block | KnownBlock)[] => {
+const getApp = (app: App): (Block | KnownBlock)[] => {
   return [
     {
       type: 'section',
@@ -444,7 +444,7 @@ const createdApp = (app: App): (Block | KnownBlock)[] => {
   ]
 }
 
-const requestPerms = (user: Identities): View => {
+const requestPerms = (user: Identity): View => {
   return {
     callback_id: 'request-perms',
     title: {
@@ -624,7 +624,7 @@ Fine... you can have this:
 \n> ${jingle.choices[0].message.content.split('\n').join('\n> ')}`
 }
 
-const showInventory = (user: Identities): (Block | KnownBlock)[] => {
+const showInventory = (user: IdentityWithInventory): (Block | KnownBlock)[] => {
   let text = []
   if (user.permissions === 'ADMIN')
     text.push(`<@${user.slack}> is an admin and has:`)

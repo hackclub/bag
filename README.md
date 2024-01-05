@@ -1,6 +1,6 @@
 ## Inventory
 
-(name tbd)
+A new, improved version of `bag`!
 
 ## Setup
 

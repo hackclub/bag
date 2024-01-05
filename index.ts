@@ -1,6 +1,8 @@
 import config from './config'
-import prisma from './lib/db'
+import { PrismaClient } from '@prisma/client'
 import slack from './lib/slack/routes'
+
+const prisma = new PrismaClient()
 
 // @prettier-ignore
 ;(async () => {

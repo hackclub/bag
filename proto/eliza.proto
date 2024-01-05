@@ -78,7 +78,9 @@ message CreateInstanceRequest {
   string key = 2;
   string itemId = 3;
   string identityId = 4;
-  string note = 5;
+  int32 quantity = 5;
+  string metadata = 6;
+  string note = 7;
 }
 
 message CreateInstanceResponse {

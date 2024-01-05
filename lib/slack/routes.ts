@@ -7,7 +7,8 @@ import {
   SlackViewAction,
   AllMiddlewareArgs,
   SlackEventMiddlewareArgs,
-  SlackActionMiddlewareArgs
+  SlackActionMiddlewareArgs,
+  subtype
 } from '@slack/bolt'
 import { StringIndexed } from '@slack/bolt/dist/types/helpers'
 import config from '../../config'
@@ -25,6 +26,8 @@ import { err, log } from '../logger'
 import { app } from '../api/init'
 import { v4 as uuid } from 'uuid'
 import { maintainers } from '../utils'
+import { requestHeaderWithCompression } from '@connectrpc/connect/protocol-grpc-web'
+import { findOrCreateIdentity } from '../db'
 
 const prisma = new PrismaClient()
 
@@ -158,14 +161,18 @@ slack.view('create-item', async props => {
     async props => {
       let fields: {
         name: string
-        image: string
-        description: string
         reaction: string
+        description: string
+        commodity: boolean
+        tradable: boolean
+        public: boolean
       } = {
         name: undefined,
-        image: undefined,
+        reaction: undefined,
         description: undefined,
-        reaction: undefined
+        commodity: undefined,
+        tradable: undefined,
+        public: undefined
       }
       for (let field of Object.values(props.view.state.values)) {
         fields[Object.keys(field)[0]] =
@@ -184,6 +191,11 @@ slack.view('create-item', async props => {
         data: fields
       })
       log('New item created: ', item.name)
+      // @ts-expect-error
+      await props.client.chat.postEphemeral({
+        channel: props.context.userId,
+        text: `New item created: ${item.name}`
+      })
     },
     mappedPermissionValues.ADMIN
   )
@@ -491,6 +503,52 @@ slack.command('/bag-apps', async props => {
   })
 })
 
+slack.command('/inventory', async props => {
+  await execute(props, async props => {
+    const message = props.command.text
+    if (message.startsWith('me')) {
+      const userId = props.context.userId
+      const user = await prisma.identity.findUnique({
+        where: {
+          slack: userId
+        },
+        include: {
+          inventory: true
+        }
+      })
+      if (message !== 'me private')
+        user.inventory = user.inventory.filter(item => item.public)
+
+      return await props.respond({
+        response_type: 'in_channel',
+        blocks: await views.showInventory(user)
+      })
+    }
+    if (message.startsWith('<@')) {
+      // Mentioning user
+      const mentionId = message.slice(2, message.indexOf('|'))
+      const mention = await findOrCreateIdentity(mentionId)
+
+      return await props.respond({
+        response_type: 'in_channel',
+        blocks: await views.showInventory(mention)
+      })
+    }
+    await props.respond({
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: "Sorry, can't help you with that, I'm just a measly bag, it's the stuff inside that's useful... maybe this is helpful? :point_down:"
+          }
+        },
+        ...views.helpDialog
+      ]
+    })
+  })
+})
+
 slack.event('app_mention', async props => {
   await execute(props, async props => {
     const removeUser = (text: string) => {
@@ -509,7 +567,7 @@ slack.event('app_mention', async props => {
         })
         break
       case 'about':
-        await props.client.chat.postEphemeral({
+        await props.client.chat.postMessage({
           channel: props.event.channel,
           user: props.context.userId,
           text: await views.heehee()
@@ -531,7 +589,7 @@ slack.event('app_mention', async props => {
 
           await props.client.chat.postMessage({
             channel: props.event.channel,
-            blocks: views.showInventory(user)
+            blocks: await views.showInventory(user)
           })
 
           break
@@ -539,15 +597,11 @@ slack.event('app_mention', async props => {
         if (message.startsWith('<@')) {
           // Mentioning user
           const mentionId = message.slice(2, message.length - 1) // Remove the formatted ID
-          let mention = await prisma.identity.findUnique({
-            where: {
-              slack: mentionId
-            }
-          })
+          const mention = await findOrCreateIdentity(mentionId)
 
           await props.client.chat.postMessage({
             channel: props.event.channel,
-            blocks: views.showInventory(mention)
+            blocks: await views.showInventory(mention)
           })
 
           break
@@ -568,18 +622,6 @@ slack.event('app_mention', async props => {
         })
     }
   })
-})
-
-slack.event('message', async props => {
-  const channel = props.event.channel
-  const easterEggChannels = ['C067VEFCV7Y', 'C067FH4PHFH']
-  if (easterEggChannels.includes(channel)) {
-    const user = await prisma.identity.findUnique({
-      where: {
-        slack: props.context.userId
-      }
-    })
-  }
 })
 
 export default slack

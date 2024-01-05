@@ -25,6 +25,7 @@ service ElizaService {
   rpc DeleteApp(DeleteAppRequest) returns (DeleteAppResponse) {} // Should be able to delete apps as a admin
   rpc DeleteInstance(DeleteInstanceRequest) returns (DeleteInstanceResponse) {}  // Should be able to delete instances that the app has access to
   rpc CloseTrade(CloseTradeRequest) returns (CloseTradeResponse) {} // Should be able to close instances that the app has access to
+  rpc VerifyKey(VerifyKeyRequest) returns (VerifyKeyResponse) {}
 }
 
 // ! All requests should come with an appId and a key
@@ -293,4 +294,13 @@ message CloseTradeRequest {
 
 message CloseTradeResponse {
   string response = 1;
+}
+
+message VerifyKeyRequest {
+  int32 appId = 1;
+  string key = 2;
+}
+
+message VerifyKeyResponse {
+  bool valid = 1;
 }

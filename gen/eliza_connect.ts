@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CloseTradeRequest, CloseTradeResponse, CreateAppRequest, CreateAppResponse, CreateInstanceRequest, CreateInstanceResponse, CreateItemRequest, CreateItemResponse, CreateRecipeRequest, CreateRecipeResponse, CreateTradeRequest, CreateTradeResponse, DeleteAppRequest, DeleteAppResponse, DeleteInstanceRequest, DeleteInstanceResponse, ReadAppRequest, ReadAppResponse, ReadIdentityRequest, ReadIdentityResponse, ReadInstanceRequest, ReadInstanceResponse, ReadInventoryRequest, ReadInventoryResponse, ReadItemRequest, ReadItemResponse, ReadRecipeRequest, ReadRecipeResponse, ReadTradeRequest, ReadTradeResponse, UpdateAppRequest, UpdateAppResponse, UpdateIdentityMetadataRequest, UpdateIdentityMetadataResponse, UpdateInstanceRequest, UpdateInstanceResponse, UpdateItemRequest, UpdateItemResponse, UpdateRecipeRequest, UpdateRecipeResponse, UpdateTradeRequest, UpdateTradeResponse } from "./eliza_pb.js";
+import { CloseTradeRequest, CloseTradeResponse, CreateAppRequest, CreateAppResponse, CreateInstanceRequest, CreateInstanceResponse, CreateItemRequest, CreateItemResponse, CreateRecipeRequest, CreateRecipeResponse, CreateTradeRequest, CreateTradeResponse, DeleteAppRequest, DeleteAppResponse, DeleteInstanceRequest, DeleteInstanceResponse, ReadAppRequest, ReadAppResponse, ReadIdentityRequest, ReadIdentityResponse, ReadInstanceRequest, ReadInstanceResponse, ReadInventoryRequest, ReadInventoryResponse, ReadItemRequest, ReadItemResponse, ReadRecipeRequest, ReadRecipeResponse, ReadTradeRequest, ReadTradeResponse, UpdateAppRequest, UpdateAppResponse, UpdateIdentityMetadataRequest, UpdateIdentityMetadataResponse, UpdateInstanceRequest, UpdateInstanceResponse, UpdateItemRequest, UpdateItemResponse, UpdateRecipeRequest, UpdateRecipeResponse, UpdateTradeRequest, UpdateTradeResponse, VerifyKeyRequest, VerifyKeyResponse } from "./eliza_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -201,6 +201,15 @@ export const ElizaService = {
       name: "CloseTrade",
       I: CloseTradeRequest,
       O: CloseTradeResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc connectrpc.eliza.v1.ElizaService.VerifyKey
+     */
+    verifyKey: {
+      name: "VerifyKey",
+      I: VerifyKeyRequest,
+      O: VerifyKeyResponse,
       kind: MethodKind.Unary,
     },
   }

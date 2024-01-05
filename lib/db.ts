@@ -1,5 +1,7 @@
 // Type helpers for Prisma
-import { Prisma } from '@prisma/client'
+import { Identity, Prisma, PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
 
 // @ts-ignore-error
 const identityWithInventory = Prisma.validator<Prisma.IdentityDefaultArgs>()({
@@ -9,3 +11,27 @@ const identityWithInventory = Prisma.validator<Prisma.IdentityDefaultArgs>()({
 export type IdentityWithInventory = Prisma.IdentityGetPayload<
   typeof identityWithInventory
 >
+
+export const findOrCreateIdentity = async (
+  slack: string
+): Promise<IdentityWithInventory> => {
+  const result = await prisma.identity.findUnique({
+    where: {
+      slack
+    },
+    include: {
+      inventory: true
+    }
+  })
+
+  if (!result)
+    return await prisma.identity.create({
+      data: {
+        slack
+      },
+      include: {
+        inventory: true
+      }
+    })
+  return result
+}

@@ -2234,3 +2234,83 @@ export class CloseTradeResponse extends Message<CloseTradeResponse> {
   }
 }
 
+/**
+ * @generated from message connectrpc.eliza.v1.VerifyKeyRequest
+ */
+export class VerifyKeyRequest extends Message<VerifyKeyRequest> {
+  /**
+   * @generated from field: int32 appId = 1;
+   */
+  appId = 0;
+
+  /**
+   * @generated from field: string key = 2;
+   */
+  key = "";
+
+  constructor(data?: PartialMessage<VerifyKeyRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "connectrpc.eliza.v1.VerifyKeyRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): VerifyKeyRequest {
+    return new VerifyKeyRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): VerifyKeyRequest {
+    return new VerifyKeyRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): VerifyKeyRequest {
+    return new VerifyKeyRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: VerifyKeyRequest | PlainMessage<VerifyKeyRequest> | undefined, b: VerifyKeyRequest | PlainMessage<VerifyKeyRequest> | undefined): boolean {
+    return proto3.util.equals(VerifyKeyRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message connectrpc.eliza.v1.VerifyKeyResponse
+ */
+export class VerifyKeyResponse extends Message<VerifyKeyResponse> {
+  /**
+   * @generated from field: bool valid = 1;
+   */
+  valid = false;
+
+  constructor(data?: PartialMessage<VerifyKeyResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "connectrpc.eliza.v1.VerifyKeyResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "valid", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): VerifyKeyResponse {
+    return new VerifyKeyResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): VerifyKeyResponse {
+    return new VerifyKeyResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): VerifyKeyResponse {
+    return new VerifyKeyResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: VerifyKeyResponse | PlainMessage<VerifyKeyResponse> | undefined, b: VerifyKeyResponse | PlainMessage<VerifyKeyResponse> | undefined): boolean {
+    return proto3.util.equals(VerifyKeyResponse, a, b);
+  }
+}
+

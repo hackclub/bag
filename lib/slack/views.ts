@@ -1,8 +1,16 @@
-import { App, Identity, PermissionLevels } from '@prisma/client'
+import {
+  PrismaClient,
+  App,
+  Identity,
+  Instance,
+  PermissionLevels
+} from '@prisma/client'
 import { View, PlainTextOption, Block, KnownBlock } from '@slack/bolt'
 import { type IdentityWithInventory } from '../db'
 import { mappedPermissionValues } from '../permissions'
 import config from '../../config'
+
+const prisma = new PrismaClient()
 
 const error = (err: string) => {
   return [
@@ -48,15 +56,16 @@ const createItem: View = {
       type: 'input',
       element: {
         type: 'plain_text_input',
-        action_id: 'image',
+        action_id: 'reaction',
         placeholder: {
           type: 'plain_text',
-          text: 'Link to image'
+          text: 'Emoji',
+          emoji: true
         }
       },
       label: {
         type: 'plain_text',
-        text: 'Image',
+        text: 'Emoji',
         emoji: true
       }
     },
@@ -624,7 +633,37 @@ Fine... you can have this:
 \n> ${jingle.choices[0].message.content.split('\n').join('\n> ')}`
 }
 
-const showInventory = (user: IdentityWithInventory): (Block | KnownBlock)[] => {
+const showInventory = async (
+  user: IdentityWithInventory
+): Promise<(Block | KnownBlock)[]> => {
+  const formatInventory = async (inventory: Instance[]): Promise<string> => {
+    let result: string[] = []
+    // for (let item of inventory) {
+    //   const ref = await prisma.item.findUnique({
+    //     where: {
+    //       name: item.itemId
+    //     }
+    //   })
+    //   result.push(`x${item.quantity} ${ref.reaction}: ${ref.name}`)
+    // }
+    const reduced = inventory.reduce((acc: any, curr: Instance) => {
+      const instance = acc.find(instances => instances[0].itemId == curr.itemId)
+      if (instance) instance.push(curr)
+      else acc.push([curr])
+      return acc
+    }, [])
+    for (let instances of reduced) {
+      const ref = await prisma.item.findUnique({
+        where: {
+          name: instances[0].itemId
+        }
+      })
+      const quantity = instances.length
+      result.push(`x${quantity} ${ref.reaction}: ${ref.name}`)
+    }
+    return result.join('\n')
+  }
+
   let text = []
   if (user.permissions === 'ADMIN')
     text.push(`<@${user.slack}> is an admin and has:`)
@@ -634,14 +673,14 @@ const showInventory = (user: IdentityWithInventory): (Block | KnownBlock)[] => {
     text.push(
       ' nothing. Nothing? The bag is empty? Are you sure? Time to go out and do some stuff.'
     )
-  else text.push(user.inventory) // TODO: Format
+  else text.push(await formatInventory(user.inventory))
 
   return [
     {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: text.join('')
+        text: text.join('\n')
       }
     }
   ]

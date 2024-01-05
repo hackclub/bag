@@ -39,6 +39,14 @@ export async function execute(
 }
 
 export default (router: ConnectRouter) => {
+  router.rpc(ElizaService, ElizaService.methods.verifyKey, async req => {
+    const app = await prisma.app.findUnique({
+      where: { id: req.appId, AND: [{ key: req.key }] }
+    })
+    if (!app) return { valid: false }
+    return { value: true }
+  })
+
   router.rpc(ElizaService, ElizaService.methods.createApp, async req => {
     return await execute(req, async (req, app) => {
       if (app.permissions !== PermissionLevels.ADMIN)
@@ -108,10 +116,10 @@ export default (router: ConnectRouter) => {
               type: 'section',
               text: {
                 type: 'mrkdwn',
-                text: `*${app.name}* just sent you *${
+                text: `*${app.name}* just sent you ${item.reaction}:: *${
                   item.name
                 }*! It's in your inventory now.${
-                  req.note && " There's a note attached to it: " + req.note
+                  req.note && " There's a note attached to it: \n\n>" + req.note
                 }`
               }
             }
@@ -148,13 +156,16 @@ export default (router: ConnectRouter) => {
       const user = await prisma.identity.findUnique({
         where: {
           slack: req.identityId
+        },
+        include: {
+          inventory: true
         }
       })
       if (!user) throw new Error('Identity not found')
 
       // TODO: Make sure to filter out private items!
 
-      return { identity: user }
+      return { identity: stringify(user) }
     })
   })
 
@@ -182,6 +193,7 @@ export default (router: ConnectRouter) => {
       const item = await prisma.item.findUnique({
         where: query
       })
+      console.log(item)
       if (item && (item.public || app.permissions === PermissionLevels.ADMIN))
         return { item: stringify(item) } // TODO: Take care of specific permissions
       throw new Error(`Query ${req.query} didn't return any results`)
@@ -213,7 +225,7 @@ export default (router: ConnectRouter) => {
         }
       })
       // TODO: Make sure permissions line up
-      return { app: appSearch }
+      return { app: stringify(appSearch) }
     })
   })
 
@@ -241,11 +253,13 @@ export default (router: ConnectRouter) => {
     return await execute(
       req,
       async (req, app) => {
-        const item = await prisma.item.findUnique({
+        const item = await prisma.item.update({
           where: {
             name: req.itemId
-          }
+          },
+          data: req.new
         })
+        return { item }
       },
       mappedPermissionValues.WRITE_SPECIFIC
     )
@@ -255,13 +269,21 @@ export default (router: ConnectRouter) => {
     return await execute(req, async (req, app) => {
       if (app.permissions !== PermissionLevels.ADMIN && req.optAppId)
         throw new Error('Invalid permissions')
-      const old = await prisma.app.update({
+      const old = await prisma.app.findUnique({
+        where: {
+          id: req.optAppId ? req.optAppId : req.appId
+        }
+      })
+      // TODO: Make sure it's not possible to do illegal things here
+      delete req.new.id
+      if (req.new.permissions === '') delete req.new.permissions
+      const updated = await prisma.app.update({
         where: {
           id: req.optAppId ? req.optAppId : req.appId
         },
-        data: req.new
+        data: Object.assign(old, req.new)
       })
-      return { app: old }
+      return { app: updated }
     })
   })
 

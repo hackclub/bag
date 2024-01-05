@@ -37,7 +37,7 @@ model Identity {
 
 model Item {
   name        String     @id @unique // Name
-  image       String // Image
+  image       String? // Image
   description String? // Description
   reaction    String? // Slack reaction tag
   commodity   Boolean    @default(false) // Commodity

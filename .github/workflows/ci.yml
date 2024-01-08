@@ -19,13 +19,18 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "18.17.0"
+      - name: Install dependencies
+        run: |
+          npm i -f
       - name: Format
-        uses: actionsx/prettier@v2
-        with:
-          args: --ignore-path ./.prettierignore --write .
+        run: |
+          npm run format
+      - name: Update schema 
+        run: |
+          npm run db:migrate-deploy
       - name: Generate proto
         run: |
-          npx generate buf proto
+          npm run rpc:gen
       - name: Build and publish client
         run: |
           cp -r ./gen ./client

@@ -7,10 +7,9 @@
     "start": "tsx index.ts",
     "dev": "tsx watch index.ts",
     "format": "prettier --ignore-path ./.prettierignore --write .",
-    "rpc:gen": "npx buf generate ./proto/eliza.proto",
+    "rpc:gen": "npx buf generate proto",
     "db:migrate-dev": "npx prisma migrate dev",
-    "db:migrate-deploy": "npx prisma migrate deploy",
-    "db:push": "npx prisma db push"
+    "db:migrate-deploy": "npx prisma migrate deploy"
   },
   "keywords": [],
   "author": "",

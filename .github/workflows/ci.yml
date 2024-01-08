@@ -1,0 +1,27 @@
+---
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Install Node.js and npm
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18.17.0"
+      - name: Format
+        uses: actionsx/prettier@v2
+        with:
+          args: --ignore-path ./.prettierignore --write .
+      
+# TODO: Also have jobs for: running `npx buf generate proto`, building the client (moving generated files into the ./client directory) and updating on NPM, and automatically generating documentation (think more about this)

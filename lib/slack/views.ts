@@ -593,6 +593,7 @@ const helpDialog: (Block | KnownBlock)[] = [
 \`/request-perms\`: Request permissions for yourself. 
 \`/edit-app <id> <key>\`: Lets you edit an app and its settings, given you have the key.
 \`/get-app <name>\`: Lets you get info about an app, including its ID, given its name.
+\`/inventory me/@<person>\`: Same functionality as mentioning me, but you can also do this in DMs! 
 
 And of course, if you ever mention me, the @bag, I will help in any way possible! (Although I am just a measly bag.) Here is a list of things you can call me for:
 
@@ -673,14 +674,14 @@ const showInventory = async (
     text.push(
       ' nothing. Nothing? The bag is empty? Are you sure? Time to go out and do some stuff.'
     )
-  else text.push(await formatInventory(user.inventory))
+  else text.push('\n' + (await formatInventory(user.inventory)))
 
   return [
     {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: text.join('\n')
+        text: text.join('')
       }
     }
   ]

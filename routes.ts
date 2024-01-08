@@ -193,7 +193,6 @@ export default (router: ConnectRouter) => {
       const item = await prisma.item.findUnique({
         where: query
       })
-      console.log(item)
       if (item && (item.public || app.permissions === PermissionLevels.ADMIN))
         return { item: stringify(item) } // TODO: Take care of specific permissions
       throw new Error(`Query ${req.query} didn't return any results`)
@@ -224,6 +223,7 @@ export default (router: ConnectRouter) => {
           id: req.optAppId ? req.optAppId : req.appId
         }
       })
+      if (!appSearch) throw new Error('App not found')
       // TODO: Make sure permissions line up
       return { app: stringify(appSearch) }
     })

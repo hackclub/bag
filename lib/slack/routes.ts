@@ -92,7 +92,7 @@ export async function execute(
       }
     })
 
-    if (Object.values(user).includes(undefined)) {
+    if (!user) {
       // Not in database yet... create user
       user = await prisma.identity.create({
         data: {
@@ -191,9 +191,9 @@ slack.view('create-item', async props => {
         data: fields
       })
       log('New item created: ', item.name)
-      // @ts-expect-error
       await props.client.chat.postEphemeral({
         channel: props.context.userId,
+        user: props.context.userId,
         text: `New item created: ${item.name}`
       })
     },
@@ -358,6 +358,18 @@ slack.action('deny-perms', async props => {
     } catch {
       return await props.say('Permissions already applied.')
     }
+  })
+})
+
+slack.command('/edit-item', async props => {
+  await execute(props, async props => {
+    // TODO
+  })
+})
+
+slack.view('edit-item', async props => {
+  await execute(props, async props => {
+    // TODO
   })
 })
 

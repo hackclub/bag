@@ -23,5 +23,11 @@ jobs:
         uses: actionsx/prettier@v2
         with:
           args: --ignore-path ./.prettierignore --write .
+      - name: Generate proto
+        run: |
+          npx generate buf proto
+      - name: Build and publish client
+        run: |
+          cp -r ./gen ./client
       
-# TODO: Also have jobs for: running `npx buf generate proto`, building the client (moving generated files into the ./client directory) and updating on NPM, and automatically generating documentation (think more about this)
+# TODO: Also have jobs for: building the client (moving generated files into the ./client directory) and updating on NPM, and automatically generating documentation (think more about this)

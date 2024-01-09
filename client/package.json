@@ -1,5 +1,5 @@
 {
-  "name": "inventory",
+  "name": "@hackclub/inventory",
   "version": "1.0.0",
   "description": "Hack Club's custom inventory system for Slack!",
   "main": "./dist/index.js",

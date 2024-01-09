@@ -25,7 +25,7 @@ model App {
   specificApps    Int[]
   specificItems   String[]
   specificTrades  String[]
-  specificRecipes String[]
+  specificRecipes Int[]
   public          Boolean          @default(false)
   metadata        Json? // Optional metadata (JSON)
 }
@@ -37,6 +37,11 @@ model Identity {
   initiatorTrades Trade[]          @relation("initiator")
   receiverTrades  Trade[]          @relation("receiver")
   metadata        Json? // Optional metadata (JSON)
+  // These are all strings and not otherwise because there's no public facing value that requires them to have a relation
+  specificApps    Int[]
+  specificItems   String[]
+  specificTrades  String[]
+  specificRecipes Int[]
 }
 
 model Item {

@@ -8,6 +8,14 @@ type RecursivePartial<T> = {
   [P in keyof T]?: RecursivePartial<T[P]>
 }
 
+export const Permissions = {
+  ADMIN: 4,
+  WRITE: 3,
+  WRITE_SPECIFIC: 2,
+  READ_PRIVATE: 1,
+  READ: 0
+}
+
 export class App {
   private client: PromiseClient<typeof ElizaService>
   private request: { appId: number; key: string }
@@ -27,7 +35,7 @@ export class App {
     baseUrl?: string
   }) {
     const transport = createConnectTransport({
-      baseUrl: options.baseUrl || 'https://inventory.hackclub.com',
+      baseUrl: options.baseUrl || 'https://bag.hackclub.com',
       httpVersion: '1.1'
     })
 

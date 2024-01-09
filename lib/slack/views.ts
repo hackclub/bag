@@ -3,7 +3,8 @@ import {
   App,
   Identity,
   Instance,
-  PermissionLevels
+  PermissionLevels,
+  Item
 } from '@prisma/client'
 import { View, PlainTextOption, Block, KnownBlock } from '@slack/bolt'
 import { type IdentityWithInventory } from '../db'
@@ -404,6 +405,225 @@ const editApp = (app: App): View => {
           text: 'Select a permission level',
           emoji: true
         }
+      },
+      {
+        type: 'input',
+        element: {
+          type: 'plain_text_input',
+          action_id: 'delete-app',
+          placeholder: {
+            type: 'plain_text',
+            text: 'App key'
+          }
+        },
+        label: {
+          type: 'plain_text',
+          text: 'Delete app'
+        },
+        hint: {
+          type: 'plain_text',
+          text: 'This will permanently delete your app, but not associated data, e.g. instances created! Please make sure this is what you want to do.'
+        }
+      }
+    ]
+  }
+}
+
+const editItem = (item: Item): View => {
+  for (let key of Object.keys(item)) if (item[key] === undefined) item[key] = ''
+  return {
+    callback_id: 'edit-item',
+    private_metadata: JSON.stringify({
+      prevName: item.name
+    }),
+    title: {
+      type: 'plain_text',
+      text: 'Edit item'
+    },
+    submit: {
+      type: 'plain_text',
+      text: 'Update app'
+    },
+    type: 'modal',
+    blocks: [
+      {
+        type: 'input',
+        element: {
+          type: 'plain_text_input',
+          action_id: 'name',
+          placeholder: {
+            type: 'plain_text',
+            text: 'Name of app'
+          },
+          initial_value: item.name
+        },
+        label: {
+          type: 'plain_text',
+          text: 'Name of app'
+        }
+      },
+      {
+        type: 'input',
+        element: {
+          type: 'plain_text_input',
+          action_id: 'image',
+          placeholder: {
+            type: 'plain_text',
+            text: 'Link to image'
+          },
+          initial_value: item.image
+        },
+        label: {
+          type: 'plain_text',
+          text: 'Image'
+        }
+      },
+      {
+        type: 'input',
+        element: {
+          type: 'plain_text_input',
+          action_id: 'description',
+          placeholder: {
+            type: 'plain_text',
+            text: 'Description'
+          },
+          initial_value: item.description,
+          multiline: true
+        },
+        label: {
+          type: 'plain_text',
+          text: 'What is this?',
+          emoji: true
+        }
+      },
+      {
+        type: 'input',
+        element: {
+          type: 'plain_text_input',
+          action_id: 'reaction',
+          placeholder: {
+            type: 'plain_text',
+            text: 'Reaction'
+          },
+          initial_value: item.reaction
+        },
+        label: {
+          type: 'plain_text',
+          text: 'Reaction',
+          emoji: true
+        }
+      },
+      {
+        type: 'input',
+        element: {
+          action_id: 'commodity',
+          type: 'static_select',
+          placeholder: {
+            type: 'plain_text',
+            text: 'Commodity'
+          },
+          options: [
+            {
+              text: {
+                type: 'plain_text',
+                text: 'Is a commodity'
+              },
+              value: 'true'
+            },
+            {
+              text: {
+                type: 'plain_text',
+                text: 'Is not a commodity'
+              },
+              value: 'false'
+            }
+          ],
+          initial_option: {
+            text: {
+              type: 'plain_text',
+              text: item.commodity ? 'Is a commodity' : 'Is not a commodity'
+            },
+            value: item.commodity ? 'Is a commodity' : 'Is not a commodity'
+          }
+        }
+      },
+      {
+        type: 'input',
+        element: {
+          action_id: 'tradable',
+          type: 'static_select',
+          placeholder: {
+            type: 'plain_text',
+            text: 'Tradable'
+          },
+          options: [
+            {
+              text: {
+                type: 'plain_text',
+                text: 'Can be traded',
+                emoji: true
+              },
+              value: 'true'
+            },
+            {
+              text: {
+                type: 'plain_text',
+                text: "Can't be traded",
+                emoji: true
+              },
+              value: 'false'
+            }
+          ],
+          initial_option: {
+            text: {
+              type: 'plain_text',
+              text: item.tradable ? 'Can be traded' : "Can't be traded"
+            },
+            value: item.tradable ? 'true' : 'false'
+          }
+        },
+        label: {
+          type: 'plain_text',
+          text: 'Is this item tradable?'
+        }
+      },
+      {
+        type: 'input',
+        element: {
+          action_id: 'public',
+          type: 'static_select',
+          placeholder: {
+            type: 'plain_text',
+            text: 'Public'
+          },
+          options: [
+            {
+              text: {
+                type: 'plain_text',
+                text: 'Is public'
+              },
+              value: 'true'
+            },
+            {
+              text: {
+                type: 'plain_text',
+                text: 'Is private'
+              },
+              value: 'false'
+            }
+          ],
+          initial_option: {
+            text: {
+              type: 'plain_text',
+              text: item.public ? 'Is public' : 'Is private'
+            },
+            value: item.public ? 'true' : 'false'
+          }
+        },
+        label: {
+          type: 'plain_text',
+          text: '(Can be viewed by everyone)'
+        }
       }
     ]
   }
@@ -659,8 +879,10 @@ const showInventory = async (
           name: instances[0].itemId
         }
       })
-      const quantity = instances.length
-      result.push(`x${quantity} ${ref.reaction}: ${ref.name}`)
+      const quantity = instances.reduce((acc: any, curr: Instance) => {
+        return acc + curr.quantity
+      }, 0)
+      result.push(`x${quantity} ${ref.reaction} ${ref.name}`)
     }
     return result.join('\n')
   }
@@ -693,6 +915,7 @@ export default {
   createApp,
   createdApp,
   editApp,
+  editItem,
   getApp,
   requestPerms,
   approveOrDenyPerms,

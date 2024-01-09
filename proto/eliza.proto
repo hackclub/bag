@@ -62,16 +62,20 @@ message Instance {
   Item item = 4;
 }
 
-message RecipeResponse {
-  int32 id = 1;
-}
-
 message Trade {
   int32 id = 1;
   string initiatorIdentityId = 2;
   string receiverIdentityId = 3;
-  bool public = 4;
-  bool closed = 5;
+  repeated Instance initatorTrades = 4;
+  repeated Instance receiverTrades = 5;
+  bool public = 6;
+  bool closed = 7; 
+}
+
+message Recipe {
+  int32 id = 1;
+  repeated string inputs = 2;
+  repeated string outputs = 3;
 }
 
 message CreateInstanceRequest {
@@ -102,6 +106,7 @@ message CreateAppRequest {
 message CreateAppResponse {
   string response = 1;
   App app = 2;
+  string key = 3;
 }
 
 message CreateItemRequest {
@@ -118,10 +123,12 @@ message CreateItemResponse {
 message CreateRecipeRequest {
   int32 appId = 1;
   string key = 2;
+  Recipe recipe = 3;
 }
 
 message CreateRecipeResponse {
   string response = 1;
+  Recipe recipe = 2;
 }
 
 message CreateTradeRequest {
@@ -262,10 +269,12 @@ message UpdateAppResponse {
 message UpdateTradeRequest {
   int32 appId = 1;
   string key = 2;
+  int32 tradeId = 3;
 }
 
 message UpdateTradeResponse {
   string response = 1;
+  Trade trade = 2;
 }
 
 message UpdateRecipeRequest {
@@ -301,10 +310,12 @@ message DeleteInstanceResponse {
 message CloseTradeRequest {
   int32 appId = 1;
   string key = 2;
+  int32 tradeId = 3;
 }
 
 message CloseTradeResponse {
   string response = 1;
+  Trade trade = 2;
 }
 
 message VerifyKeyRequest {

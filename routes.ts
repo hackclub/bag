@@ -1,7 +1,6 @@
-// TODO: Update those error messages
 import { ConnectRouter } from '@connectrpc/connect'
 import { ElizaService } from './gen/eliza_connect'
-import { log, err } from './lib/logger'
+import { log } from './lib/logger'
 import { mappedPermissionValues } from './lib/permissions'
 import { App, PermissionLevels, PrismaClient } from '@prisma/client'
 import { WebClient } from '@slack/web-api'
@@ -42,6 +41,7 @@ export async function execute(
 }
 
 export default (router: ConnectRouter) => {
+  // * WORKS
   router.rpc(ElizaService, ElizaService.methods.verifyKey, async req => {
     const app = await prisma.app.findUnique({
       where: { id: req.appId, AND: [{ key: req.key }] }
@@ -50,6 +50,7 @@ export default (router: ConnectRouter) => {
     return { valid: true }
   })
 
+  // * WORKS
   router.rpc(ElizaService, ElizaService.methods.createApp, async req => {
     return await execute(
       req,
@@ -57,22 +58,34 @@ export default (router: ConnectRouter) => {
         let key = uuid()
         while (await prisma.app.findUnique({ where: { key } })) key = uuid()
 
+        const getKeyByValue = (obj, value) =>
+          Object.keys(obj).find(key => obj[key] === value)
+
         const created = await prisma.app.create({
           data: {
             name: req.name,
             key,
             description: req.description,
-            permissions: req.permissions,
+            permissions:
+              PermissionLevels[
+                getKeyByValue(mappedPermissionValues, req.permissions)
+              ],
             public: req.public,
             metadata: req.metadata ? JSON.parse(req.metadata) : {}
           }
         })
-        return { app: created }
+        return {
+          app: {
+            ...created,
+            metadata: JSON.stringify(created.metadata)
+          }
+        }
       },
       mappedPermissionValues.ADMIN
     )
   })
 
+  // * WORKS
   router.rpc(ElizaService, ElizaService.methods.createInstance, async req => {
     return await execute(
       req,
@@ -81,9 +94,7 @@ export default (router: ConnectRouter) => {
           app.permissions === PermissionLevels.WRITE_SPECIFIC &&
           !app.specificTrades.find(trade => trade == req.itemId)
         )
-          throw new Error(
-            `Not enough permissions to create instance. Go into Slack and request access with TODO`
-          )
+          throw new Error('Not enough permissions to create instance')
 
         const item = await prisma.item.findUnique({
           where: {
@@ -101,7 +112,7 @@ export default (router: ConnectRouter) => {
             inventory: true
           }
         })
-        if (!identity) throw new Error('Identity not found; create it first!')
+        if (!identity) throw new Error('Identity not found')
 
         const instance = await prisma.instance.create({
           data: {
@@ -120,7 +131,7 @@ export default (router: ConnectRouter) => {
               type: 'section',
               text: {
                 type: 'mrkdwn',
-                text: `*${app.name}* just sent you ${item.reaction}:: *${
+                text: `*${app.name}* just sent you ${item.reaction}: *${
                   item.name
                 }*! It's in your inventory now.${
                   req.note && " There's a note attached to it: \n\n>" + req.note
@@ -136,6 +147,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
+  // * WORKS
   router.rpc(ElizaService, ElizaService.methods.createItem, async req => {
     return await execute(
       req,
@@ -151,9 +163,27 @@ export default (router: ConnectRouter) => {
   })
 
   router.rpc(ElizaService, ElizaService.methods.createRecipe, async req => {
-    return await execute(req, async (req, app) => {
-      // TODO
-    })
+    return await execute(
+      req,
+      async (req, app) => {
+        const recipe = await prisma.recipe.create({
+          data: req.recipe
+        })
+        if (app.permissions === PermissionLevels.WRITE_SPECIFIC)
+          await prisma.app.update({
+            where: {
+              id: app.id
+            },
+            data: {
+              specificRecipes: {
+                push: recipe.id
+              }
+            }
+          })
+        return { recipe }
+      },
+      mappedPermissionValues.WRITE_SPECIFIC
+    )
   })
 
   router.rpc(ElizaService, ElizaService.methods.createTrade, async req => {
@@ -221,6 +251,7 @@ export default (router: ConnectRouter) => {
     })
   })
 
+  // * WORKS
   router.rpc(ElizaService, ElizaService.methods.readItem, async req => {
     return await execute(req, async (req, app) => {
       const query = JSON.parse(req.query)
@@ -253,6 +284,7 @@ export default (router: ConnectRouter) => {
     })
   })
 
+  // * WORKS
   router.rpc(ElizaService, ElizaService.methods.readApp, async req => {
     return await execute(req, async (req, app) => {
       const appSearch = await prisma.app.findUnique({
@@ -307,7 +339,7 @@ export default (router: ConnectRouter) => {
               inventory: true
             }
           })
-          if (!identity) throw new Error('Identity not found; create it first!')
+          if (!identity) throw new Error('Identity not found')
 
           const updated = await prisma.identity.update({
             where: {
@@ -350,6 +382,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
+  // * WORKS
   router.rpc(ElizaService, ElizaService.methods.updateItem, async req => {
     return await execute(
       req,
@@ -358,20 +391,23 @@ export default (router: ConnectRouter) => {
           app.permissions === PermissionLevels.WRITE_SPECIFIC &&
           !app.specificItems.find(item => item === req.itemId)
         )
-          throw new Error('Invalid permissions.')
+          throw new Error('Invalid permissions')
 
+        for (let key of Object.keys(req.new))
+          if (req.new[key] === '') delete req.new[key]
         const item = await prisma.item.update({
           where: {
             name: req.itemId
           },
           data: req.new
         })
-        return { item }
+        return { item: stringify(item) }
       },
       mappedPermissionValues.WRITE_SPECIFIC
     )
   })
 
+  // * WORKS
   router.rpc(ElizaService, ElizaService.methods.updateApp, async req => {
     return await execute(req, async (req, app) => {
       if (app.permissions !== PermissionLevels.ADMIN && req.optAppId)
@@ -408,9 +444,17 @@ export default (router: ConnectRouter) => {
   })
 
   router.rpc(ElizaService, ElizaService.methods.updateRecipe, async req => {
-    return await execute(req, async (req, app) => {
-      // TODO
-    })
+    return await execute(
+      req,
+      async (req, app) => {
+        const recipe = await prisma.recipe.findUnique({
+          where: {
+            id: req.recipe
+          }
+        })
+      },
+      mappedPermissionValues.WRITE_SPECIFIC
+    )
   })
 
   router.rpc(ElizaService, ElizaService.methods.deleteInstance, async req => {
@@ -442,8 +486,29 @@ export default (router: ConnectRouter) => {
   })
 
   router.rpc(ElizaService, ElizaService.methods.closeTrade, async req => {
-    return await execute(req, async (req, app) => {
-      // TODO
-    })
+    return await execute(
+      req,
+      async (req, app) => {
+        const trade = await prisma.trade.findUnique({
+          where: {
+            id: req.tradeId
+          }
+        })
+        if (!trade) throw new Error('Trade not found')
+
+        // * Apps can close trades without both sides agreeing. This is so trades can be used to simulate other behavior, but also because it makes it more fun.
+        await prisma.trade.update({
+          where: {
+            id: req.tradeId
+          },
+          data: {
+            closed: true
+          }
+        })
+
+        // Transfer items between users
+      },
+      mappedPermissionValues.WRITE_SPECIFIC
+    )
   })
 }

@@ -337,14 +337,60 @@ slack.action('approve-perms', async props => {
 
 slack.action('deny-perms', async props => {
   await execute(props, async props => {
-    // TODO
+    // Let user know
+    // @ts-expect-error
+    const { user: userId, permissions } = JSON.parse(props.action.value)
+
+    // @ts-expect-error
+    await props.client.chat.postMessage({
+      channel: userId,
+      text: `Your request for ${
+        permissions[0].toUpperCase() + permissions.slice(1)
+      } permissions was rejected.`
+    })
   })
 })
 
 slack.command('/edit-item', async props => {
-  await execute(props, async props => {
-    // TODO
-  })
+  await execute(
+    props,
+    async props => {
+      try {
+        const name = props.body.text
+        const item = await prisma.item.findUnique({
+          where: {
+            name
+          }
+        })
+        if (!item)
+          return await props.client.chat.postEphemeral({
+            channel: props.body.channel_id,
+            user: props.context.userId,
+            text: 'Oh no! Item not found.'
+          })
+
+        // Ensure permissions
+        const user = await prisma.identity.findUnique({
+          where: {
+            slack: props.context.userId
+          }
+        })
+        console.log(user)
+
+        await props.client.views.open({
+          trigger_id: props.body.trigger_id,
+          view: views.editItem(item)
+        })
+      } catch {
+        return await props.client.chat.postEphemeral({
+          channel: props.body.channel_id,
+          user: props.context.userId,
+          text: "Oh no! To edit an item you'll need to provide the name of the item and have the appropriate permissions."
+        })
+      }
+    },
+    mappedPermissionValues.WRITE_SPECIFIC
+  )
 })
 
 slack.view('edit-item', async props => {
@@ -392,15 +438,17 @@ slack.command('/edit-app', async props => {
 slack.view('edit-app', async props => {
   await execute(props, async props => {
     let fields: {
-      name: string
-      description: string
-      public: boolean
-      permissions: PermissionLevels
+      'name': string
+      'description': string
+      'public': boolean
+      'permissions': PermissionLevels
+      'delete-app': string
     } = {
-      name: '',
-      description: '',
-      public: false,
-      permissions: undefined
+      'name': '',
+      'description': '',
+      'public': false,
+      'permissions': undefined,
+      'delete-app': undefined
     }
     for (let field of Object.values(props.view.state.values)) {
       fields[Object.keys(field)[0]] =
@@ -415,7 +463,33 @@ slack.view('edit-app', async props => {
 
     const { prevName } = JSON.parse(props.view.private_metadata)
 
-    // Update app
+    if (fields['delete-app']) {
+      // Send user notification that their app was deleted
+      let app = await prisma.app.findUnique({
+        where: {
+          name: prevName,
+          key: fields['delete-app']
+        }
+      })
+      if (!app)
+        return await props.client.chat.postEphemeral({
+          channel: props.context.userId,
+          user: props.context.userId,
+          text: `Unable to delete *${app.name}* - you provided the wrong key.`
+        })
+      await prisma.app.delete({
+        where: {
+          name: prevName,
+          key: fields['delete-app']
+        }
+      })
+      return await props.client.chat.postMessage({
+        channel: props.context.userId,
+        user: props.context.userId,
+        text: `Deleted *${app.name}*.`
+      })
+    }
+
     let app = await prisma.app.findUnique({
       where: {
         name: prevName
@@ -423,15 +497,18 @@ slack.view('edit-app', async props => {
     })
 
     // Request permissions if changed
-    // TODO
-    if (app.permissions !== fields.permissions) {
+    if (
+      mappedPermissionValues[app.permissions] >
+      mappedPermissionValues[fields.permissions]
+    ) {
+      // Give downgrade without permissions
+    } else if (app.permissions !== fields.permissions) {
       for (let maintainer of maintainers)
         await props.client.chat.postMessage({
           channel: maintainer.slack,
           user: maintainer.slack,
           blocks: views.approveOrDenyAppPerms(
-            // @ts-expect-error because you need to fix it, dummy
-            props.context.userId,
+            app,
             fields.permissions as PermissionLevels
           )
         })
@@ -444,7 +521,7 @@ slack.view('edit-app', async props => {
       },
       data: fields
     })
-    await props.client.chat.postEphemeral({
+    await props.client.chat.postMessage({
       channel: props.context.userId,
       user: props.context.userId,
       text: `Updated *${app.name}* successfully.`
@@ -531,7 +608,33 @@ slack.command('/start-trade', async props => {
 
 slack.action('close-trade', async props => {
   await execute(props, async props => {
-    // TODO
+    // Close trade, transfer items between users
+    // @ts-expect-error
+    const id: number = Number(props.action.value)
+    const trade = await prisma.trade.findUnique({
+      where: {
+        id
+      }
+    })
+
+    console.log(trade, props.body.user.id)
+    if (
+      ![trade.initiatorIdentityId, trade.receiverIdentityId].includes(
+        props.body.user.id
+      )
+    )
+      return await props.say("Oh no! You can't close this trade.")
+    return
+
+    // Make sure both sides have agreed
+    if (!trade.initiatorAgreed || !trade.receiverAgreed) return props.say('')
+
+    return
+
+    await prisma.trade.update({
+      where: { id },
+      data: { closed: true }
+    })
   })
 })
 
@@ -552,13 +655,58 @@ slack.command('/bag-apps', async props => {
     let apps = await prisma.app.findMany()
     if (permission < mappedPermissionValues.READ_PRIVATE)
       apps = apps.filter(app => app.public)
-    // console.log(apps.map(app => [...views.getApp(app)]))
-    // TODO: Complete
-    await props.client.chat.postEphemeral({
-      channel: props.body.channel_id,
-      user: props.context.userId,
-      text: ''
-    })
+    let formatted = apps.map(app => views.getApp(app))
+    try {
+      await props.client.chat.postMessage({
+        channel: props.body.channel_id,
+        user: props.context.userId,
+        blocks: [
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `Here's a list of all the ${
+                permission < mappedPermissionValues.READ_PRIVATE
+                  ? 'public '
+                  : ''
+              }apps currently in the bag:`
+            }
+          },
+          ...formatted.map(appBlock => appBlock[0]),
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: 'You can write your own! Start by running `/create-app`.'
+            }
+          }
+        ]
+      })
+    } catch {
+      await props.client.chat.postMessage({
+        channel: props.context.userId,
+        user: props.context.userId,
+        blocks: [
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `Here's a list of all the ${
+                permission < mappedPermissionValues.READ_PRIVATE && 'public '
+              }apps currently in the bag:`
+            }
+          },
+          ...formatted.map(appBlock => appBlock[0]),
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: 'You can write your own! Start by running `create-app`.'
+            }
+          }
+        ]
+      })
+    }
   })
 })
 

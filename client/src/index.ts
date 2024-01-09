@@ -1,6 +1,6 @@
 import { PromiseClient, createPromiseClient } from '@connectrpc/connect'
 import { createConnectTransport } from '@connectrpc/connect-node'
-import { ElizaService } from '../gen/eliza_connect' // TODO: This also needs to be exported in the package and should have a build command
+import { ElizaService } from '../gen/eliza_connect'
 import * as methods from '../gen/eliza_pb'
 import 'dotenv/config'
 
@@ -21,9 +21,13 @@ export class App {
     this.request = { appId, key }
   }
 
-  static async connect(options: { appId: number; key: string }) {
+  static async connect(options: {
+    appId: number
+    key: string
+    baseUrl?: string
+  }) {
     const transport = createConnectTransport({
-      baseUrl: 'http://localhost:3000',
+      baseUrl: options.baseUrl || 'https://inventory.hackclub.com',
       httpVersion: '1.1'
     })
 

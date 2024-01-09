@@ -1,12 +1,13 @@
 .env
 .env.local
 
-/node_modules
+node_modules
 
 test.ts
-
 TODO.md
 
 yarn-error.log
 
 /apps
+
+client/gen

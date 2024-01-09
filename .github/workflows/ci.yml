@@ -11,28 +11,28 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout 
+      - name: Checkout
         uses: actions/checkout@v3
         with:
           ref: ${{ github.head_ref }}
       - name: Install Node.js and npm
         uses: actions/setup-node@v3
         with:
-          node-version: "18.17.0"
+          node-version: '18.17.0'
       - name: Install dependencies
         run: |
           npm i -f
       - name: Format
         run: |
           npm run format
-      - name: Update schema 
-        run: |
-          npm run db:migrate-deploy
       - name: Generate proto
         run: |
           npm run rpc:gen
       - name: Build and publish client
         run: |
           cp -r ./gen ./client
-      
-# TODO: Also have jobs for: building the client (moving generated files into the ./client directory) and updating on NPM, and automatically generating documentation (think more about this)
+      # - name: Generate documentation
+      #   run: |
+      #     npm run gen
+
+# TODO: Also have jobs for: Publishing client on NPM and automatically generating documentation (think more about this)

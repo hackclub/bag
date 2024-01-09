@@ -16,14 +16,16 @@ enum PermissionLevels {
 }
 
 model App {
-  id          Int              @id @default(autoincrement())
-  name        String           @unique
-  key         String           @unique // Unique UUID as key
-  description String?
-  permissions PermissionLevels @default(value: READ)
-  specific    String[]
-  public      Boolean          @default(false)
-  metadata    Json? // Optional metadata (JSON)
+  id              Int              @id @default(autoincrement())
+  name            String           @unique
+  key             String           @unique // Unique UUID as key
+  description     String?
+  permissions     PermissionLevels @default(value: READ)
+  specificItems   String[]
+  specificTrades  String[]
+  specificRecipes String[]
+  public          Boolean          @default(false)
+  metadata        Json? // Optional metadata (JSON)
 }
 
 model Identity {
@@ -45,6 +47,8 @@ model Item {
   instances   Instance[] // Instance IDs (ref)
   public      Boolean    @default(false)
   metadata    Json? // Optional metadata (JSON)
+  // recipeInputs Item[] @relation("recipeInputs")
+  // recipeOutputs Item[] @relation("recipeOutputs")
 }
 
 model Instance {
@@ -68,14 +72,15 @@ model Trade {
   receiver            Identity   @relation("receiver", fields: [receiverIdentityId], references: [slack])
   initiatorTrades     Instance[] @relation("initiatorTrades")
   receiverTrades      Instance[] @relation("receiverTrades")
+  initiatorAgreed     Boolean    @default(false)
+  receiverAgreed      Boolean    @default(false)
   public              Boolean    @default(true)
   closed              Boolean    @default(false)
 }
 
 // model Recipe {
 //   id Int @id @default(autoincrement())
-//   inputIds String[]
-//   inputs Item[] @relation(fields: [inputIds], references: [name])
+//   inputs Item[] @relation("recipeInputs")
 //   outputIds String[]
-//   outputs Item[]
+//   outputs Item[] @relation("recipeOutputs")
 // }

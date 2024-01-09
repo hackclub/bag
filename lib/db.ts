@@ -1,5 +1,5 @@
 // Type helpers for Prisma
-import { Identity, Prisma, PrismaClient } from '@prisma/client'
+import { Prisma, PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 

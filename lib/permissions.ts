@@ -1,5 +1,3 @@
-import { PermissionLevels } from '@prisma/client'
-
 export const mappedPermissionValues = {
   ADMIN: 4,
   WRITE: 3,

@@ -29,7 +29,7 @@ service ElizaService {
 }
 
 // ! All requests should come with an appId and a key
-message App  {
+message App {
   int32 id = 1;
   string name = 2;
   string description = 3;
@@ -163,7 +163,7 @@ message ReadItemRequest {
 
 message ReadItemResponse {
   string response = 1;
-  Item item = 2;
+  repeated Item items = 2;
 }
 
 message ReadInstanceRequest {
@@ -209,19 +209,24 @@ message ReadRecipeResponse {
 message UpdateIdentityMetadataRequest {
   int32 appId = 1;
   string key = 2;
+  string metadata = 3;
 }
 
 message UpdateIdentityMetadataResponse {
   string response = 1;
+  Identity identity = 2;
 }
 
 message UpdateInstanceRequest {
   int32 appId = 1;
   string key = 2;
+  int32 instanceId = 3;
+  Instance new = 4;
 }
 
 message UpdateInstanceResponse {
   string response = 1;
+  Instance instance = 2;
 }
 
 message UpdateItemRequest {

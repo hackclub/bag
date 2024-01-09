@@ -1083,9 +1083,9 @@ export class ReadItemResponse extends Message<ReadItemResponse> {
   response = "";
 
   /**
-   * @generated from field: connectrpc.eliza.v1.Item item = 2;
+   * @generated from field: repeated connectrpc.eliza.v1.Item items = 2;
    */
-  item?: Item;
+  items: Item[] = [];
 
   constructor(data?: PartialMessage<ReadItemResponse>) {
     super();
@@ -1096,7 +1096,7 @@ export class ReadItemResponse extends Message<ReadItemResponse> {
   static readonly typeName = "connectrpc.eliza.v1.ReadItemResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "item", kind: "message", T: Item },
+    { no: 2, name: "items", kind: "message", T: Item, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReadItemResponse {
@@ -1474,6 +1474,11 @@ export class UpdateIdentityMetadataRequest extends Message<UpdateIdentityMetadat
    */
   key = "";
 
+  /**
+   * @generated from field: string metadata = 3;
+   */
+  metadata = "";
+
   constructor(data?: PartialMessage<UpdateIdentityMetadataRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1484,6 +1489,7 @@ export class UpdateIdentityMetadataRequest extends Message<UpdateIdentityMetadat
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "metadata", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateIdentityMetadataRequest {
@@ -1512,6 +1518,11 @@ export class UpdateIdentityMetadataResponse extends Message<UpdateIdentityMetada
    */
   response = "";
 
+  /**
+   * @generated from field: connectrpc.eliza.v1.Identity identity = 2;
+   */
+  identity?: Identity;
+
   constructor(data?: PartialMessage<UpdateIdentityMetadataResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1521,6 +1532,7 @@ export class UpdateIdentityMetadataResponse extends Message<UpdateIdentityMetada
   static readonly typeName = "connectrpc.eliza.v1.UpdateIdentityMetadataResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "identity", kind: "message", T: Identity },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateIdentityMetadataResponse {
@@ -1554,6 +1566,16 @@ export class UpdateInstanceRequest extends Message<UpdateInstanceRequest> {
    */
   key = "";
 
+  /**
+   * @generated from field: int32 instanceId = 3;
+   */
+  instanceId = 0;
+
+  /**
+   * @generated from field: connectrpc.eliza.v1.Instance new = 4;
+   */
+  new?: Instance;
+
   constructor(data?: PartialMessage<UpdateInstanceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1564,6 +1586,8 @@ export class UpdateInstanceRequest extends Message<UpdateInstanceRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "instanceId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 4, name: "new", kind: "message", T: Instance },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateInstanceRequest {

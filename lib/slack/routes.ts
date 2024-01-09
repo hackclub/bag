@@ -497,6 +497,63 @@ slack.command('/get-app', async props => {
   })
 })
 
+slack.command('/start-trade', async props => {
+  await execute(props, async props => {
+    if (!/^<@[A-Z0-9]+\|[\d\w\s]+>$/gm.test(props.command.text))
+      return await props.client.chat.postEphemeral({
+        channel: props.body.channel_id,
+        user: props.context.userId,
+        text: 'Oh no! You need to mention a user in order to start a trade with them.'
+      })
+
+    const receiver = props.command.text.slice(
+      2,
+      props.command.text.indexOf('|')
+    )
+
+    // Create trade
+    const trade = await prisma.trade.create({
+      data: {
+        initiatorIdentityId: props.context.userId,
+        receiverIdentityId: receiver
+      }
+    })
+
+    await props.client.chat.postMessage({
+      channel: props.body.channel_id,
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `<@${props.context.userId}> just opened a trade with <@${receiver}>.\n\n Mention <@U067VQW1D9P> in the thread to add items (\`@bag add\`), remove items (\`@bag remove\`), and once both sides are done trading, click on the "Close trade" button to close the trade.`
+          }
+        },
+        {
+          type: 'actions',
+          elements: [
+            {
+              type: 'button',
+              text: {
+                type: 'plain_text',
+                text: 'Close trade',
+                emoji: true
+              },
+              style: 'danger',
+              value: trade.id.toString(),
+              action_id: 'close-trade'
+            }
+          ]
+        }
+      ]
+    })
+  })
+})
+
+slack.action('close-trade', async props => {
+  await execute(props, async props => {})
+})
+
 slack.command('/find-item', async props => {
   await execute(props, async props => {}, mappedPermissionValues.ADMIN)
 })

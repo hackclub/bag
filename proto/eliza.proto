@@ -66,7 +66,7 @@ message RecipeResponse {
   int32 id = 1;
 }
 
-message TradeResponse {
+message Trade {
   int32 id = 1;
   string initiatorIdentityId = 2;
   string receiverIdentityId = 3;
@@ -127,10 +127,14 @@ message CreateRecipeResponse {
 message CreateTradeRequest {
   int32 appId = 1;
   string key = 2;
+  string initiator = 3;
+  string receiver = 4;
+  bool public = 5;
 }
 
 message CreateTradeResponse {
   string response = 1;
+  Trade trade = 2;
 }
 
 message ReadIdentityRequest {
@@ -191,10 +195,12 @@ message ReadAppResponse {
 message ReadTradeRequest {
   int32 appId = 1;
   string key = 2;
+  int32 tradeId = 3;
 }
 
 message ReadTradeResponse {
   string response = 1;
+  Trade trade = 2;
 }
 
 message ReadRecipeRequest {

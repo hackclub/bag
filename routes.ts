@@ -157,9 +157,21 @@ export default (router: ConnectRouter) => {
   })
 
   router.rpc(ElizaService, ElizaService.methods.createTrade, async req => {
-    return await execute(req, async (req, app) => {
-      // TODO
-    })
+    return await execute(
+      req,
+      async req => {
+        return {
+          trade: await prisma.trade.create({
+            data: {
+              initiatorIdentityId: req.initator,
+              receiverIdentityId: req.receiver,
+              public: req.public
+            }
+          })
+        }
+      },
+      mappedPermissionValues.WRITE_SPECIFIC
+    )
   })
 
   router.rpc(ElizaService, ElizaService.methods.readIdentity, async req => {
@@ -250,7 +262,12 @@ export default (router: ConnectRouter) => {
       })
       if (!appSearch) throw new Error('App not found')
 
-      // TODO: Make sure permissions line up
+      if (
+        req.optAppId &&
+        app.permissions !== PermissionLevels.ADMIN &&
+        !app.specificApps.find(app => app === appSearch.id)
+      )
+        throw new Error('App not found')
 
       return { app: stringify(appSearch) }
     })
@@ -258,6 +275,13 @@ export default (router: ConnectRouter) => {
 
   router.rpc(ElizaService, ElizaService.methods.readTrade, async req => {
     return await execute(req, async (req, app) => {
+      const trade = await prisma.trade.findUnique({
+        where: {
+          id: req.tradeId
+        }
+      })
+
+      // Make sure app can read trade, and filter out private items if needed
       // TODO
     })
   })

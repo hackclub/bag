@@ -8,6 +8,7 @@ TODO.md
 
 yarn-error.log
 
-/apps
+apps
 
 client/gen
+client/dist

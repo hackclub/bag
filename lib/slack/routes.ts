@@ -1,32 +1,23 @@
 import {
   App,
   ExpressReceiver,
-  View,
   SlackCommandMiddlewareArgs,
   SlackViewMiddlewareArgs,
   SlackViewAction,
   AllMiddlewareArgs,
   SlackEventMiddlewareArgs,
-  SlackActionMiddlewareArgs,
-  subtype
+  SlackActionMiddlewareArgs
 } from '@slack/bolt'
 import { StringIndexed } from '@slack/bolt/dist/types/helpers'
 import config from '../../config'
 import messages from './messages'
 import views from './views'
 import { mappedPermissionValues } from '../permissions'
-import {
-  PrismaClient,
-  App as DbApp,
-  Item,
-  PermissionLevels,
-  Prisma
-} from '@prisma/client'
+import { PrismaClient, PermissionLevels, Prisma } from '@prisma/client'
 import { err, log } from '../logger'
 import { app } from '../api/init'
 import { v4 as uuid } from 'uuid'
 import { maintainers } from '../utils'
-import { requestHeaderWithCompression } from '@connectrpc/connect/protocol-grpc-web'
 import { findOrCreateIdentity } from '../db'
 
 const prisma = new PrismaClient()
@@ -43,7 +34,7 @@ const slack = new App({
   receiver
 })
 
-// ! A bunch of function overloads, I know
+// A bunch of function overloads, I know
 type CommandMiddleware = SlackCommandMiddlewareArgs &
   AllMiddlewareArgs<StringIndexed>
 type EventMiddleware = SlackEventMiddlewareArgs<'app_mention'> &
@@ -82,7 +73,6 @@ export async function execute(
   permission: number = mappedPermissionValues.READ
 ) {
   try {
-    // if (config.NODE_ENV === 'development') log(JSON.stringify(props.body))
     if (props.ack) await props.ack()
 
     // Ensure there are enough permissions to continue running
@@ -100,6 +90,7 @@ export async function execute(
         }
       })
 
+      // For now, temporarily block if it's not in whitelist
       // For now, temporarily block if it's not in whitelist
       if (
         !['U03MNFDRSGJ', 'UDK5M9Y13', 'U032A2PMSE9', 'U05TXCSCK7E'].includes(
@@ -144,8 +135,6 @@ slack.command('/create-item', async props => {
   await execute(
     props,
     async props => {
-      // Open a view for creating item
-      // Missing: reaction emoji (should post item and have user react to it),
       await props.client.views.open({
         trigger_id: props.body.trigger_id,
         view: views.createItem
@@ -174,17 +163,11 @@ slack.view('create-item', async props => {
         tradable: undefined,
         public: undefined
       }
-      for (let field of Object.values(props.view.state.values)) {
+      for (let field of Object.values(props.view.state.values))
         fields[Object.keys(field)[0]] =
           field[Object.keys(field)[0]].value ||
           Object.values(field)[0].selected_option.value ||
           ''
-      }
-
-      Object.keys(fields).map(field => {
-        if (fields[field] === 'true') fields[field] = true
-        else if (fields[field] === 'false') fields[field] = false
-      })
 
       // Create item
       const item = await prisma.item.create({
@@ -226,12 +209,11 @@ slack.view('create-app', async props => {
       description: '',
       permissions: undefined
     }
-    for (let field of Object.values(props.view.state.values)) {
+    for (let field of Object.values(props.view.state.values))
       fields[Object.keys(field)[0]] =
         field[Object.keys(field)[0]].value ||
         Object.values(field)[0].selected_option.value ||
         ''
-    }
 
     // Apps, by default, can read everything that's public
     // But, if they're created by an admin, you can pass in any option
@@ -250,7 +232,7 @@ slack.view('create-app', async props => {
 
     // Create UUID
     let key = uuid()
-    while (await prisma.app.findUnique({ where: { key } })) key = uuid()
+    while (await prisma.app.findUnique({ where: { key } })) key = uuid
 
     // Create app
     try {
@@ -296,6 +278,7 @@ slack.command('/request-perms', async props => {
 })
 
 slack.view('request-perms', async props => {
+  // TODO: Check to make sure this works
   await execute(props, async props => {
     let permission = Object.values(props.view.state.values)[0].permission
       .selected_option.value
@@ -312,7 +295,7 @@ slack.view('request-perms', async props => {
     await props.client.chat.postEphemeral({
       channel: props.context.userId,
       user: props.context.userId,
-      text: 'Permission request made! You should get a response sometime if the next 24 hours if today is a weekday, and 72 hours otherwise!'
+      text: 'Permission request made! You should get a response sometime in the next 24 hours if today is a weekday, and 72 hours otherwise!'
     })
   })
 })
@@ -347,17 +330,14 @@ slack.action('approve-perms', async props => {
         } permissions was approved!`
       })
     } catch {
-      return await props.say('Permissions already applied.')
+      return await props.say('Permissions already applied')
     }
   })
 })
 
 slack.action('deny-perms', async props => {
   await execute(props, async props => {
-    try {
-    } catch {
-      return await props.say('Permissions already applied.')
-    }
+    // TODO
   })
 })
 
@@ -427,12 +407,11 @@ slack.view('edit-app', async props => {
         field[Object.keys(field)[0]].value ||
         Object.values(field)[0].selected_option.value ||
         ''
+      if (fields[Object.keys(field)[0]] === 'true')
+        fields[Object.keys(field)[0]] = true
+      else if (fields[Object.keys(field)[0]] === 'false')
+        fields[Object.keys(field)[0]] = false
     }
-
-    Object.keys(fields).map(field => {
-      if (fields[field] === 'true') fields[field] = true
-      else if (fields[field] === 'false') fields[field] = false
-    })
 
     const { prevName } = JSON.parse(props.view.private_metadata)
 
@@ -444,20 +423,18 @@ slack.view('edit-app', async props => {
     })
 
     // Request permissions if changed
-    if (
-      mappedPermissionValues[app.permissions] !==
-      mappedPermissionValues[fields.permissions]
-    ) {
-      for (let maintainer of maintainers) {
+    // TODO
+    if (app.permissions !== fields.permissions) {
+      for (let maintainer of maintainers)
         await props.client.chat.postMessage({
           channel: maintainer.slack,
           user: maintainer.slack,
-          blocks: views.approveOrDenyPerms(
+          blocks: views.approveOrDenyAppPerms(
+            // @ts-expect-error because you need to fix it, dummy
             props.context.userId,
             fields.permissions as PermissionLevels
           )
         })
-      }
     }
 
     delete fields.permissions
@@ -488,6 +465,8 @@ slack.command('/get-app', async props => {
         user: props.context.userId,
         text: `Oh no! Looks like \`${props.command.text}\` doesn't exist.`
       })
+
+    // TODO: Deal with permissions
 
     return await slack.client.chat.postEphemeral({
       channel: props.body.channel_id,
@@ -551,11 +530,21 @@ slack.command('/start-trade', async props => {
 })
 
 slack.action('close-trade', async props => {
-  await execute(props, async props => {})
+  await execute(props, async props => {
+    // TODO
+  })
 })
 
+// TODO: Very important to figure out, giving permissions to apps
+
 slack.command('/find-item', async props => {
-  await execute(props, async props => {}, mappedPermissionValues.ADMIN)
+  await execute(
+    props,
+    async props => {
+      // TODO
+    },
+    mappedPermissionValues.ADMIN
+  )
 })
 
 slack.command('/bag-apps', async props => {
@@ -564,6 +553,7 @@ slack.command('/bag-apps', async props => {
     if (permission < mappedPermissionValues.READ_PRIVATE)
       apps = apps.filter(app => app.public)
     // console.log(apps.map(app => [...views.getApp(app)]))
+    // TODO: Complete
     await props.client.chat.postEphemeral({
       channel: props.body.channel_id,
       user: props.context.userId,

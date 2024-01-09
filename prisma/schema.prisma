@@ -21,6 +21,8 @@ model App {
   key             String           @unique // Unique UUID as key
   description     String?
   permissions     PermissionLevels @default(value: READ)
+  // These are all strings and not otherwise because there's no public facing value that requires them to have a relation
+  specificApps    Int[]
   specificItems   String[]
   specificTrades  String[]
   specificRecipes String[]
@@ -38,17 +40,17 @@ model Identity {
 }
 
 model Item {
-  name        String     @id @unique // Name
-  image       String? // Image
-  description String? // Description
-  reaction    String? // Slack reaction tag
-  commodity   Boolean    @default(false) // Commodity
-  tradable    Boolean    @default(true) // Tradable
-  instances   Instance[] // Instance IDs (ref)
-  public      Boolean    @default(false)
-  metadata    Json? // Optional metadata (JSON)
-  // recipeInputs Item[] @relation("recipeInputs")
-  // recipeOutputs Item[] @relation("recipeOutputs")
+  name          String     @id @unique // Name
+  image         String? // Image
+  description   String? // Description
+  reaction      String? // Slack reaction tag
+  commodity     Boolean    @default(false) // Commodity
+  tradable      Boolean    @default(true) // Tradable
+  instances     Instance[] // Instance IDs (ref)
+  public        Boolean    @default(false)
+  metadata      Json? // Optional metadata (JSON)
+  recipeInputs  Recipe[]   @relation("recipeInputs")
+  recipeOutputs Recipe[]   @relation("recipeOutputs")
 }
 
 model Instance {
@@ -78,9 +80,8 @@ model Trade {
   closed              Boolean    @default(false)
 }
 
-// model Recipe {
-//   id Int @id @default(autoincrement())
-//   inputs Item[] @relation("recipeInputs")
-//   outputIds String[]
-//   outputs Item[] @relation("recipeOutputs")
-// }
+model Recipe {
+  id      Int    @id @default(autoincrement())
+  inputs  Item[] @relation("recipeInputs")
+  outputs Item[] @relation("recipeOutputs")
+}

@@ -239,16 +239,12 @@ slack.view('create-app', async props => {
     )
       throw new Error('Name is already being used')
 
-    // Create UUID
-    let key = uuid()
-    while (await prisma.app.findUnique({ where: { key } })) key = uuid
-
     // Create app
     try {
       const app = await prisma.app.create({
         data: {
           name: fields.name,
-          key,
+          key: uuid(),
           description: fields.description,
           permissions: fields.permissions
         }
@@ -900,13 +896,6 @@ slack.event('app_mention', async props => {
           channel: props.event.channel,
           user: props.context.userId,
           blocks: views.helpDialog
-        })
-        break
-      case 'about':
-        await props.client.chat.postMessage({
-          channel: props.event.channel,
-          user: props.context.userId,
-          text: await views.heehee()
         })
         break
       default:

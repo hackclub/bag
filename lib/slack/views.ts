@@ -853,7 +853,6 @@ const helpDialog: (Block | KnownBlock)[] = [
 And of course, if you ever mention me, the @bag, I will help in any way possible! (Although I am just a measly bag.) Here is a list of things you can call me for:
 
 * \`help\`: Call me for help!
-* \`about\`: More on me. (And maybe a jingle?)
 * \`me\`: Check out your inventory! This will list all public items. You can also list private items with \`me private\` instead.
 * \`@<person>\`: Check out another Hack Clubber's inventory! This will list all their public items.
 
@@ -861,33 +860,6 @@ By the way, I come with a bunch of ~magic tricks~ apps! You can check out all th
     }
   }
 ]
-
-const heehee = async () => {
-  const jingle = await (
-    await fetch('https://jamsapi.hackclub.dev/openai/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.OPENAI_TOKEN}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          {
-            role: 'user',
-            content:
-              "Write a poem jingle about a plastic bag that thinks it's measly from a first person point of view. Short, three sentences max."
-          }
-        ]
-      })
-    })
-  ).json()
-
-  return `No secrets are coming out of the <#C067VEFCV7Y>!
-  
-Fine... you can have this:
-\n> ${jingle.choices[0].message.content.split('\n').join('\n> ')}`
-}
 
 const showInventory = async (
   user: IdentityWithInventory
@@ -986,6 +958,22 @@ const startTrade = (
   ]
 }
 
+const tradeDialog = (user: IdentityWithInventory): View => {
+  return {
+    callback_id: 'add-trade',
+    title: {
+      type: 'plain_text',
+      text: 'Add from inventory'
+    },
+    submit: {
+      type: 'plain_text',
+      text: 'Offer'
+    },
+    type: 'modal',
+    blocks: []
+  }
+}
+
 export default {
   error,
   createItem,
@@ -999,7 +987,7 @@ export default {
   approveOrDenyPerms,
   approveOrDenyAppPerms,
   helpDialog,
-  heehee,
   showInventory,
-  startTrade
+  startTrade,
+  tradeDialog
 }

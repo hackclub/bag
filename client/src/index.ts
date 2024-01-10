@@ -49,153 +49,213 @@ export class App {
     return new App(client, options.appId, options.key)
   }
 
+  static format(obj: any) {
+    // Format: convert metadata to JSON, etc.
+    for (let [entry, value] of Object.entries(obj)) {
+      if (entry === 'metadata') {
+        obj[entry] = JSON.parse(value as string)
+        if (typeof obj[entry] === 'string')
+          obj[entry] = JSON.parse(obj[entry] as string)
+      } else if (value instanceof Object) obj[entry] = App.format(value)
+    }
+    return obj
+  }
+
   // I would do this with a cleaner for-loop, but I can't get it to be typed in TypeScript
   async createApp(request: RecursivePartial<methods.CreateAppRequest>) {
-    return await this.client.createApp({
-      ...this.request,
-      ...request
-    })
+    return App.format(
+      await this.client.createApp({
+        ...this.request,
+        ...request
+      })
+    )
   }
 
   async createInstance(
     request: RecursivePartial<methods.CreateInstanceRequest>
   ) {
-    return await this.client.createInstance({
-      ...this.request,
-      ...request
-    })
+    return App.format(
+      await this.client.createInstance({
+        ...this.request,
+        ...request
+      })
+    )
   }
 
   async createItem(request: RecursivePartial<methods.CreateItemRequest>) {
-    return await this.client.createItem({
-      ...this.request,
-      ...request
-    })
+    return App.format(
+      await this.client.createItem({
+        ...this.request,
+        ...request
+      })
+    )
   }
 
   async createRecipe(request: RecursivePartial<methods.CreateRecipeRequest>) {
-    return await this.client.createRecipe({
-      ...this.request,
-      ...request
-    })
+    return App.format(
+      await this.client.createRecipe({
+        ...this.request,
+        ...request
+      })
+    )
   }
 
   async createTrade(request: RecursivePartial<methods.CreateTradeRequest>) {
-    return await this.client.createTrade({
-      ...this.request,
-      ...request
-    })
+    return App.format(
+      await this.client.createTrade({
+        ...this.request,
+        ...request
+      })
+    )
   }
 
   async readIdentity(request: RecursivePartial<methods.ReadIdentityRequest>) {
-    return await this.client.readIdentity({
-      ...this.request,
-      ...request
-    })
+    return App.format(
+      await this.client.readIdentity({
+        ...this.request,
+        ...request
+      })
+    )
+  }
+
+  async readInventory(request: RecursivePartial<methods.ReadInventoryRequest>) {
+    return App.format(
+      await this.client.readInventory({
+        ...this.request,
+        ...request
+      })
+    )
   }
 
   async readItem(request: RecursivePartial<methods.ReadItemRequest>) {
-    return await this.client.readItem({
-      ...this.request,
-      ...request
-    })
+    return App.format(
+      await this.client.readItem({
+        ...this.request,
+        ...request
+      })
+    )
   }
 
   async readInstance(request: RecursivePartial<methods.ReadInstanceRequest>) {
-    return await this.client.readInstance({
-      ...this.request,
-      ...request
-    })
+    return App.format(
+      await this.client.readInstance({
+        ...this.request,
+        ...request
+      })
+    )
   }
 
   async readApp(request: RecursivePartial<methods.ReadAppRequest> = {}) {
-    return await this.client.readApp({
-      ...this.request,
-      ...request
-    })
+    return App.format(
+      await this.client.readApp({
+        ...this.request,
+        ...request
+      })
+    )
   }
 
   async readTrade(request: RecursivePartial<methods.ReadTradeRequest>) {
-    return await this.client.readTrade({
-      ...this.request,
-      ...request
-    })
+    return App.format(
+      await this.client.readTrade({
+        ...this.request,
+        ...request
+      })
+    )
   }
 
   async readRecipe(request: RecursivePartial<methods.ReadRecipeRequest>) {
-    return await this.client.readRecipe({
-      ...this.request,
-      ...request
-    })
+    return App.format(
+      await this.client.readRecipe({
+        ...this.request,
+        ...request
+      })
+    )
   }
 
   async updateIdentityMetadata(
     request: RecursivePartial<methods.UpdateIdentityMetadataRequest>
   ) {
-    return await this.client.updateIdentityMetadata({
-      ...this.request,
-      ...request
-    })
+    return App.format(
+      await this.client.updateIdentityMetadata({
+        ...this.request,
+        ...request
+      })
+    )
   }
 
   async updateInstance(
     request: RecursivePartial<methods.UpdateInstanceRequest>
   ) {
-    return await this.client.updateInstance({
-      ...this.request,
-      ...request
-    })
+    return App.format(
+      await this.client.updateInstance({
+        ...this.request,
+        ...request
+      })
+    )
   }
 
   async updateItem(request: RecursivePartial<methods.UpdateItemRequest>) {
-    return await this.client.updateItem({
-      ...this.request,
-      ...request
-    })
+    return App.format(
+      await this.client.updateItem({
+        ...this.request,
+        ...request
+      })
+    )
   }
 
   async updateApp(request: RecursivePartial<methods.UpdateAppRequest>) {
-    const response = await this.client.updateApp({
-      ...this.request,
-      ...request
-    })
-    return response
+    return App.format(
+      await this.client.updateApp({
+        ...this.request,
+        ...request
+      })
+    )
   }
 
   async updateTrade(request: RecursivePartial<methods.UpdateTradeRequest>) {
-    return await this.client.updateTrade({
-      ...this.request,
-      ...request
-    })
+    return App.format(
+      await this.client.updateTrade({
+        ...this.request,
+        ...request
+      })
+    )
   }
 
   async updateRecipe(request: RecursivePartial<methods.UpdateRecipeRequest>) {
-    return await this.client.updateRecipe({
-      ...this.request,
-      ...request
-    })
+    return App.format(
+      await this.client.updateRecipe({
+        ...this.request,
+        ...request
+      })
+    )
   }
 
   async deleteApp(request: RecursivePartial<methods.DeleteAppRequest>) {
-    return await this.client.deleteApp({
-      ...this.request,
-      ...request
-    })
+    return App.format(
+      await this.client.deleteApp({
+        ...this.request,
+        ...request
+      })
+    )
   }
 
   async deleteInstance(
     request: RecursivePartial<methods.DeleteInstanceRequest>
   ) {
-    return await this.client.deleteInstance({
-      ...this.request,
-      ...request
-    })
+    return App.format(
+      await this.client.deleteInstance({
+        ...this.request,
+        ...request
+      })
+    )
   }
 
   async closeTrade(request: RecursivePartial<methods.CloseTradeRequest>) {
-    return await this.client.closeTrade({
-      ...this.request,
-      ...request
-    })
+    return App.format(
+      await this.client.closeTrade({
+        ...this.request,
+        ...request
+      })
+    )
   }
 }

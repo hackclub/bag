@@ -58,7 +58,8 @@ message Instance {
   optional int32 id = 1;
   optional string itemId = 2;
   optional string identityId = 3;
-  optional Item item = 4;
+  optional int32 quantity = 4;
+  optional Item item = 5;
 }
 
 message Trade {
@@ -73,7 +74,7 @@ message Trade {
 
 message Recipe {
   int32 id = 1;
-  repeated string inputsIds = 2;
+  repeated string inputIds = 2;
   repeated string outputIds = 3;
   repeated Item inputs = 4;
   repeated Item outputs = 5;
@@ -86,7 +87,8 @@ message CreateInstanceRequest {
   string identityId = 4;
   int32 quantity = 5;
   optional string metadata = 6;
-  optional string note = 7;
+  optional bool public = 7;
+  optional string note = 8;
 }
 
 message CreateInstanceResponse {
@@ -124,7 +126,8 @@ message CreateItemResponse {
 message CreateRecipeRequest {
   int32 appId = 1;
   string key = 2;
-  Recipe recipe = 3;
+  repeated string inputs = 3;
+  repeated string outputs = 4;
 }
 
 message CreateRecipeResponse {

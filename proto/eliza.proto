@@ -28,54 +28,55 @@ service ElizaService {
   rpc VerifyKey(VerifyKeyRequest) returns (VerifyKeyResponse) {}
 }
 
-// ! All requests should come with an appId and a key
 message App {
-  int32 id = 1;
-  string name = 2;
-  string description = 3;
-  string permissions = 4;
-  bool public = 5;
-  string metadata = 6;
-}
-
-message Identity {
-  string slack = 1;
-  repeated Instance inventory = 2;
-  string metadata = 3;
+  optional int32 id = 1;
+  optional string name = 2;
+  optional string description = 3;
+  optional string permissions = 4;
+  optional bool public = 5;
+  optional string metadata = 6;
 }
 
 message Item {
-  string name = 1;
-  string image = 2;
-  string description = 3;
-  string reaction = 4;
-  bool commodity = 5;
-  bool tradable = 6;
-  bool public = 7;
-  string metadata = 8;
+  optional string name = 1;
+  optional string image = 2;
+  optional string description = 3;
+  optional string reaction = 4;
+  optional bool commodity = 5;
+  optional bool tradable = 6;
+  optional bool public = 7;
+  optional string metadata = 8;
+}
+
+message Identity {
+  optional string slack = 1;
+  repeated Instance inventory = 2;
+  optional string metadata = 3;
 }
 
 message Instance {
-  int32 id = 1;
-  string itemId = 2;
-  string identityId = 3;
-  Item item = 4;
+  optional int32 id = 1;
+  optional string itemId = 2;
+  optional string identityId = 3;
+  optional Item item = 4;
 }
 
 message Trade {
-  int32 id = 1;
-  string initiatorIdentityId = 2;
-  string receiverIdentityId = 3;
-  repeated Instance initatorTrades = 4;
+  optional int32 id = 1;
+  optional string initiatorIdentityId = 2;
+  optional string receiverIdentityId = 3;
+  repeated Instance initiatorTrades = 4;
   repeated Instance receiverTrades = 5;
-  bool public = 6;
-  bool closed = 7; 
+  optional bool public = 6;
+  optional bool closed = 7;
 }
 
 message Recipe {
   int32 id = 1;
-  repeated string inputs = 2;
-  repeated string outputs = 3;
+  repeated string inputsIds = 2;
+  repeated string outputIds = 3;
+  repeated Item inputs = 4;
+  repeated Item outputs = 5;
 }
 
 message CreateInstanceRequest {
@@ -84,29 +85,29 @@ message CreateInstanceRequest {
   string itemId = 3;
   string identityId = 4;
   int32 quantity = 5;
-  string metadata = 6;
-  string note = 7;
+  optional string metadata = 6;
+  optional string note = 7;
 }
 
 message CreateInstanceResponse {
-  string response = 1;
-  Instance instance = 2;
+  optional string response = 1;
+  optional Instance instance = 2;
 }
 
 message CreateAppRequest {
   int32 appId = 1;
   string key = 2;
   string name = 3;
-  string description = 4;
-  int32 permissions = 5;
-  bool public = 6;
-  string metadata = 7;
+  optional string description = 4;
+  optional int32 permissions = 5;
+  optional bool public = 6;
+  optional string metadata = 7;
 }
 
 message CreateAppResponse {
-  string response = 1;
-  App app = 2;
-  string key = 3;
+  optional string response = 1;
+  optional App app = 2;
+  optional string key = 3;
 }
 
 message CreateItemRequest {
@@ -116,8 +117,8 @@ message CreateItemRequest {
 }
 
 message CreateItemResponse {
-  string response = 1;
-  Item item = 2;
+  optional string response = 1;
+  optional Item item = 2;
 }
 
 message CreateRecipeRequest {
@@ -127,8 +128,8 @@ message CreateRecipeRequest {
 }
 
 message CreateRecipeResponse {
-  string response = 1;
-  Recipe recipe = 2;
+  optional string response = 1;
+  optional Recipe recipe = 2;
 }
 
 message CreateTradeRequest {
@@ -140,8 +141,8 @@ message CreateTradeRequest {
 }
 
 message CreateTradeResponse {
-  string response = 1;
-  Trade trade = 2;
+  optional string response = 1;
+  optional Trade trade = 2;
 }
 
 message ReadIdentityRequest {
@@ -151,8 +152,8 @@ message ReadIdentityRequest {
 }
 
 message ReadIdentityResponse {
-  string response = 1;
-  Identity identity = 2;
+  optional string response = 1;
+  optional Identity identity = 2;
 }
 
 message ReadInventoryRequest {
@@ -162,7 +163,7 @@ message ReadInventoryRequest {
 }
 
 message ReadInventoryResponse {
-  string response = 1;
+  optional string response = 1;
   repeated Instance inventory = 2;
 }
 
@@ -173,7 +174,7 @@ message ReadItemRequest {
 }
 
 message ReadItemResponse {
-  string response = 1;
+  optional string response = 1;
   repeated Item items = 2;
 }
 
@@ -184,8 +185,8 @@ message ReadInstanceRequest {
 }
 
 message ReadInstanceResponse {
-  string response = 1;
-  Instance instance = 2;
+  optional string response = 1;
+  optional Instance instance = 2;
 }
 
 message ReadAppRequest {
@@ -195,8 +196,8 @@ message ReadAppRequest {
 }
 
 message ReadAppResponse {
-  string response = 1;
-  App app = 2;
+  optional string response = 1;
+  optional App app = 2;
 }
 
 message ReadTradeRequest {
@@ -206,8 +207,8 @@ message ReadTradeRequest {
 }
 
 message ReadTradeResponse {
-  string response = 1;
-  Trade trade = 2;
+  optional string response = 1;
+  optional Trade trade = 2;
 }
 
 message ReadRecipeRequest {
@@ -217,19 +218,20 @@ message ReadRecipeRequest {
 }
 
 message ReadRecipeResponse {
-  string response = 1;
-  Recipe recipe = 2;
+  optional string response = 1;
+  optional Recipe recipe = 2;
 }
 
 message UpdateIdentityMetadataRequest {
   int32 appId = 1;
   string key = 2;
-  string metadata = 3;
+  string identityId = 3;
+  string metadata = 4;
 }
 
 message UpdateIdentityMetadataResponse {
-  string response = 1;
-  Identity identity = 2;
+  optional string response = 1;
+  optional Identity identity = 2;
 }
 
 message UpdateInstanceRequest {
@@ -240,8 +242,8 @@ message UpdateInstanceRequest {
 }
 
 message UpdateInstanceResponse {
-  string response = 1;
-  Instance instance = 2;
+  optional string response = 1;
+  optional Instance instance = 2;
 }
 
 message UpdateItemRequest {
@@ -252,31 +254,33 @@ message UpdateItemRequest {
 }
 
 message UpdateItemResponse {
-  string response = 1;
-  Item item = 2;
+  optional string response = 1;
+  optional Item item = 2;
 }
 
 message UpdateAppRequest {
   int32 appId = 1;
   string key = 2;
-  int32 optAppId = 3;
+  optional int32 optAppId = 3;
   App new = 4;
 }
 
 message UpdateAppResponse {
-  string response = 1;
-  App app = 2;
+  optional string response = 1;
+  optional App app = 2;
 }
 
 message UpdateTradeRequest {
   int32 appId = 1;
   string key = 2;
   int32 tradeId = 3;
+  string identityId = 4;
+  repeated Instance add = 5;
 }
 
 message UpdateTradeResponse {
-  string response = 1;
-  Trade trade = 2;
+  optional string response = 1;
+  optional Trade trade = 2;
 }
 
 message UpdateRecipeRequest {
@@ -285,7 +289,8 @@ message UpdateRecipeRequest {
 }
 
 message UpdateRecipeResponse {
-  string response = 1;
+  optional string response = 1;
+  optional Recipe recipe = 2;
 }
 
 message DeleteAppRequest {
@@ -295,7 +300,8 @@ message DeleteAppRequest {
 }
 
 message DeleteAppResponse {
-  string response = 1;
+  optional string response = 1;
+  optional App deletedApp = 2;
 }
 
 message DeleteInstanceRequest {
@@ -305,8 +311,8 @@ message DeleteInstanceRequest {
 }
 
 message DeleteInstanceResponse {
-  string response = 1;
-  Instance deletedInstance = 2;
+  optional string response = 1;
+  optional Instance deletedInstance = 2;
 }
 
 message CloseTradeRequest {
@@ -316,8 +322,8 @@ message CloseTradeRequest {
 }
 
 message CloseTradeResponse {
-  string response = 1;
-  Trade trade = 2;
+  optional string response = 1;
+  optional Trade trade = 2;
 }
 
 message VerifyKeyRequest {

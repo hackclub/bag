@@ -4,7 +4,8 @@ import {
   Identity,
   Instance,
   PermissionLevels,
-  Item
+  Item,
+  Trade
 } from '@prisma/client'
 import { View, PlainTextOption, Block, KnownBlock } from '@slack/bolt'
 import { type IdentityWithInventory } from '../db'
@@ -643,16 +644,23 @@ const getApp = (app: App): (Block | KnownBlock)[] => {
         type: 'mrkdwn',
         text: `Here's *${app.name}*:
 
-_${app.description}_
+>_${app.description}_
+
 ID: ${app.id}
 Permissions: ${app.permissions}
-Public: ${app.public}`
+Public: ${app.public}
+Metadata: \`${
+          app.metadata === null || !Object.keys(app.metadata).length
+            ? '{}'
+            : app.metadata
+        }\``
       }
     }
   ]
 }
 
 const getItem = (item: Item): (Block | KnownBlock)[] => {
+  console.log(item)
   return [
     {
       type: 'section',
@@ -660,7 +668,8 @@ const getItem = (item: Item): (Block | KnownBlock)[] => {
         type: 'mrkdwn',
         text: `Here's ${item.reaction} *${item.name}*:
 
-_${item.description}_
+>_${item.description}_
+
 Is this a commodity? ${item.commodity ? 'Yes' : 'No'}
 Tradable: ${item.tradable ? 'Yes' : 'No'}
 Public: ${item.public ? 'Yes' : 'No'}
@@ -935,6 +944,48 @@ const showInventory = async (
   ]
 }
 
+const startTrade = (
+  initiator: string,
+  receiver: string,
+  trade: Trade
+): (Block | KnownBlock)[] => {
+  return [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `<@${initiator}> just opened a trade with <@${receiver}>.\n\n Add and remove items; once you're satisfied, click on the "Close trade" button to close the trade. Once both sides close the trade, the transfer will be made.`
+      }
+    },
+    {
+      type: 'actions',
+      elements: [
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: 'Add from inventory'
+          },
+          style: 'primary',
+          value: trade.id.toString(),
+          action_id: 'update-trade'
+        },
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: 'Close trade',
+            emoji: true
+          },
+          style: 'danger',
+          value: trade.id.toString(),
+          action_id: 'close-thread'
+        }
+      ]
+    }
+  ]
+}
+
 export default {
   error,
   createItem,
@@ -949,5 +1000,6 @@ export default {
   approveOrDenyAppPerms,
   helpDialog,
   heehee,
-  showInventory
+  showInventory,
+  startTrade
 }

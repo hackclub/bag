@@ -2,7 +2,7 @@ import { ConnectRouter } from '@connectrpc/connect'
 import { ElizaService } from './gen/eliza_connect'
 import { log } from './lib/logger'
 import { mappedPermissionValues } from './lib/permissions'
-import { App, PermissionLevels, PrismaClient } from '@prisma/client'
+import { App, Item, PermissionLevels, PrismaClient } from '@prisma/client'
 import { WebClient } from '@slack/web-api'
 import config from './config'
 import { v4 as uuid } from 'uuid'
@@ -15,6 +15,10 @@ const stringify = (obj: object) => {
   // Convert nulls to undefined so it passes through gRPC
   let newObj = {}
   for (let [key, value] of Object.entries(obj)) {
+    if (key === 'metadata') {
+      newObj[key] = JSON.stringify(value)
+      continue
+    }
     newObj[key] = value !== null ? value : undefined
   }
   return newObj
@@ -160,15 +164,21 @@ export default (router: ConnectRouter) => {
     )
   })
 
+  // * WORKS
   router.rpc(ElizaService, ElizaService.methods.createRecipe, async req => {
     return await execute(
       req,
       async (req, app) => {
-        // TODO
-        console.log(req.recipe)
-        return
+        if (!req.recipe.inputs.length || !req.recipe.outputs.length)
+          throw new Error('Recipe should have inputs and outputs')
+        const inputs = req.recipe.inputs.map(input => ({
+          name: input
+        }))
+        const outputs = req.recipe.outputs.map(output => ({
+          name: output
+        }))
         const recipe = await prisma.recipe.create({
-          data: req.recipe
+          data: { inputs: { connect: inputs }, outputs: { connect: outputs } }
         })
         if (app.permissions === PermissionLevels.WRITE_SPECIFIC)
           await prisma.app.update({
@@ -187,6 +197,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
+  // TODO
   router.rpc(ElizaService, ElizaService.methods.createTrade, async req => {
     return await execute(
       req,
@@ -205,6 +216,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
+  // TODO
   router.rpc(ElizaService, ElizaService.methods.readIdentity, async req => {
     return await execute(req, async (req, app) => {
       const user = await prisma.identity.findUnique({
@@ -229,6 +241,7 @@ export default (router: ConnectRouter) => {
     })
   })
 
+  // TODO
   router.rpc(ElizaService, ElizaService.methods.readInventory, async req => {
     return await execute(req, async (req, app) => {
       const user = await prisma.identity.findUnique({
@@ -271,6 +284,7 @@ export default (router: ConnectRouter) => {
     })
   })
 
+  // TODO
   router.rpc(ElizaService, ElizaService.methods.readInstance, async req => {
     return await execute(req, async (req, app) => {
       const instance = await prisma.instance.findUnique({
@@ -306,6 +320,7 @@ export default (router: ConnectRouter) => {
     })
   })
 
+  // TODO
   router.rpc(ElizaService, ElizaService.methods.readTrade, async req => {
     return await execute(req, async (req, app) => {
       const trade = await prisma.trade.findUnique({
@@ -315,7 +330,6 @@ export default (router: ConnectRouter) => {
       })
 
       // Make sure app can read trade, and filter out private items if needed
-      // TODO
     })
   })
 
@@ -323,15 +337,29 @@ export default (router: ConnectRouter) => {
     return await execute(req, async (req, app) => {
       const recipe = await prisma.recipe.findUnique({
         where: {
-          id: req.tradeId
+          id: req.recipeId
+        },
+        include: {
+          inputs: true,
+          outputs: true
         }
       })
-      console.log(recipe)
-      // TODO: Deal with permissions
+
+      if (app.permissions === PermissionLevels.READ && !recipe.public)
+        throw new Error('Recipe not found')
+      if (
+        mappedPermissionValues[app.permissions] <
+          mappedPermissionValues.WRITE &&
+        !req.public &&
+        !app.specificRecipes.find(recipeId => recipeId === recipe.id)
+      )
+        throw new Error('Recipe not found')
+
       return { recipe }
     })
   })
 
+  // TODO
   router.rpc(
     ElizaService,
     ElizaService.methods.updateIdentityMetadata,
@@ -358,13 +386,14 @@ export default (router: ConnectRouter) => {
             }
           })
 
-          return { app: updated }
+          return { app: stringify(updated) }
         },
         mappedPermissionValues.WRITE_SPECIFIC
       )
     }
   )
 
+  // TODO
   router.rpc(ElizaService, ElizaService.methods.updateInstance, async req => {
     return await execute(
       req,
@@ -415,7 +444,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
-  // * WORKS
+  // TODO: Figure out this gRPC thing. We can't tell if changing description is intentional
   router.rpc(ElizaService, ElizaService.methods.updateApp, async req => {
     return await execute(req, async (req, app) => {
       if (app.permissions !== PermissionLevels.ADMIN && req.optAppId)
@@ -427,6 +456,7 @@ export default (router: ConnectRouter) => {
       })
 
       delete req.new.id
+      if (req.new.name === '') delete req.new.name
       if (req.new.permissions === '') delete req.new.permissions
       if (
         mappedPermissionValues[app.permissions] <
@@ -445,12 +475,12 @@ export default (router: ConnectRouter) => {
     })
   })
 
+  // TODO
   router.rpc(ElizaService, ElizaService.methods.updateTrade, async req => {
-    return await execute(req, async (req, app) => {
-      // TODO
-    })
+    return await execute(req, async (req, app) => {})
   })
 
+  // TODO
   router.rpc(ElizaService, ElizaService.methods.updateRecipe, async req => {
     return await execute(
       req,
@@ -465,6 +495,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
+  // TODO
   router.rpc(ElizaService, ElizaService.methods.deleteInstance, async req => {
     return await execute(
       req,
@@ -493,6 +524,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
+  // TODO
   router.rpc(ElizaService, ElizaService.methods.closeTrade, async req => {
     return await execute(
       req,
@@ -515,7 +547,6 @@ export default (router: ConnectRouter) => {
         })
 
         // Transfer items between users
-        // TODO
       },
       mappedPermissionValues.WRITE_SPECIFIC
     )

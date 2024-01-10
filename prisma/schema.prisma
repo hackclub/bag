@@ -27,7 +27,7 @@ model App {
   specificTrades  String[]
   specificRecipes Int[]
   public          Boolean          @default(false)
-  metadata        Json? // Optional metadata (JSON)
+  metadata        Json             @default("{}")
 }
 
 model Identity {
@@ -36,7 +36,7 @@ model Identity {
   permissions     PermissionLevels @default(value: READ)
   initiatorTrades Trade[]          @relation("initiator")
   receiverTrades  Trade[]          @relation("receiver")
-  metadata        Json? // Optional metadata (JSON)
+  metadata        Json             @default("{}")
   // These are all strings and not otherwise because there's no public facing value that requires them to have a relation
   specificApps    Int[]
   specificItems   String[]
@@ -53,7 +53,7 @@ model Item {
   tradable      Boolean    @default(true) // Tradable
   instances     Instance[] // Instance IDs (ref)
   public        Boolean    @default(false)
-  metadata      Json? // Optional metadata (JSON)
+  metadata      Json       @default("{}")
   recipeInputs  Recipe[]   @relation("recipeInputs")
   recipeOutputs Recipe[]   @relation("recipeOutputs")
 }
@@ -65,7 +65,7 @@ model Instance {
   item            Item     @relation(fields: [itemId], references: [name])
   identity        Identity @relation(fields: [identityId], references: [slack])
   quantity        Int      @default(0) // Quantity (if item.commodity == true)
-  metadata        Json? // Optional metadata (JSON)
+  metadata        Json     @default("{}")
   initiatorTrades Trade[]  @relation("initiatorTrades")
   receiverTrades  Trade[]  @relation("receiverTrades")
   public          Boolean  @default(true)
@@ -86,7 +86,8 @@ model Trade {
 }
 
 model Recipe {
-  id      Int    @id @default(autoincrement())
-  inputs  Item[] @relation("recipeInputs")
-  outputs Item[] @relation("recipeOutputs")
+  id      Int     @id @default(autoincrement())
+  inputs  Item[]  @relation("recipeInputs")
+  outputs Item[]  @relation("recipeOutputs")
+  public  Boolean @default(true)
 }

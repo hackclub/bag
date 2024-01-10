@@ -592,7 +592,7 @@ slack.view('edit-app', async props => {
   })
 })
 
-// TODO
+// * WORKS
 slack.command('/get-app', async props => {
   await execute(props, async (props, permission) => {
     try {
@@ -616,11 +616,12 @@ slack.command('/get-app', async props => {
         !app.public &&
         !user.specificApps.find(appId => appId === app.id)
       )
-        return await slack.client.chat.postMessage({
-          channel: props.body.channel_id,
-          user: props.context.userId,
-          blocks: views.getApp(app)
-        })
+        throw new Error()
+      return await slack.client.chat.postMessage({
+        channel: props.body.channel_id,
+        user: props.context.userId,
+        blocks: views.getApp(app)
+      })
     } catch {
       return await slack.client.chat.postEphemeral({
         channel: props.body.channel_id,
@@ -693,36 +694,49 @@ slack.command('/start-trade', async props => {
       }
     })
 
-    const { ts } = await props.client.chat.postMessage({
+    await props.client.chat.postMessage({
       channel: props.body.channel_id,
-      blocks: [
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `<@${props.context.userId}> just opened a trade with <@${receiver}>.\n\n Add and remove items by choosing them from the dropdown in the thread. Once you're satisfied, click on the "Close trade" button to close the trade. Once both sides close the trade, the transfer will be made`
-          }
-        },
-        {
-          type: 'actions',
-          elements: [
-            {
-              type: 'button',
-              text: {
-                type: 'plain_text',
-                text: 'Close trade',
-                emoji: true
-              },
-              style: 'danger',
-              value: trade.id.toString(),
-              action_id: 'close-trade'
-            }
-          ]
-        }
-      ]
+      blocks: views.startTrade(props.context.userId, receiver, trade)
+    })
+  })
+})
+
+// TODO
+slack.action('update-trade', async props => {
+  await execute(props, async props => {
+    // TODO: Make sure user is allowed to update trade
+    // @ts-expect-error
+    const id = props.action.value
+    const trade = await prisma.trade.findUnique({
+      where: {
+        id: Number(id)
+      }
     })
 
-    // Post dropdowns in thread
+    if (
+      ![trade.initiatorIdentityId, trade.receiverIdentityId].includes(
+        props.body.user.id
+      )
+    )
+      return props.say(
+        "Oh no! You'll allowed to spectate on the trade and that's it."
+      )
+
+    // @ts-expect-error
+    await props.client.views.open({
+      // @ts-expect-error
+      trigger_id: props.body.trigger_id,
+      view: await views.tradeDialog(
+        await prisma.identity.findUnique({
+          where: {
+            slack: props.body.user.id
+          },
+          include: {
+            inventory: true
+          }
+        })
+      )
+    })
   })
 })
 

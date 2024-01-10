@@ -7,40 +7,38 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3 } from "@bufbuild/protobuf";
 
 /**
- * ! All requests should come with an appId and a key
- *
  * @generated from message connectrpc.eliza.v1.App
  */
 export class App extends Message<App> {
   /**
-   * @generated from field: int32 id = 1;
+   * @generated from field: optional int32 id = 1;
    */
-  id = 0;
+  id?: number;
 
   /**
-   * @generated from field: string name = 2;
+   * @generated from field: optional string name = 2;
    */
-  name = "";
+  name?: string;
 
   /**
-   * @generated from field: string description = 3;
+   * @generated from field: optional string description = 3;
    */
-  description = "";
+  description?: string;
 
   /**
-   * @generated from field: string permissions = 4;
+   * @generated from field: optional string permissions = 4;
    */
-  permissions = "";
+  permissions?: string;
 
   /**
-   * @generated from field: bool public = 5;
+   * @generated from field: optional bool public = 5;
    */
-  public = false;
+  public?: boolean;
 
   /**
-   * @generated from field: string metadata = 6;
+   * @generated from field: optional string metadata = 6;
    */
-  metadata = "";
+  metadata?: string;
 
   constructor(data?: PartialMessage<App>) {
     super();
@@ -50,12 +48,12 @@ export class App extends Message<App> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.App";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "permissions", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 6, name: "metadata", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 4, name: "permissions", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 6, name: "metadata", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): App {
@@ -76,97 +74,48 @@ export class App extends Message<App> {
 }
 
 /**
- * @generated from message connectrpc.eliza.v1.Identity
- */
-export class Identity extends Message<Identity> {
-  /**
-   * @generated from field: string slack = 1;
-   */
-  slack = "";
-
-  /**
-   * @generated from field: repeated connectrpc.eliza.v1.Instance inventory = 2;
-   */
-  inventory: Instance[] = [];
-
-  /**
-   * @generated from field: string metadata = 3;
-   */
-  metadata = "";
-
-  constructor(data?: PartialMessage<Identity>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "connectrpc.eliza.v1.Identity";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "slack", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "inventory", kind: "message", T: Instance, repeated: true },
-    { no: 3, name: "metadata", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Identity {
-    return new Identity().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Identity {
-    return new Identity().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Identity {
-    return new Identity().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: Identity | PlainMessage<Identity> | undefined, b: Identity | PlainMessage<Identity> | undefined): boolean {
-    return proto3.util.equals(Identity, a, b);
-  }
-}
-
-/**
  * @generated from message connectrpc.eliza.v1.Item
  */
 export class Item extends Message<Item> {
   /**
-   * @generated from field: string name = 1;
+   * @generated from field: optional string name = 1;
    */
-  name = "";
+  name?: string;
 
   /**
-   * @generated from field: string image = 2;
+   * @generated from field: optional string image = 2;
    */
-  image = "";
+  image?: string;
 
   /**
-   * @generated from field: string description = 3;
+   * @generated from field: optional string description = 3;
    */
-  description = "";
+  description?: string;
 
   /**
-   * @generated from field: string reaction = 4;
+   * @generated from field: optional string reaction = 4;
    */
-  reaction = "";
+  reaction?: string;
 
   /**
-   * @generated from field: bool commodity = 5;
+   * @generated from field: optional bool commodity = 5;
    */
-  commodity = false;
+  commodity?: boolean;
 
   /**
-   * @generated from field: bool tradable = 6;
+   * @generated from field: optional bool tradable = 6;
    */
-  tradable = false;
+  tradable?: boolean;
 
   /**
-   * @generated from field: bool public = 7;
+   * @generated from field: optional bool public = 7;
    */
-  public = false;
+  public?: boolean;
 
   /**
-   * @generated from field: string metadata = 8;
+   * @generated from field: optional string metadata = 8;
    */
-  metadata = "";
+  metadata?: string;
 
   constructor(data?: PartialMessage<Item>) {
     super();
@@ -176,14 +125,14 @@ export class Item extends Message<Item> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.Item";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "image", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "reaction", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "commodity", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 6, name: "tradable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 8, name: "metadata", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "image", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 4, name: "reaction", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "commodity", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 6, name: "tradable", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 7, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 8, name: "metadata", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Item {
@@ -204,26 +153,75 @@ export class Item extends Message<Item> {
 }
 
 /**
+ * @generated from message connectrpc.eliza.v1.Identity
+ */
+export class Identity extends Message<Identity> {
+  /**
+   * @generated from field: optional string slack = 1;
+   */
+  slack?: string;
+
+  /**
+   * @generated from field: repeated connectrpc.eliza.v1.Instance inventory = 2;
+   */
+  inventory: Instance[] = [];
+
+  /**
+   * @generated from field: optional string metadata = 3;
+   */
+  metadata?: string;
+
+  constructor(data?: PartialMessage<Identity>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "connectrpc.eliza.v1.Identity";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "slack", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "inventory", kind: "message", T: Instance, repeated: true },
+    { no: 3, name: "metadata", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Identity {
+    return new Identity().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Identity {
+    return new Identity().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Identity {
+    return new Identity().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Identity | PlainMessage<Identity> | undefined, b: Identity | PlainMessage<Identity> | undefined): boolean {
+    return proto3.util.equals(Identity, a, b);
+  }
+}
+
+/**
  * @generated from message connectrpc.eliza.v1.Instance
  */
 export class Instance extends Message<Instance> {
   /**
-   * @generated from field: int32 id = 1;
+   * @generated from field: optional int32 id = 1;
    */
-  id = 0;
+  id?: number;
 
   /**
-   * @generated from field: string itemId = 2;
+   * @generated from field: optional string itemId = 2;
    */
-  itemId = "";
+  itemId?: string;
 
   /**
-   * @generated from field: string identityId = 3;
+   * @generated from field: optional string identityId = 3;
    */
-  identityId = "";
+  identityId?: string;
 
   /**
-   * @generated from field: connectrpc.eliza.v1.Item item = 4;
+   * @generated from field: optional connectrpc.eliza.v1.Item item = 4;
    */
   item?: Item;
 
@@ -235,10 +233,10 @@ export class Instance extends Message<Instance> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.Instance";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 2, name: "itemId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "identityId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "item", kind: "message", T: Item },
+    { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 2, name: "itemId", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "identityId", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 4, name: "item", kind: "message", T: Item, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Instance {
@@ -263,24 +261,24 @@ export class Instance extends Message<Instance> {
  */
 export class Trade extends Message<Trade> {
   /**
-   * @generated from field: int32 id = 1;
+   * @generated from field: optional int32 id = 1;
    */
-  id = 0;
+  id?: number;
 
   /**
-   * @generated from field: string initiatorIdentityId = 2;
+   * @generated from field: optional string initiatorIdentityId = 2;
    */
-  initiatorIdentityId = "";
+  initiatorIdentityId?: string;
 
   /**
-   * @generated from field: string receiverIdentityId = 3;
+   * @generated from field: optional string receiverIdentityId = 3;
    */
-  receiverIdentityId = "";
+  receiverIdentityId?: string;
 
   /**
-   * @generated from field: repeated connectrpc.eliza.v1.Instance initatorTrades = 4;
+   * @generated from field: repeated connectrpc.eliza.v1.Instance initiatorTrades = 4;
    */
-  initatorTrades: Instance[] = [];
+  initiatorTrades: Instance[] = [];
 
   /**
    * @generated from field: repeated connectrpc.eliza.v1.Instance receiverTrades = 5;
@@ -288,14 +286,14 @@ export class Trade extends Message<Trade> {
   receiverTrades: Instance[] = [];
 
   /**
-   * @generated from field: bool public = 6;
+   * @generated from field: optional bool public = 6;
    */
-  public = false;
+  public?: boolean;
 
   /**
-   * @generated from field: bool closed = 7;
+   * @generated from field: optional bool closed = 7;
    */
-  closed = false;
+  closed?: boolean;
 
   constructor(data?: PartialMessage<Trade>) {
     super();
@@ -305,13 +303,13 @@ export class Trade extends Message<Trade> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.Trade";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 2, name: "initiatorIdentityId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "receiverIdentityId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "initatorTrades", kind: "message", T: Instance, repeated: true },
+    { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 2, name: "initiatorIdentityId", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "receiverIdentityId", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 4, name: "initiatorTrades", kind: "message", T: Instance, repeated: true },
     { no: 5, name: "receiverTrades", kind: "message", T: Instance, repeated: true },
-    { no: 6, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "closed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 7, name: "closed", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Trade {
@@ -341,14 +339,24 @@ export class Recipe extends Message<Recipe> {
   id = 0;
 
   /**
-   * @generated from field: repeated string inputs = 2;
+   * @generated from field: repeated string inputsIds = 2;
    */
-  inputs: string[] = [];
+  inputsIds: string[] = [];
 
   /**
-   * @generated from field: repeated string outputs = 3;
+   * @generated from field: repeated string outputIds = 3;
    */
-  outputs: string[] = [];
+  outputIds: string[] = [];
+
+  /**
+   * @generated from field: repeated connectrpc.eliza.v1.Item inputs = 4;
+   */
+  inputs: Item[] = [];
+
+  /**
+   * @generated from field: repeated connectrpc.eliza.v1.Item outputs = 5;
+   */
+  outputs: Item[] = [];
 
   constructor(data?: PartialMessage<Recipe>) {
     super();
@@ -359,8 +367,10 @@ export class Recipe extends Message<Recipe> {
   static readonly typeName = "connectrpc.eliza.v1.Recipe";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 2, name: "inputs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 3, name: "outputs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 2, name: "inputsIds", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "outputIds", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "inputs", kind: "message", T: Item, repeated: true },
+    { no: 5, name: "outputs", kind: "message", T: Item, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Recipe {
@@ -410,14 +420,14 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
   quantity = 0;
 
   /**
-   * @generated from field: string metadata = 6;
+   * @generated from field: optional string metadata = 6;
    */
-  metadata = "";
+  metadata?: string;
 
   /**
-   * @generated from field: string note = 7;
+   * @generated from field: optional string note = 7;
    */
-  note = "";
+  note?: string;
 
   constructor(data?: PartialMessage<CreateInstanceRequest>) {
     super();
@@ -432,8 +442,8 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
     { no: 3, name: "itemId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "identityId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "quantity", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 6, name: "metadata", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "note", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "metadata", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 7, name: "note", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstanceRequest {
@@ -458,12 +468,12 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
  */
 export class CreateInstanceResponse extends Message<CreateInstanceResponse> {
   /**
-   * @generated from field: string response = 1;
+   * @generated from field: optional string response = 1;
    */
-  response = "";
+  response?: string;
 
   /**
-   * @generated from field: connectrpc.eliza.v1.Instance instance = 2;
+   * @generated from field: optional connectrpc.eliza.v1.Instance instance = 2;
    */
   instance?: Instance;
 
@@ -475,8 +485,8 @@ export class CreateInstanceResponse extends Message<CreateInstanceResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.CreateInstanceResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "instance", kind: "message", T: Instance },
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "instance", kind: "message", T: Instance, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstanceResponse {
@@ -516,24 +526,24 @@ export class CreateAppRequest extends Message<CreateAppRequest> {
   name = "";
 
   /**
-   * @generated from field: string description = 4;
+   * @generated from field: optional string description = 4;
    */
-  description = "";
+  description?: string;
 
   /**
-   * @generated from field: int32 permissions = 5;
+   * @generated from field: optional int32 permissions = 5;
    */
-  permissions = 0;
+  permissions?: number;
 
   /**
-   * @generated from field: bool public = 6;
+   * @generated from field: optional bool public = 6;
    */
-  public = false;
+  public?: boolean;
 
   /**
-   * @generated from field: string metadata = 7;
+   * @generated from field: optional string metadata = 7;
    */
-  metadata = "";
+  metadata?: string;
 
   constructor(data?: PartialMessage<CreateAppRequest>) {
     super();
@@ -546,10 +556,10 @@ export class CreateAppRequest extends Message<CreateAppRequest> {
     { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "permissions", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 6, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "metadata", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "permissions", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 6, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 7, name: "metadata", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateAppRequest {
@@ -574,19 +584,19 @@ export class CreateAppRequest extends Message<CreateAppRequest> {
  */
 export class CreateAppResponse extends Message<CreateAppResponse> {
   /**
-   * @generated from field: string response = 1;
+   * @generated from field: optional string response = 1;
    */
-  response = "";
+  response?: string;
 
   /**
-   * @generated from field: connectrpc.eliza.v1.App app = 2;
+   * @generated from field: optional connectrpc.eliza.v1.App app = 2;
    */
   app?: App;
 
   /**
-   * @generated from field: string key = 3;
+   * @generated from field: optional string key = 3;
    */
-  key = "";
+  key?: string;
 
   constructor(data?: PartialMessage<CreateAppResponse>) {
     super();
@@ -596,9 +606,9 @@ export class CreateAppResponse extends Message<CreateAppResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.CreateAppResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "app", kind: "message", T: App },
-    { no: 3, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "app", kind: "message", T: App, opt: true },
+    { no: 3, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateAppResponse {
@@ -672,12 +682,12 @@ export class CreateItemRequest extends Message<CreateItemRequest> {
  */
 export class CreateItemResponse extends Message<CreateItemResponse> {
   /**
-   * @generated from field: string response = 1;
+   * @generated from field: optional string response = 1;
    */
-  response = "";
+  response?: string;
 
   /**
-   * @generated from field: connectrpc.eliza.v1.Item item = 2;
+   * @generated from field: optional connectrpc.eliza.v1.Item item = 2;
    */
   item?: Item;
 
@@ -689,8 +699,8 @@ export class CreateItemResponse extends Message<CreateItemResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.CreateItemResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "item", kind: "message", T: Item },
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "item", kind: "message", T: Item, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateItemResponse {
@@ -764,12 +774,12 @@ export class CreateRecipeRequest extends Message<CreateRecipeRequest> {
  */
 export class CreateRecipeResponse extends Message<CreateRecipeResponse> {
   /**
-   * @generated from field: string response = 1;
+   * @generated from field: optional string response = 1;
    */
-  response = "";
+  response?: string;
 
   /**
-   * @generated from field: connectrpc.eliza.v1.Recipe recipe = 2;
+   * @generated from field: optional connectrpc.eliza.v1.Recipe recipe = 2;
    */
   recipe?: Recipe;
 
@@ -781,8 +791,8 @@ export class CreateRecipeResponse extends Message<CreateRecipeResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.CreateRecipeResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "recipe", kind: "message", T: Recipe },
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "recipe", kind: "message", T: Recipe, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateRecipeResponse {
@@ -868,12 +878,12 @@ export class CreateTradeRequest extends Message<CreateTradeRequest> {
  */
 export class CreateTradeResponse extends Message<CreateTradeResponse> {
   /**
-   * @generated from field: string response = 1;
+   * @generated from field: optional string response = 1;
    */
-  response = "";
+  response?: string;
 
   /**
-   * @generated from field: connectrpc.eliza.v1.Trade trade = 2;
+   * @generated from field: optional connectrpc.eliza.v1.Trade trade = 2;
    */
   trade?: Trade;
 
@@ -885,8 +895,8 @@ export class CreateTradeResponse extends Message<CreateTradeResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.CreateTradeResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "trade", kind: "message", T: Trade },
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "trade", kind: "message", T: Trade, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateTradeResponse {
@@ -960,12 +970,12 @@ export class ReadIdentityRequest extends Message<ReadIdentityRequest> {
  */
 export class ReadIdentityResponse extends Message<ReadIdentityResponse> {
   /**
-   * @generated from field: string response = 1;
+   * @generated from field: optional string response = 1;
    */
-  response = "";
+  response?: string;
 
   /**
-   * @generated from field: connectrpc.eliza.v1.Identity identity = 2;
+   * @generated from field: optional connectrpc.eliza.v1.Identity identity = 2;
    */
   identity?: Identity;
 
@@ -977,8 +987,8 @@ export class ReadIdentityResponse extends Message<ReadIdentityResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.ReadIdentityResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "identity", kind: "message", T: Identity },
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "identity", kind: "message", T: Identity, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReadIdentityResponse {
@@ -1052,9 +1062,9 @@ export class ReadInventoryRequest extends Message<ReadInventoryRequest> {
  */
 export class ReadInventoryResponse extends Message<ReadInventoryResponse> {
   /**
-   * @generated from field: string response = 1;
+   * @generated from field: optional string response = 1;
    */
-  response = "";
+  response?: string;
 
   /**
    * @generated from field: repeated connectrpc.eliza.v1.Instance inventory = 2;
@@ -1069,7 +1079,7 @@ export class ReadInventoryResponse extends Message<ReadInventoryResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.ReadInventoryResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 2, name: "inventory", kind: "message", T: Instance, repeated: true },
   ]);
 
@@ -1144,9 +1154,9 @@ export class ReadItemRequest extends Message<ReadItemRequest> {
  */
 export class ReadItemResponse extends Message<ReadItemResponse> {
   /**
-   * @generated from field: string response = 1;
+   * @generated from field: optional string response = 1;
    */
-  response = "";
+  response?: string;
 
   /**
    * @generated from field: repeated connectrpc.eliza.v1.Item items = 2;
@@ -1161,7 +1171,7 @@ export class ReadItemResponse extends Message<ReadItemResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.ReadItemResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 2, name: "items", kind: "message", T: Item, repeated: true },
   ]);
 
@@ -1236,12 +1246,12 @@ export class ReadInstanceRequest extends Message<ReadInstanceRequest> {
  */
 export class ReadInstanceResponse extends Message<ReadInstanceResponse> {
   /**
-   * @generated from field: string response = 1;
+   * @generated from field: optional string response = 1;
    */
-  response = "";
+  response?: string;
 
   /**
-   * @generated from field: connectrpc.eliza.v1.Instance instance = 2;
+   * @generated from field: optional connectrpc.eliza.v1.Instance instance = 2;
    */
   instance?: Instance;
 
@@ -1253,8 +1263,8 @@ export class ReadInstanceResponse extends Message<ReadInstanceResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.ReadInstanceResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "instance", kind: "message", T: Instance },
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "instance", kind: "message", T: Instance, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReadInstanceResponse {
@@ -1328,12 +1338,12 @@ export class ReadAppRequest extends Message<ReadAppRequest> {
  */
 export class ReadAppResponse extends Message<ReadAppResponse> {
   /**
-   * @generated from field: string response = 1;
+   * @generated from field: optional string response = 1;
    */
-  response = "";
+  response?: string;
 
   /**
-   * @generated from field: connectrpc.eliza.v1.App app = 2;
+   * @generated from field: optional connectrpc.eliza.v1.App app = 2;
    */
   app?: App;
 
@@ -1345,8 +1355,8 @@ export class ReadAppResponse extends Message<ReadAppResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.ReadAppResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "app", kind: "message", T: App },
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "app", kind: "message", T: App, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReadAppResponse {
@@ -1420,12 +1430,12 @@ export class ReadTradeRequest extends Message<ReadTradeRequest> {
  */
 export class ReadTradeResponse extends Message<ReadTradeResponse> {
   /**
-   * @generated from field: string response = 1;
+   * @generated from field: optional string response = 1;
    */
-  response = "";
+  response?: string;
 
   /**
-   * @generated from field: connectrpc.eliza.v1.Trade trade = 2;
+   * @generated from field: optional connectrpc.eliza.v1.Trade trade = 2;
    */
   trade?: Trade;
 
@@ -1437,8 +1447,8 @@ export class ReadTradeResponse extends Message<ReadTradeResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.ReadTradeResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "trade", kind: "message", T: Trade },
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "trade", kind: "message", T: Trade, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReadTradeResponse {
@@ -1512,12 +1522,12 @@ export class ReadRecipeRequest extends Message<ReadRecipeRequest> {
  */
 export class ReadRecipeResponse extends Message<ReadRecipeResponse> {
   /**
-   * @generated from field: string response = 1;
+   * @generated from field: optional string response = 1;
    */
-  response = "";
+  response?: string;
 
   /**
-   * @generated from field: connectrpc.eliza.v1.Recipe recipe = 2;
+   * @generated from field: optional connectrpc.eliza.v1.Recipe recipe = 2;
    */
   recipe?: Recipe;
 
@@ -1529,8 +1539,8 @@ export class ReadRecipeResponse extends Message<ReadRecipeResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.ReadRecipeResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "recipe", kind: "message", T: Recipe },
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "recipe", kind: "message", T: Recipe, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReadRecipeResponse {
@@ -1565,7 +1575,12 @@ export class UpdateIdentityMetadataRequest extends Message<UpdateIdentityMetadat
   key = "";
 
   /**
-   * @generated from field: string metadata = 3;
+   * @generated from field: string identityId = 3;
+   */
+  identityId = "";
+
+  /**
+   * @generated from field: string metadata = 4;
    */
   metadata = "";
 
@@ -1579,7 +1594,8 @@ export class UpdateIdentityMetadataRequest extends Message<UpdateIdentityMetadat
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "metadata", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "identityId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "metadata", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateIdentityMetadataRequest {
@@ -1604,12 +1620,12 @@ export class UpdateIdentityMetadataRequest extends Message<UpdateIdentityMetadat
  */
 export class UpdateIdentityMetadataResponse extends Message<UpdateIdentityMetadataResponse> {
   /**
-   * @generated from field: string response = 1;
+   * @generated from field: optional string response = 1;
    */
-  response = "";
+  response?: string;
 
   /**
-   * @generated from field: connectrpc.eliza.v1.Identity identity = 2;
+   * @generated from field: optional connectrpc.eliza.v1.Identity identity = 2;
    */
   identity?: Identity;
 
@@ -1621,8 +1637,8 @@ export class UpdateIdentityMetadataResponse extends Message<UpdateIdentityMetada
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.UpdateIdentityMetadataResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "identity", kind: "message", T: Identity },
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "identity", kind: "message", T: Identity, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateIdentityMetadataResponse {
@@ -1702,12 +1718,12 @@ export class UpdateInstanceRequest extends Message<UpdateInstanceRequest> {
  */
 export class UpdateInstanceResponse extends Message<UpdateInstanceResponse> {
   /**
-   * @generated from field: string response = 1;
+   * @generated from field: optional string response = 1;
    */
-  response = "";
+  response?: string;
 
   /**
-   * @generated from field: connectrpc.eliza.v1.Instance instance = 2;
+   * @generated from field: optional connectrpc.eliza.v1.Instance instance = 2;
    */
   instance?: Instance;
 
@@ -1719,8 +1735,8 @@ export class UpdateInstanceResponse extends Message<UpdateInstanceResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.UpdateInstanceResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "instance", kind: "message", T: Instance },
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "instance", kind: "message", T: Instance, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateInstanceResponse {
@@ -1800,12 +1816,12 @@ export class UpdateItemRequest extends Message<UpdateItemRequest> {
  */
 export class UpdateItemResponse extends Message<UpdateItemResponse> {
   /**
-   * @generated from field: string response = 1;
+   * @generated from field: optional string response = 1;
    */
-  response = "";
+  response?: string;
 
   /**
-   * @generated from field: connectrpc.eliza.v1.Item item = 2;
+   * @generated from field: optional connectrpc.eliza.v1.Item item = 2;
    */
   item?: Item;
 
@@ -1817,8 +1833,8 @@ export class UpdateItemResponse extends Message<UpdateItemResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.UpdateItemResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "item", kind: "message", T: Item },
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "item", kind: "message", T: Item, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateItemResponse {
@@ -1853,9 +1869,9 @@ export class UpdateAppRequest extends Message<UpdateAppRequest> {
   key = "";
 
   /**
-   * @generated from field: int32 optAppId = 3;
+   * @generated from field: optional int32 optAppId = 3;
    */
-  optAppId = 0;
+  optAppId?: number;
 
   /**
    * @generated from field: connectrpc.eliza.v1.App new = 4;
@@ -1872,7 +1888,7 @@ export class UpdateAppRequest extends Message<UpdateAppRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "optAppId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 3, name: "optAppId", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
     { no: 4, name: "new", kind: "message", T: App },
   ]);
 
@@ -1898,12 +1914,12 @@ export class UpdateAppRequest extends Message<UpdateAppRequest> {
  */
 export class UpdateAppResponse extends Message<UpdateAppResponse> {
   /**
-   * @generated from field: string response = 1;
+   * @generated from field: optional string response = 1;
    */
-  response = "";
+  response?: string;
 
   /**
-   * @generated from field: connectrpc.eliza.v1.App app = 2;
+   * @generated from field: optional connectrpc.eliza.v1.App app = 2;
    */
   app?: App;
 
@@ -1915,8 +1931,8 @@ export class UpdateAppResponse extends Message<UpdateAppResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.UpdateAppResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "app", kind: "message", T: App },
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "app", kind: "message", T: App, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateAppResponse {
@@ -1955,6 +1971,16 @@ export class UpdateTradeRequest extends Message<UpdateTradeRequest> {
    */
   tradeId = 0;
 
+  /**
+   * @generated from field: string identityId = 4;
+   */
+  identityId = "";
+
+  /**
+   * @generated from field: repeated connectrpc.eliza.v1.Instance add = 5;
+   */
+  add: Instance[] = [];
+
   constructor(data?: PartialMessage<UpdateTradeRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1966,6 +1992,8 @@ export class UpdateTradeRequest extends Message<UpdateTradeRequest> {
     { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "tradeId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 4, name: "identityId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "add", kind: "message", T: Instance, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateTradeRequest {
@@ -1990,12 +2018,12 @@ export class UpdateTradeRequest extends Message<UpdateTradeRequest> {
  */
 export class UpdateTradeResponse extends Message<UpdateTradeResponse> {
   /**
-   * @generated from field: string response = 1;
+   * @generated from field: optional string response = 1;
    */
-  response = "";
+  response?: string;
 
   /**
-   * @generated from field: connectrpc.eliza.v1.Trade trade = 2;
+   * @generated from field: optional connectrpc.eliza.v1.Trade trade = 2;
    */
   trade?: Trade;
 
@@ -2007,8 +2035,8 @@ export class UpdateTradeResponse extends Message<UpdateTradeResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.UpdateTradeResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "trade", kind: "message", T: Trade },
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "trade", kind: "message", T: Trade, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateTradeResponse {
@@ -2076,9 +2104,14 @@ export class UpdateRecipeRequest extends Message<UpdateRecipeRequest> {
  */
 export class UpdateRecipeResponse extends Message<UpdateRecipeResponse> {
   /**
-   * @generated from field: string response = 1;
+   * @generated from field: optional string response = 1;
    */
-  response = "";
+  response?: string;
+
+  /**
+   * @generated from field: optional connectrpc.eliza.v1.Recipe recipe = 2;
+   */
+  recipe?: Recipe;
 
   constructor(data?: PartialMessage<UpdateRecipeResponse>) {
     super();
@@ -2088,7 +2121,8 @@ export class UpdateRecipeResponse extends Message<UpdateRecipeResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.UpdateRecipeResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "recipe", kind: "message", T: Recipe, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateRecipeResponse {
@@ -2162,9 +2196,14 @@ export class DeleteAppRequest extends Message<DeleteAppRequest> {
  */
 export class DeleteAppResponse extends Message<DeleteAppResponse> {
   /**
-   * @generated from field: string response = 1;
+   * @generated from field: optional string response = 1;
    */
-  response = "";
+  response?: string;
+
+  /**
+   * @generated from field: optional connectrpc.eliza.v1.App deletedApp = 2;
+   */
+  deletedApp?: App;
 
   constructor(data?: PartialMessage<DeleteAppResponse>) {
     super();
@@ -2174,7 +2213,8 @@ export class DeleteAppResponse extends Message<DeleteAppResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.DeleteAppResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "deletedApp", kind: "message", T: App, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteAppResponse {
@@ -2248,12 +2288,12 @@ export class DeleteInstanceRequest extends Message<DeleteInstanceRequest> {
  */
 export class DeleteInstanceResponse extends Message<DeleteInstanceResponse> {
   /**
-   * @generated from field: string response = 1;
+   * @generated from field: optional string response = 1;
    */
-  response = "";
+  response?: string;
 
   /**
-   * @generated from field: connectrpc.eliza.v1.Instance deletedInstance = 2;
+   * @generated from field: optional connectrpc.eliza.v1.Instance deletedInstance = 2;
    */
   deletedInstance?: Instance;
 
@@ -2265,8 +2305,8 @@ export class DeleteInstanceResponse extends Message<DeleteInstanceResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.DeleteInstanceResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "deletedInstance", kind: "message", T: Instance },
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "deletedInstance", kind: "message", T: Instance, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteInstanceResponse {
@@ -2340,12 +2380,12 @@ export class CloseTradeRequest extends Message<CloseTradeRequest> {
  */
 export class CloseTradeResponse extends Message<CloseTradeResponse> {
   /**
-   * @generated from field: string response = 1;
+   * @generated from field: optional string response = 1;
    */
-  response = "";
+  response?: string;
 
   /**
-   * @generated from field: connectrpc.eliza.v1.Trade trade = 2;
+   * @generated from field: optional connectrpc.eliza.v1.Trade trade = 2;
    */
   trade?: Trade;
 
@@ -2357,8 +2397,8 @@ export class CloseTradeResponse extends Message<CloseTradeResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.CloseTradeResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "trade", kind: "message", T: Trade },
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "trade", kind: "message", T: Trade, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CloseTradeResponse {

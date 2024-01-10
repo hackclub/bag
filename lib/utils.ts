@@ -7,3 +7,6 @@ const maintainersYaml = fs.readFileSync(
   'utf-8'
 )
 export const maintainers = parse(maintainersYaml)
+
+export const getKeyByValue = (obj, value) =>
+  Object.keys(obj).find(key => obj[key] === value)

@@ -6,6 +6,7 @@ import { App, PermissionLevels, PrismaClient } from '@prisma/client'
 import { WebClient } from '@slack/web-api'
 import config from './config'
 import { v4 as uuid } from 'uuid'
+import { getKeyByValue } from './lib/utils'
 
 const web = new WebClient(config.SLACK_BOT_TOKEN)
 const prisma = new PrismaClient()
@@ -57,9 +58,6 @@ export default (router: ConnectRouter) => {
       async (req, app) => {
         let key = uuid()
         while (await prisma.app.findUnique({ where: { key } })) key = uuid()
-
-        const getKeyByValue = (obj, value) =>
-          Object.keys(obj).find(key => obj[key] === value)
 
         const created = await prisma.app.create({
           data: {
@@ -166,6 +164,9 @@ export default (router: ConnectRouter) => {
     return await execute(
       req,
       async (req, app) => {
+        // TODO
+        console.log(req.recipe)
+        return
         const recipe = await prisma.recipe.create({
           data: req.recipe
         })
@@ -266,7 +267,7 @@ export default (router: ConnectRouter) => {
       if (app.permissions === PermissionLevels.READ)
         items = items.filter(item => item.public)
 
-      return { items }
+      return { items: items.map(item => stringify(item)) }
     })
   })
 
@@ -320,7 +321,14 @@ export default (router: ConnectRouter) => {
 
   router.rpc(ElizaService, ElizaService.methods.readRecipe, async req => {
     return await execute(req, async (req, app) => {
-      // TODO
+      const recipe = await prisma.recipe.findUnique({
+        where: {
+          id: req.tradeId
+        }
+      })
+      console.log(recipe)
+      // TODO: Deal with permissions
+      return { recipe }
     })
   })
 
@@ -507,6 +515,7 @@ export default (router: ConnectRouter) => {
         })
 
         // Transfer items between users
+        // TODO
       },
       mappedPermissionValues.WRITE_SPECIFIC
     )

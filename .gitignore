@@ -3,6 +3,7 @@
 
 node_modules
 
+setup.ts
 test.ts
 TODO.md
 

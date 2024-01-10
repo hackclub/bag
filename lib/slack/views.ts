@@ -420,6 +420,7 @@ const editApp = (app: App): View => {
           type: 'plain_text',
           text: 'Delete app'
         },
+        optional: true,
         hint: {
           type: 'plain_text',
           text: 'This will permanently delete your app, but not associated data, e.g. instances created! Please make sure this is what you want to do.'
@@ -471,8 +472,9 @@ const editItem = (item: Item): View => {
             type: 'plain_text',
             text: 'Link to image'
           },
-          initial_value: item.image
+          initial_value: item.image || ''
         },
+        optional: true,
         label: {
           type: 'plain_text',
           text: 'Image'
@@ -543,8 +545,12 @@ const editItem = (item: Item): View => {
               type: 'plain_text',
               text: item.commodity ? 'Is a commodity' : 'Is not a commodity'
             },
-            value: item.commodity ? 'Is a commodity' : 'Is not a commodity'
+            value: item.commodity ? 'true' : 'false'
           }
+        },
+        label: {
+          type: 'plain_text',
+          text: 'Is this item a commodity?'
         }
       },
       {
@@ -635,12 +641,34 @@ const getApp = (app: App): (Block | KnownBlock)[] => {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `Here's \`${app.name}\`:
+        text: `Here's *${app.name}*:
 
+_${app.description}_
 ID: ${app.id}
-Description: ${app.description}
 Permissions: ${app.permissions}
 Public: ${app.public}`
+      }
+    }
+  ]
+}
+
+const getItem = (item: Item): (Block | KnownBlock)[] => {
+  return [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `Here's ${item.reaction} *${item.name}*:
+
+_${item.description}_
+Is this a commodity? ${item.commodity ? 'Yes' : 'No'}
+Tradable: ${item.tradable ? 'Yes' : 'No'}
+Public: ${item.public ? 'Yes' : 'No'}
+Metadata: \`${
+          item.metadata === null || !Object.keys(item.metadata).length
+            ? '{}'
+            : item.metadata
+        }\`        `
       }
     }
   ]
@@ -695,7 +723,7 @@ const requestPerms = (user: Identity): View => {
             text: 'Permission'
           },
           options: cascadingPermissions as Array<PlainTextOption>,
-          action_id: 'permission'
+          action_id: 'permissions'
         },
         label: {
           type: 'plain_text',
@@ -709,14 +737,14 @@ const requestPerms = (user: Identity): View => {
 
 const approveOrDenyPerms = (
   user: string,
-  permission: PermissionLevels
+  permissions: PermissionLevels
 ): (Block | KnownBlock)[] => {
   return [
     {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `<@${user}> just asked for ${permission} permissions. Accept or deny:`
+        text: `<@${user}> just asked for ${permissions} permissions. Accept or deny:`
       }
     },
     {
@@ -731,7 +759,7 @@ const approveOrDenyPerms = (
           },
           value: JSON.stringify({
             user,
-            permission
+            permissions: mappedPermissionValues[permissions]
           }),
           action_id: 'approve-perms'
         },
@@ -744,7 +772,7 @@ const approveOrDenyPerms = (
           },
           value: JSON.stringify({
             user,
-            permission
+            permissions: mappedPermissionValues[permissions]
           }),
           action_id: 'deny-perms'
         }
@@ -755,16 +783,14 @@ const approveOrDenyPerms = (
 
 const approveOrDenyAppPerms = (
   app: App,
-  permission: PermissionLevels
+  permissions: PermissionLevels
 ): (Block | KnownBlock)[] => {
   return [
     {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `${
-          app.name
-        } just asked for ${permission.toLowerCase()} permissions. Accept or deny:`
+        text: `${app.name} (an app) just asked for ${permissions} permissions. Accept or deny:`
       }
     },
     {
@@ -779,7 +805,7 @@ const approveOrDenyAppPerms = (
           },
           value: JSON.stringify({
             app: app.id,
-            permission
+            permissions
           }),
           action_id: 'approve-app-perms'
         },
@@ -792,7 +818,7 @@ const approveOrDenyAppPerms = (
           },
           value: JSON.stringify({
             app: app.id,
-            permission
+            permissions
           }),
           action_id: 'deny-app-perms'
         }
@@ -917,6 +943,7 @@ export default {
   editApp,
   editItem,
   getApp,
+  getItem,
   requestPerms,
   approveOrDenyPerms,
   approveOrDenyAppPerms,

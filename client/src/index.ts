@@ -5,7 +5,11 @@ import * as methods from '../gen/eliza_pb'
 import 'dotenv/config'
 
 type RecursivePartial<T> = {
-  [P in keyof T]?: RecursivePartial<T[P]>
+  [P in keyof T]?: T[P] extends (infer U)[]
+    ? RecursivePartial<U>[]
+    : T[P] extends object | undefined
+      ? RecursivePartial<T[P]>
+      : T[P]
 }
 
 export const Permissions = {

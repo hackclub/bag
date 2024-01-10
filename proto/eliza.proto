@@ -213,10 +213,12 @@ message ReadTradeResponse {
 message ReadRecipeRequest {
   int32 appId = 1;
   string key = 2;
+  int32 recipeId = 3;
 }
 
 message ReadRecipeResponse {
   string response = 1;
+  Recipe recipe = 2;
 }
 
 message UpdateIdentityMetadataRequest {

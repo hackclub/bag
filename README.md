@@ -1,6 +1,6 @@
-## Inventory
+## Bag
 
-A new, improved version of `bag`!
+A new, improved version of the old `bag`!
 
 ## Setup
 

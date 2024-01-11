@@ -140,7 +140,7 @@ message CreateTradeRequest {
   string key = 2;
   string initiator = 3;
   string receiver = 4;
-  bool public = 5;
+  optional bool public = 5;
 }
 
 message CreateTradeResponse {
@@ -242,6 +242,7 @@ message UpdateInstanceRequest {
   string key = 2;
   int32 instanceId = 3;
   Instance new = 4;
+  optional string note = 5;
 }
 
 message UpdateInstanceResponse {
@@ -289,6 +290,8 @@ message UpdateTradeResponse {
 message UpdateRecipeRequest {
   int32 appId = 1;
   string key = 2;
+  string recipeId = 3;
+  Recipe new = 4;
 }
 
 message UpdateRecipeResponse {
@@ -327,6 +330,8 @@ message CloseTradeRequest {
 message CloseTradeResponse {
   optional string response = 1;
   optional Trade trade = 2;
+  optional Identity initiator = 3;
+  optional Identity receiver = 4;
 }
 
 message VerifyKeyRequest {

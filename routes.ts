@@ -620,4 +620,32 @@ export default (router: ConnectRouter) => {
       mappedPermissionValues.WRITE_SPECIFIC
     )
   })
+
+  // TODO
+  router.rpc(ElizaService, ElizaService.methods.closeTrade, async req => {
+    return await execute(
+      req,
+      async (req, app) => {
+        const trade = await prisma.trade.findUnique({
+          where: {
+            id: req.tradeId
+          }
+        })
+        if (!trade) throw new Error('Trade not found')
+
+        // * Apps can close trades without both sides agreeing. This is so trades can be used to simulate other behavior, but also because it makes it more fun.
+        await prisma.trade.update({
+          where: {
+            id: req.tradeId
+          },
+          data: {
+            closed: true
+          }
+        })
+
+        // Transfer items between users
+      },
+      mappedPermissionValues.WRITE_SPECIFIC
+    )
+  })
 }

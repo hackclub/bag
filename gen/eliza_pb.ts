@@ -855,9 +855,9 @@ export class CreateTradeRequest extends Message<CreateTradeRequest> {
   receiver = "";
 
   /**
-   * @generated from field: bool public = 5;
+   * @generated from field: optional bool public = 5;
    */
-  public = false;
+  public?: boolean;
 
   constructor(data?: PartialMessage<CreateTradeRequest>) {
     super();
@@ -871,7 +871,7 @@ export class CreateTradeRequest extends Message<CreateTradeRequest> {
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "initiator", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "receiver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateTradeRequest {
@@ -1700,6 +1700,11 @@ export class UpdateInstanceRequest extends Message<UpdateInstanceRequest> {
    */
   new?: Instance;
 
+  /**
+   * @generated from field: optional string note = 5;
+   */
+  note?: string;
+
   constructor(data?: PartialMessage<UpdateInstanceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1712,6 +1717,7 @@ export class UpdateInstanceRequest extends Message<UpdateInstanceRequest> {
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "instanceId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 4, name: "new", kind: "message", T: Instance },
+    { no: 5, name: "note", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateInstanceRequest {
@@ -2088,6 +2094,16 @@ export class UpdateRecipeRequest extends Message<UpdateRecipeRequest> {
    */
   key = "";
 
+  /**
+   * @generated from field: string recipeId = 3;
+   */
+  recipeId = "";
+
+  /**
+   * @generated from field: connectrpc.eliza.v1.Recipe new = 4;
+   */
+  new?: Recipe;
+
   constructor(data?: PartialMessage<UpdateRecipeRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2098,6 +2114,8 @@ export class UpdateRecipeRequest extends Message<UpdateRecipeRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "recipeId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "new", kind: "message", T: Recipe },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateRecipeRequest {
@@ -2407,6 +2425,16 @@ export class CloseTradeResponse extends Message<CloseTradeResponse> {
    */
   trade?: Trade;
 
+  /**
+   * @generated from field: optional connectrpc.eliza.v1.Identity initiator = 3;
+   */
+  initiator?: Identity;
+
+  /**
+   * @generated from field: optional connectrpc.eliza.v1.Identity receiver = 4;
+   */
+  receiver?: Identity;
+
   constructor(data?: PartialMessage<CloseTradeResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2417,6 +2445,8 @@ export class CloseTradeResponse extends Message<CloseTradeResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 2, name: "trade", kind: "message", T: Trade, opt: true },
+    { no: 3, name: "initiator", kind: "message", T: Identity, opt: true },
+    { no: 4, name: "receiver", kind: "message", T: Identity, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CloseTradeResponse {

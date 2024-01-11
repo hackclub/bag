@@ -1,5 +1,5 @@
 {
-  "name": "inventory",
+  "name": "bag",
   "version": "1.0.0",
   "description": "Hack Club's custom inventory system for Slack!",
   "homepage": "https://github.com/hackclub/inventory",

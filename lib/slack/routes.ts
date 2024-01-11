@@ -132,7 +132,9 @@ slack.error(async error => {
 })
 
 // * WORKS
-slack.command('/create-item', async props => {
+// TODO: Should allow apps to create items and have access to those if accepted
+// TODO: When user creates item, it should be added to their list of items they can edit
+slack.command('/item', async props => {
   await execute(
     props,
     async props => {
@@ -146,7 +148,7 @@ slack.command('/create-item', async props => {
 })
 
 // * WORKS
-slack.view('create-item', async props => {
+slack.view('item', async props => {
   await execute(
     props,
     async props => {
@@ -359,6 +361,7 @@ slack.action('deny-perms', async props => {
   })
 })
 
+// TODO: Should allow existing items to give permissions to new apps
 // * WORKS
 slack.command('/edit-item', async props => {
   await execute(
@@ -455,6 +458,7 @@ slack.view('edit-item', async props => {
   })
 })
 
+// TODO: Should be able to give permissions to other apps
 // * WORKS
 slack.command('/edit-app', async props => {
   await execute(props, async props => {
@@ -880,6 +884,7 @@ slack.command('/inventory', async props => {
   })
 })
 
+// TODO: Don't post anything if it's completely empty (bag invite)
 // * WORKS
 slack.event('app_mention', async props => {
   await execute(props, async props => {

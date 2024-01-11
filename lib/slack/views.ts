@@ -27,7 +27,7 @@ const error = (err: string) => {
 }
 
 const createItem: View = {
-  callback_id: 'create-item',
+  callback_id: 'item',
   title: {
     type: 'plain_text',
     text: 'Craft item'
@@ -843,7 +843,7 @@ const helpDialog: (Block | KnownBlock)[] = [
       type: 'mrkdwn',
       text: `Hi! I am a bag. Here's a list of available commands.
 
-\`/create-item\`: Lets you create an item, if you're an admin. (I know, I know, but we have to have rules somewhere.)
+\`/item\`: Lets you create an item, if you're an admin. (I know, I know, but we have to have rules somewhere.)
 \`/create-app\`: Lets you create an app. Most apps will, by default, start out in readonly public mode, and be private by default. You'll receive a DM from @bag with your app key, as well as the ability to edit app settings.
 \`/request-perms\`: Request permissions for yourself. 
 \`/edit-app <id> <key>\`: Lets you edit an app and its settings, given you have the key.

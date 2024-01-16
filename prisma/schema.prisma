@@ -58,6 +58,8 @@ model Item {
   recipeOutputs Recipe[]   @relation("recipeOutputs")
 }
 
+// model Skill {}
+
 model Instance {
   id              Int      @id @default(autoincrement())
   itemId          String // Item ID (ref)
@@ -90,4 +92,15 @@ model Recipe {
   inputs  Item[]  @relation("recipeInputs")
   outputs Item[]  @relation("recipeOutputs")
   public  Boolean @default(true)
+}
+
+enum LoggerLevels {
+  ERROR
+  GENERAL
+}
+
+model Logger {
+  id       Int          @id @default(autoincrement())
+  level    LoggerLevels @default(GENERAL)
+  contents String
 }

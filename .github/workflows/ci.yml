@@ -32,9 +32,8 @@ jobs:
       - name: Build and publish client
         run: |
           cp -r ./gen ./client
-          cd client && npm run build && cd ..
+          cd client && npm run build && npm publish && cd ..
       # - name: Generate documentation
       #   run: |
       #     npm run gen
-
-# TODO: Also have jobs for: Publishing client on NPM and automatically generating documentation (think more about this)
+      # TODO: Figure out how to generate documentation

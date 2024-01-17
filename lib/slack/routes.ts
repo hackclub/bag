@@ -145,13 +145,17 @@ slack.command('/bag-item', async props => {
     switch (command) {
       case 'list':
         let items = await prisma.item.findMany()
-        // TODO: Also account for filtering other permissions
         if (permission < mappedPermissionValues.READ_PRIVATE)
           items = items.filter(item => item.public)
-        let formatted = items.map(item => views.getItem(item))
+        else if (permission < mappedPermissionValues.WRITE)
+          items = items.filter(
+            item =>
+              item.public ||
+              user.specificItems.find(itemId => itemId === item.name)
+          )
+        const formatted = items.map(item => views.getItem(item))
         return await props.client.chat.postMessage({
           channel: props.body.channel_id,
-          user: props.context.userId,
           blocks: [
             {
               type: 'section',
@@ -164,7 +168,7 @@ slack.command('/bag-item', async props => {
                 }items currently in the bag:`
               }
             },
-            ...items.map(itemBlock => itemBlock[0]),
+            ...formatted.map(itemBlock => itemBlock[0]),
             {
               type: 'section',
               text: {
@@ -175,8 +179,51 @@ slack.command('/bag-item', async props => {
           ]
         })
       case 'search':
-        // TODO
-        break
+        try {
+          const query = message.split(' ').slice(1).join('')
+          if (query[0] !== '`' || query[query.length - 1] !== '`')
+            throw new Error()
+          let items = await prisma.item.findMany({
+            where: JSON.parse(query.slice(1, query.length - 1))
+          })
+          if (!items.length) throw new Error()
+
+          if (
+            mappedPermissionValues[user.permissions] <
+            mappedPermissionValues.READ_PRIVATE
+          )
+            items = items.filter(item => item.public)
+          if (
+            mappedPermissionValues[user.permissions] <
+            mappedPermissionValues.WRITE
+          )
+            items = items.filter(
+              item =>
+                item.public ||
+                user.specificItems.find(itemId => itemId === item.name)
+            )
+
+          const formatted = items.map(item => views.getItem(item))
+          return await props.client.chat.postMessage({
+            channel: props.body.channel_id,
+            blocks: [
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: `Here's a list of all the items in the bag that match ${query}:`
+                }
+              },
+              ...formatted.map(itemBlock => itemBlock[0])
+            ]
+          })
+        } catch {
+          return await props.client.chat.postEphemeral({
+            channel: props.body.channel_id,
+            user: props.context.userId,
+            text: "Oh no! Couldn't find any items matching your query. Make sure your query is properly formatted - that is, a valid JSON query encased in a `code snippet`."
+          })
+        }
       case 'edit':
         try {
           const name = message.split(' ')[1]
@@ -220,7 +267,11 @@ slack.command('/bag-item', async props => {
         // Either list item, or if no message is provided, show options
         if (message === '') {
           // List options
-          // TODO
+          return await props.client.chat.postEphemeral({
+            channel: props.body.channel_id,
+            user: props.context.userId,
+            blocks: views.itemDialog
+          })
         } else {
           try {
             const item = await prisma.item.findUnique({
@@ -441,7 +492,44 @@ slack.command('/bag-app', async props => {
           ]
         })
       case 'search':
-        break
+        try {
+          const query = message.split(' ').slice(1).join('')
+          if (query[0] !== '`' || query[query.length - 1] !== '`')
+            throw new Error()
+          let apps = await prisma.app.findMany({
+            where: JSON.parse(query.slice(1, query.length - 1))
+          })
+          if (!apps.length) throw new Error()
+
+          if (
+            mappedPermissionValues[user.permissions] <
+            mappedPermissionValues.READ_PRIVATE
+          )
+            apps = apps.filter(app => app.public)
+          if (
+            mappedPermissionValues[user.permissions] <
+            mappedPermissionValues.ADMIN
+          )
+            apps = apps.filter(
+              app =>
+                app.public || app.specificApps.find(appId => appId === app.id)
+            )
+
+          const formatted = apps.map(app => views.getApp(app))
+          return await props.client.chat.postMessage({
+            channel: props.body.channel_id,
+            blocks: [
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: `Here's a list of all the apps in the bag that match ${query}:`
+                }
+              },
+              ...formatted.map(appBlock => appBlock[0])
+            ]
+          })
+        } catch {}
       case 'edit':
         try {
           const [id, key] = props.body.text.split(' ')
@@ -483,7 +571,11 @@ slack.command('/bag-app', async props => {
         })
       default:
         if (message === '') {
-          // TODO
+          return await props.client.chat.postMessage({
+            channel: props.body.channel_id,
+            user: props.context.userId,
+            blocks: views.appDialog
+          })
         } else {
           try {
             const app = await prisma.app.findUnique({

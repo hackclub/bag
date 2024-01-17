@@ -914,6 +914,28 @@ By the way, I come with a bunch of ~magic tricks~ apps! You can check out all th
   }
 ]
 
+// TODO
+const itemDialog: (Block | KnownBlock)[] = [
+  {
+    type: 'section',
+    text: {
+      type: 'mrkdwn',
+      text: `Options for \`bag-item\`:`
+    }
+  }
+]
+
+// TODO
+const appDialog: (Block | KnownBlock)[] = [
+  {
+    type: 'section',
+    text: {
+      type: 'mrkdwn',
+      text: `Options for \`bag-app\`:`
+    }
+  }
+]
+
 // TODO: Add button to view more info about each inventory item
 const showInventory = async (
   user: IdentityWithInventory
@@ -1042,6 +1064,8 @@ export default {
   approveOrDenyPerms,
   approveOrDenyAppPerms,
   helpDialog,
+  itemDialog,
+  appDialog,
   showInventory,
   startTrade,
   tradeDialog

@@ -2,7 +2,7 @@ import { serialize } from 'next-mdx-remote/serialize'
 import { MDXRemote } from 'next-mdx-remote'
 import fs from 'fs'
 import path from 'path'
-import { Container, Flex, Box } from 'theme-ui'
+import { Container, Grid, Box } from 'theme-ui'
 import Content, { Toc } from '@/components/Content'
 import convertMDX, { generateToc } from '@/utils'
 import 'highlight.js/styles/xcode.css'
@@ -10,19 +10,19 @@ import Menu from '@/components/Menu'
 
 export default function Index({ source, toc }) {
   return (
-    <Flex py={3} sx={{ justifyContent: 'center' }}>
+    <Grid columns={[1, 2, 1]}>
       <Menu />
-      <Container variant="copy" sx={{ border: '1px solid' }}>
+      <Container variant="copy">
         <Content>
           <MDXRemote {...source} />
         </Content>
       </Container>
-      <Box sx={{ border: '1px solid' }}>
+      <Box>
         <Toc>
           <MDXRemote {...toc} />
         </Toc>
       </Box>
-    </Flex>
+    </Grid>
   )
 }
 

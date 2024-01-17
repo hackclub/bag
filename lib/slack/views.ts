@@ -712,7 +712,7 @@ const createdApp = (app: App): (Block | KnownBlock)[] => {
 
 const requestPerms = (user: Identity): View => {
   return {
-    callback_id: 'request-perms',
+    callback_id: 'user-request-perms',
     title: {
       type: 'plain_text',
       text: 'Request permissions'
@@ -744,6 +744,59 @@ const requestPerms = (user: Identity): View => {
   }
 }
 
+const approveOrDenyItem = (
+  item: {
+    name: string
+    reaction: string
+    description: string
+    commodity: boolean
+    tradable: boolean
+    public: boolean
+  },
+  user: string
+): (Block | KnownBlock)[] => {
+  return [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: ''
+      }
+    },
+    {
+      type: 'actions',
+      elements: [
+        {
+          type: 'button',
+          style: 'primary',
+          text: {
+            type: 'plain_text',
+            text: 'Approve and create'
+          },
+          value: JSON.stringify({
+            item,
+            user
+          }),
+          action_id: 'approve-item'
+        },
+        {
+          type: 'button',
+          style: 'danger',
+          text: {
+            type: 'plain_text',
+            text: 'Deny'
+          },
+          value: JSON.stringify({
+            item,
+            user
+          }),
+          action_id: 'deny-item'
+        }
+      ]
+    }
+  ]
+}
+
 const approveOrDenyPerms = (
   user: string,
   permissions: PermissionLevels
@@ -770,7 +823,7 @@ const approveOrDenyPerms = (
             user,
             permissions: mappedPermissionValues[permissions]
           }),
-          action_id: 'approve-perms'
+          action_id: 'user-approve-perms'
         },
         {
           type: 'button',
@@ -783,7 +836,7 @@ const approveOrDenyPerms = (
             user,
             permissions: mappedPermissionValues[permissions]
           }),
-          action_id: 'deny-perms'
+          action_id: 'user-deny-perms'
         }
       ]
     }
@@ -985,6 +1038,7 @@ export default {
   getApp,
   getItem,
   requestPerms,
+  approveOrDenyItem,
   approveOrDenyPerms,
   approveOrDenyAppPerms,
   helpDialog,

@@ -33,6 +33,7 @@ model App {
 model Identity {
   slack           String           @id @unique // Slack ID
   inventory       Instance[] // Instance IDs (ref)
+  skills          SkillInstance[]
   permissions     PermissionLevels @default(value: READ)
   initiatorTrades Trade[]          @relation("initiator")
   receiverTrades  Trade[]          @relation("receiver")
@@ -58,8 +59,6 @@ model Item {
   recipeOutputs Recipe[]   @relation("recipeOutputs")
 }
 
-// model Skill {}
-
 model Instance {
   id              Int      @id @default(autoincrement())
   itemId          String // Item ID (ref)
@@ -71,6 +70,26 @@ model Instance {
   initiatorTrades Trade[]  @relation("initiatorTrades")
   receiverTrades  Trade[]  @relation("receiverTrades")
   public          Boolean  @default(true)
+}
+
+model Skill {
+  name         String          @id @unique
+  maxLevel     Int?
+  description  String?
+  reaction     String?
+  metadata     Json            @default("{}")
+  recipeInputs Recipe[]        @relation("recipeInputs")
+  havers       SkillInstance[]
+}
+
+model SkillInstance {
+  id         Int      @id @default(autoincrement())
+  skillId    String
+  identityId String
+  skill      Skill    @relation(fields: [skillId], references: [name])
+  identity   Identity @relation(fields: [identityId], references: [slack])
+  level      Int      @default(1)
+  metadata   Json     @default("{}")
 }
 
 model Trade {
@@ -90,6 +109,7 @@ model Trade {
 model Recipe {
   id      Int     @id @default(autoincrement())
   inputs  Item[]  @relation("recipeInputs")
+  skills  Skill[] @relation("recipeInputs")
   outputs Item[]  @relation("recipeOutputs")
   public  Boolean @default(true)
 }

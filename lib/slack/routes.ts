@@ -309,6 +309,7 @@ slack.command('/bag-item', async props => {
 })
 
 // TODO: Should allow existing items to give permissions to new apps
+
 slack.view('edit-item', async props => {
   await execute(props, async props => {
     let fields: {
@@ -394,6 +395,10 @@ slack.view('create-item', async props => {
       })
       if (user.permissions !== PermissionLevels.ADMIN) {
         // Request to create item
+        await props.client.chat.postMessage({
+          channel: user.slack,
+          text: 'Item creation request made! You should get a response sometime in the next 24 hours if today is a weekday, and 72 hours otherwise!'
+        })
         return await props.client.chat.postMessage({
           channel: channels.approvals,
           blocks: views.approveOrDenyItem(fields, props.context.userId)
@@ -419,13 +424,29 @@ slack.action('approve-item', async props => {
   await execute(props, async props => {
     try {
       // @ts-expect-error
-      let { user, item } = JSON.parse(props.action.value)
+      let { user, item: fields } = JSON.parse(props.action.value)
 
       // Create item, and add to user's list of items they can access
-      // TODO
+      const item = await prisma.item.create({
+        data: fields
+      })
+      log('New item created: ', item.name)
+
+      await prisma.identity.update({
+        where: {
+          slack: user
+        },
+        data: {
+          specificItems: { push: item.name }
+        }
+      })
 
       // @ts-expect-error
-      await props.client.chat.postMessage()
+      await props.client.chat.postMessage({
+        channel: user,
+        user,
+        text: `New item approved and created: ${item.name} ${item.reaction}`
+      })
     } catch {
       await props.say('Already applied.')
     }
@@ -612,6 +633,8 @@ slack.command('/bag-app', async props => {
   })
 })
 
+// TODO: Should allow existing apps to give permissions to new apps
+
 slack.view('create-app', async props => {
   await execute(props, async props => {
     let fields: {
@@ -671,7 +694,6 @@ Try again?`
   })
 })
 
-// TODO: Give permissions to other apps
 slack.view('edit-app', async props => {
   await execute(props, async props => {
     let fields: {
@@ -939,8 +961,6 @@ slack.action('close-trade', async props => {
         id
       }
     })
-
-    // TODO
 
     console.log(trade, props.body.user.id)
     if (

@@ -21,7 +21,6 @@ model App {
   key             String
   description     String?
   permissions     PermissionLevels @default(value: READ)
-  // These are all strings and not otherwise because there's no public facing value that requires them to have a relation
   specificApps    Int[]
   specificItems   String[]
   specificTrades  Int[]
@@ -31,14 +30,13 @@ model App {
 }
 
 model Identity {
-  slack           String           @id @unique // Slack ID
-  inventory       Instance[] // Instance IDs (ref)
+  slack           String           @id @unique
+  inventory       Instance[]
   skills          SkillInstance[]
   permissions     PermissionLevels @default(value: READ)
   initiatorTrades Trade[]          @relation("initiator")
   receiverTrades  Trade[]          @relation("receiver")
   metadata        Json             @default("{}")
-  // These are all strings and not otherwise because there's no public facing value that requires them to have a relation
   specificApps    Int[]
   specificItems   String[]
   specificTrades  Int[]
@@ -46,13 +44,13 @@ model Identity {
 }
 
 model Item {
-  name          String     @id @unique // Name
-  image         String? // Image
-  description   String? // Description
-  reaction      String? // Slack reaction tag
-  commodity     Boolean    @default(false) // Commodity
-  tradable      Boolean    @default(true) // Tradable
-  instances     Instance[] // Instance IDs (ref)
+  name          String     @id @unique
+  image         String?
+  description   String?
+  reaction      String?
+  commodity     Boolean    @default(false)
+  tradable      Boolean    @default(true)
+  instances     Instance[]
   public        Boolean    @default(false)
   metadata      Json       @default("{}")
   recipeInputs  Recipe[]   @relation("recipeInputs")
@@ -61,11 +59,11 @@ model Item {
 
 model Instance {
   id         Int             @id @default(autoincrement())
-  itemId     String // Item ID (ref)
-  identityId String // Identity ID (ref)
+  itemId     String
+  identityId String
   item       Item            @relation(fields: [itemId], references: [name])
   identity   Identity        @relation(fields: [identityId], references: [slack])
-  quantity   Int             @default(0) // Quantity (if item.commodity == true)
+  quantity   Int             @default(0)
   metadata   Json            @default("{}")
   public     Boolean         @default(true)
   trades     TradeInstance[]

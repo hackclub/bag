@@ -3,7 +3,6 @@ syntax = "proto3";
 package connectrpc.eliza.v1;
 
 service ElizaService {
-  // Response to request
   rpc CreateApp(CreateAppRequest) returns (CreateAppResponse) {}  // Should be able to create apps as an admin
   rpc CreateInstance(CreateInstanceRequest) returns (CreateInstanceResponse) {}  // Should be able to create and assign instances, depending on permissions
   rpc CreateItem(CreateItemRequest) returns (CreateItemResponse) {}  // Should be able to create items, depending on permissions

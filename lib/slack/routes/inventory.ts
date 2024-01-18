@@ -1,7 +1,12 @@
 import slack, { execute } from '../slack'
 import views from '../views'
-import { PrismaClient } from '@prisma/client'
-import { findOrCreateIdentity } from '../../db'
+import { Block, KnownBlock } from '@slack/bolt'
+import { PrismaClient, Instance } from '@prisma/client'
+import {
+  findOrCreateIdentity,
+  combineInventory,
+  type IdentityWithInventory
+} from '../../db'
 
 const prisma = new PrismaClient()
 
@@ -23,7 +28,7 @@ slack.command('/bag-inventory', async props => {
 
       return await props.respond({
         response_type: 'in_channel',
-        blocks: await views.showInventory(user)
+        blocks: await showInventory(user)
       })
     }
     if (message.startsWith('<@')) {
@@ -33,7 +38,7 @@ slack.command('/bag-inventory', async props => {
 
       return await props.respond({
         response_type: 'in_channel',
-        blocks: await views.showInventory(mention)
+        blocks: await showInventory(mention)
       })
     }
     await props.respond({
@@ -87,7 +92,7 @@ slack.event('app_mention', async props => {
 
           await props.client.chat.postMessage({
             channel: props.event.channel,
-            blocks: await views.showInventory(user),
+            blocks: await showInventory(user),
             thread_ts
           })
 
@@ -99,7 +104,7 @@ slack.event('app_mention', async props => {
 
           await props.client.chat.postMessage({
             channel: props.event.channel,
-            blocks: await views.showInventory(mention),
+            blocks: await showInventory(mention),
             thread_ts
           })
 
@@ -123,3 +128,38 @@ slack.event('app_mention', async props => {
     }
   })
 })
+
+// TODO: Add button to view more info about each inventory item
+const showInventory = async (
+  user: IdentityWithInventory
+): Promise<(Block | KnownBlock)[]> => {
+  const formatInventory = async (inventory: Instance[]): Promise<string> => {
+    let result: string[] = []
+    const combined = await combineInventory(inventory)
+    for (let [quantity, _, ref] of combined) {
+      result.push(`x${quantity} ${ref.reaction} ${ref.name}`)
+    }
+    return result.join('\n')
+  }
+
+  let text = []
+  if (user.permissions === 'ADMIN')
+    text.push(`<@${user.slack}> is an admin and has:`)
+  else text.push(`<@${user.slack}> has:`)
+
+  if (!user.inventory.length)
+    text.push(
+      ' nothing. Nothing? The bag is empty? Are you sure? Time to go out and do some stuff.'
+    )
+  else text.push('\n' + (await formatInventory(user.inventory)))
+
+  return [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: text.join('')
+      }
+    }
+  ]
+}

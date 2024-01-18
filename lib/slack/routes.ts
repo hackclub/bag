@@ -954,6 +954,7 @@ slack.action('update-trade', async props => {
             inventory: true
           }
         }),
+        trade.id,
         { channel, ts }
       )
     })
@@ -984,7 +985,11 @@ slack.view('add-trade', async props => {
         Object.values(field)[0].selected_option.value ||
         ''
 
-    const { channel, ts } = JSON.parse(props.view.private_metadata)
+    const {
+      trade: tradeId,
+      channel,
+      ts
+    } = JSON.parse(props.view.private_metadata)
 
     const inventory = await combineInventory(user.inventory)
     const [quantity, instances, item] = inventory.find(
@@ -1000,6 +1005,16 @@ slack.view('add-trade', async props => {
       })
 
     // Add to trade by creating instance
+    const trade = await prisma.trade.findUnique({
+      where: {
+        id: tradeId
+      }
+    })
+    const tradeKey =
+      user.slack === trade.initiatorIdentityId
+        ? 'initiatorTrades'
+        : 'recieverTrades'
+    // Calculate what instances need to be applied
 
     // Post in thread about trade
     await props.client.chat.postMessage({

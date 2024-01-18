@@ -1061,6 +1061,7 @@ const addTrade = (
 
 const tradeDialog = async (
   user: IdentityWithInventory,
+  trade: number,
   thread: { channel: string; ts: string }
 ): Promise<View> => {
   const inventory = await combineInventory(user.inventory)
@@ -1075,7 +1076,7 @@ const tradeDialog = async (
       text: 'Offer'
     },
     type: 'modal',
-    private_metadata: JSON.stringify(thread),
+    private_metadata: JSON.stringify({ trade, ...thread }),
     blocks: [
       {
         type: 'input',

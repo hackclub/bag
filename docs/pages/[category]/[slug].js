@@ -9,7 +9,7 @@ import 'highlight.js/styles/xcode.css'
 import Menu from '@/components/Menu'
 import matter from 'gray-matter'
 
-export default function Index({ source, toc, menu, menuHeaders }) {
+export default function Doc({ source, toc, menu, menuHeaders }) {
   return (
     <Grid
       sx={{ bg: 'snow', position: 'relative', alignItems: 'flex-start' }}
@@ -39,8 +39,10 @@ function toTitleCase(str) {
   })
 }
 
-export async function getStaticProps() {
-  const res = fs.readFileSync(path.join(process.cwd(), 'content/main.mdx'))
+export async function getStaticProps({ params }) {
+  const res = fs.readFileSync(
+    path.join(process.cwd(), 'content', params.category, params.slug)
+  )
   let menu = fs
     .readdirSync(path.join(process.cwd(), 'content'), { withFileTypes: true })
     .filter(dirent => dirent.isDirectory())
@@ -66,5 +68,25 @@ export async function getStaticProps() {
       menu: gen,
       menuHeaders: ['Quickstart', 'Bot', 'Client']
     }
+  }
+}
+
+export async function getStaticPaths() {
+  let menu = fs
+    .readdirSync(path.join(process.cwd(), 'content'), { withFileTypes: true })
+    .filter(dirent => dirent.isDirectory())
+    .map(dirent => {
+      return dirent.name
+    })
+  let push = []
+  for (let title of menu) {
+    let files = fs.readdirSync(path.join(process.cwd(), 'content', title))
+    push.push(...files.map(file => ({ title, file })))
+  }
+  return {
+    paths: push.map(file => ({
+      params: { category: file.title, slug: file.file }
+    })),
+    fallback: true
   }
 }

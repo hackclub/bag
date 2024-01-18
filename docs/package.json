@@ -14,6 +14,7 @@
     "@hackclub/icons": "^0.0.14",
     "@hackclub/meta": "^1.1.33",
     "@hackclub/theme": "^0.3.3",
+    "gray-matter": "^4.0.3",
     "highlight.js": "^11.9.0",
     "next": "14.0.2",
     "next-mdx-remote": "^4.4.1",

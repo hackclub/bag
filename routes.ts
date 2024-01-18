@@ -2,11 +2,12 @@ import { ConnectRouter } from '@connectrpc/connect'
 import { ElizaService } from './gen/eliza_connect'
 import { log } from './lib/logger'
 import { mappedPermissionValues } from './lib/permissions'
-import { App, Item, PermissionLevels, PrismaClient } from '@prisma/client'
+import { App, PermissionLevels, PrismaClient } from '@prisma/client'
 import { WebClient } from '@slack/web-api'
 import config from './config'
 import { v4 as uuid } from 'uuid'
 import { getKeyByValue } from './lib/utils'
+import { InstanceWithItem, TradeWithTrades } from './lib/db'
 
 const web = new WebClient(config.SLACK_BOT_TOKEN)
 const prisma = new PrismaClient()
@@ -153,7 +154,6 @@ export default (router: ConnectRouter) => {
           ]
         })
 
-        console.log('Formatted', format(instance))
         return { instance: format(instance) }
       },
       mappedPermissionValues.WRITE_SPECIFIC
@@ -188,7 +188,7 @@ export default (router: ConnectRouter) => {
               .map(input => app.specificItems.includes(input))
               .includes(false)
           )
-            throw new Error('Invalid inputs')
+            throw new Error('Invalid inptus')
           if (
             req.outputs
               .map(output => app.specificItems.includes(output))
@@ -232,9 +232,32 @@ export default (router: ConnectRouter) => {
     )
   })
 
-  // TODO: Make sure to add to specific trades
   router.rpc(ElizaService, ElizaService.methods.createTrade, async req => {
-    return await execute(req, async req => {})
+    return await execute(
+      req,
+      async (req, app) => {
+        const trade = await prisma.trade.create({
+          data: {
+            initiatorIdentityId: req.initiator,
+            receiverIdentityId: req.receiver,
+            public: req.public ? req.public : false
+          }
+        })
+
+        if (app.permissions === PermissionLevels.WRITE_SPECIFIC)
+          await prisma.app.update({
+            where: {
+              id: app.id
+            },
+            data: {
+              specificTrades: { push: trade.id }
+            }
+          })
+
+        return { trade: format(trade) }
+      },
+      mappedPermissionValues.WRITE_SPECIFIC
+    )
   })
 
   router.rpc(ElizaService, ElizaService.methods.readIdentity, async req => {
@@ -327,9 +350,7 @@ export default (router: ConnectRouter) => {
             mappedPermissionValues.WRITE &&
           !app.specificItems.find(itemId => itemId === instance.itemId)
         )
-          throw new Error()
-
-        return { instance: format(instance) }
+          return { instance: format(instance) }
       } catch {
         throw new Error('Instance not found')
       }
@@ -377,6 +398,8 @@ export default (router: ConnectRouter) => {
           }
         })
         if (!trade) throw new Error()
+        if (!trade.public && app.permissions === PermissionLevels.READ)
+          throw new Error()
         if (!trade.public && app.permissions === PermissionLevels.READ)
           throw new Error()
         if (
@@ -486,12 +509,50 @@ export default (router: ConnectRouter) => {
           instance = await prisma.instance.delete({
             where: {
               id: req.instanceId
+            },
+            include: {
+              item: true
             }
           })
-          // TODO: Let user know their instance disappeared
-        }
 
-        // TODO: Let user know their instances were updated
+          await web.chat.postMessage({
+            channel: req.identityId,
+            blocks: [
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: `*${app.name}* just removed ${
+                    (instance as InstanceWithItem).item.name
+                  } from your inventory!${
+                    req.note
+                      ? " There's a note attached to it: \n\n>" + req.note
+                      : ''
+                  }`
+                }
+              }
+            ]
+          })
+        } else
+          await web.chat.postMessage({
+            channel: req.identityId,
+            blocks: [
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: `*${app.name}* just updated ${
+                    (instance as InstanceWithItem).item.name
+                  } from your inventory!${
+                    req.note
+                      ? " There's a note attached to it: \n\n>" + req.note
+                      : ''
+                  }`
+                }
+              }
+            ]
+          })
+
         return { instance: format(instance) }
       },
       mappedPermissionValues.WRITE_SPECIFIC
@@ -540,7 +601,7 @@ export default (router: ConnectRouter) => {
         }
       })
 
-      if (req.new.id !== undefined) delete req.new.id
+      if (req.new.id !== undefined) delete req.new.identity
       if (req.new.name === '') throw new Error('Name of app cannot be blank')
 
       const updated = await prisma.app.update({
@@ -576,21 +637,64 @@ export default (router: ConnectRouter) => {
         )
           throw new Error('Identity not allowed to edit trade')
 
-        const updateKey = trade.initiatorIdentityId
+        const updateKey =
+          trade.initiatorIdentityId === req.identityId
+            ? 'initiatorTrades'
+            : 'receiverTrades'
         await prisma.trade.update({
           where: {
             id: req.tradeId
           },
-          data: {}
+          data: {
+            [updateKey]: {
+              push: { connect: req.add.map(instance => ({ id: instance.id })) }
+            }
+          }
         })
       },
       mappedPermissionValues.WRITE_SPECIFIC
     )
   })
 
-  //TODO
   router.rpc(ElizaService, ElizaService.methods.updateRecipe, async req => {
-    return await execute(req, async (req, app) => {})
+    return await execute(
+      req,
+      async (req, app) => {
+        if (
+          app.permissions === PermissionLevels.WRITE_SPECIFIC &&
+          !app.specificRecipes.find(recipeId => recipeId === req.recipeId)
+        )
+          throw new Error('Invalid permissions')
+
+        if (req.new.id !== undefined) delete req.new.id
+
+        const inputs = req.new.inputIds
+          ? req.new.inputIds.map(id => ({ id }))
+          : req.new.inputs.map(input => ({ id: input.id }))
+        const outputs = req.new.outputIds
+          ? req.new.outputIds.map(id => ({ id }))
+          : req.new.outputs.map(output => ({ id: output.id }))
+
+        if (!inputs.length || !outputs.length)
+          throw new Error('Recipe should have inputs and outputs')
+
+        let recipe = await prisma.recipe.update({
+          where: {
+            id: req.recipeId
+          },
+          data: req.new
+        })
+
+        return {
+          recipe: {
+            ...format(recipe),
+            inputIds: req.new.inputIds,
+            outputIds: req.new.outputIds
+          }
+        }
+      },
+      mappedPermissionValues.WRITE_SPECIFIC
+    )
   })
 
   router.rpc(ElizaService, ElizaService.methods.deleteInstance, async req => {
@@ -621,20 +725,77 @@ export default (router: ConnectRouter) => {
     )
   })
 
-  // TODO
   router.rpc(ElizaService, ElizaService.methods.closeTrade, async req => {
     return await execute(
       req,
       async (req, app) => {
-        const trade = await prisma.trade.findUnique({
+        let trade: TradeWithTrades = await prisma.trade.findUnique({
           where: {
             id: req.tradeId
+          },
+          include: {
+            initiatorTrades: true,
+            receiverTrades: true
           }
         })
         if (!trade) throw new Error('Trade not found')
+        if (
+          app.permissions === PermissionLevels.WRITE_SPECIFIC &&
+          !app.specificTrades.find(tradeId => tradeId === trade.id)
+        )
+          throw new Error('Invalid permissions')
 
-        // * Apps can close trades without both sides agreeing. This is so trades can be used to simulate other behavior, but also because it makes it more fun.
-        await prisma.trade.update({
+        // Transfer between users
+        const initiator = await prisma.identity.findUnique({
+          where: {
+            slack: trade.initiatorIdentityId
+          },
+          include: {
+            inventory: true
+          }
+        })
+        const receiver = await prisma.identity.findUnique({
+          where: {
+            slack: trade.receiverIdentityId
+          },
+          include: {
+            inventory: true
+          }
+        })
+
+        initiator.inventory.map(async instance => {
+          if (
+            trade.initiatorTrades.find(
+              tradeInstance => tradeInstance.id === instance.id
+            )
+          )
+            await prisma.instance.update({
+              where: {
+                id: instance.id
+              },
+              data: {
+                identityId: receiver.slack
+              }
+            })
+        })
+        receiver.inventory.map(async instance => {
+          if (
+            trade.receiverTrades.find(
+              tradeInstance => tradeInstance.id === instance.id
+            )
+          )
+            await prisma.instance.update({
+              where: {
+                id: instance.id
+              },
+              data: {
+                identityId: initiator.slack
+              }
+            })
+        })
+
+        // Apps can close trades without both sides agreeing. This is so trades can be used to simulate other behavior, but also because it makes it more fun.
+        let closed = await prisma.trade.update({
           where: {
             id: req.tradeId
           },
@@ -643,7 +804,19 @@ export default (router: ConnectRouter) => {
           }
         })
 
-        // Transfer items between users
+        return {
+          trade: format(closed),
+          initiator: await prisma.identity.findUnique({
+            where: {
+              slack: closed.initiatorIdentityId
+            }
+          }),
+          receiver: await prisma.identity.findUnique({
+            where: {
+              slack: closed.receiverIdentityId
+            }
+          })
+        }
       },
       mappedPermissionValues.WRITE_SPECIFIC
     )

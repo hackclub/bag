@@ -951,31 +951,76 @@ slack.action('update-trade', async props => {
   })
 })
 
+// slack.action('close-trade', async props => {
+//   await execute(props, async props => {
+//     // Close trade, transfer items between users
+//     // @ts-expect-error
+//     const id: number = Number(props.action.value)
+//     const trade = await prisma.trade.findUnique({
+//       where: {
+//         id
+//       }
+//     })
+
+//     console.log(trade, props.body.user.id)
+//     if (
+//       ![trade.initiatorIdentityId, trade.receiverIdentityId].includes(
+//         props.body.user.id
+//       )
+//     )
+//       return await props.say("Oh no! You can't close this trade.")
+//     return
+
+//     // Make sure both sides have agreed
+//     if (!trade.initiatorAgreed || !trade.receiverAgreed) return props.say('')
+
+//     return
+
+//     await prisma.trade.update({
+//       where: { id },
+//       data: { closed: true }
+//     })
+//   })
+// })
+
 slack.action('close-trade', async props => {
   await execute(props, async props => {
     // Close trade, transfer items between users
     // @ts-expect-error
     const id: number = Number(props.action.value)
-    const trade = await prisma.trade.findUnique({
+    let trade = await prisma.trade.findUnique({
       where: {
         id
       }
     })
 
-    console.log(trade, props.body.user.id)
     if (
       ![trade.initiatorIdentityId, trade.receiverIdentityId].includes(
         props.body.user.id
       )
     )
       return await props.say("Oh no! You can't close this trade.")
-    return
+
+    const tradeKey =
+      props.body.user.id === trade.initiatorIdentityId
+        ? 'initiatorAgreed'
+        : 'receiverAgreed'
+    trade = await prisma.trade.update({
+      where: {
+        id
+      },
+      data: {
+        [tradeKey]: true
+      }
+    })
 
     // Make sure both sides have agreed
-    if (!trade.initiatorAgreed || !trade.receiverAgreed) return props.say('')
+    if (!trade.initiatorAgreed || !trade.receiverAgreed)
+      return props.say(
+        'Awesome, waiting for the other trader to close the trade!'
+      )
 
-    return
-
+    // If both sides have agreed, close the trade
     await prisma.trade.update({
       where: { id },
       data: { closed: true }

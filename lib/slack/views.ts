@@ -10,7 +10,7 @@ import {
 import { View, PlainTextOption, Block, KnownBlock } from '@slack/bolt'
 import { type IdentityWithInventory } from '../db'
 import { mappedPermissionValues } from '../permissions'
-import config from '../../config'
+import { combineInventory } from '../utils'
 
 const prisma = new PrismaClient()
 
@@ -942,29 +942,8 @@ const showInventory = async (
 ): Promise<(Block | KnownBlock)[]> => {
   const formatInventory = async (inventory: Instance[]): Promise<string> => {
     let result: string[] = []
-    // for (let item of inventory) {
-    //   const ref = await prisma.item.findUnique({
-    //     where: {
-    //       name: item.itemId
-    //     }
-    //   })
-    //   result.push(`x${item.quantity} ${ref.reaction}: ${ref.name}`)
-    // }
-    const reduced = inventory.reduce((acc: any, curr: Instance) => {
-      const instance = acc.find(instances => instances[0].itemId == curr.itemId)
-      if (instance) instance.push(curr)
-      else acc.push([curr])
-      return acc
-    }, [])
-    for (let instances of reduced) {
-      const ref = await prisma.item.findUnique({
-        where: {
-          name: instances[0].itemId
-        }
-      })
-      const quantity = instances.reduce((acc: any, curr: Instance) => {
-        return acc + curr.quantity
-      }, 0)
+    const combined = await combineInventory(inventory)
+    for (let [quantity, _, ref] of combined) {
       result.push(`x${quantity} ${ref.reaction} ${ref.name}`)
     }
     return result.join('\n')
@@ -1034,7 +1013,8 @@ const startTrade = (
   ]
 }
 
-const tradeDialog = (user: IdentityWithInventory): View => {
+const tradeDialog = async (user: IdentityWithInventory): Promise<View> => {
+  const inventory = await combineInventory(user.inventory)
   return {
     callback_id: 'add-trade',
     title: {
@@ -1046,7 +1026,46 @@ const tradeDialog = (user: IdentityWithInventory): View => {
       text: 'Offer'
     },
     type: 'modal',
-    blocks: []
+    blocks: [
+      {
+        type: 'input',
+        element: {
+          action_id: 'trade',
+          type: 'static_select',
+          placeholder: {
+            type: 'plain_text',
+            text: 'Choose a item'
+          },
+          options: inventory.map(([quantity, instance, item]) => {
+            return {
+              text: {
+                type: 'plain_text',
+                text: `x${quantity} ${item.reaction} ${instance[0].itemId}`,
+                emoji: true
+              },
+              value: instance[0].id.toString()
+            }
+          })
+        },
+        label: {
+          type: 'plain_text',
+          text: 'Add item to trade'
+        }
+      },
+      {
+        type: 'input',
+        element: {
+          type: 'number_input',
+          is_decimal_allowed: false,
+          action_id: 'quantity'
+        },
+        label: {
+          type: 'plain_text',
+          text: 'Quantity',
+          emoji: true
+        }
+      }
+    ]
   }
 }
 

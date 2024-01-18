@@ -1,6 +1,8 @@
 import config from './config'
 import { PrismaClient } from '@prisma/client'
-import slack from './lib/slack/routes'
+import slack from './lib/slack/slack'
+import './lib/slack/routes.ts'
+import './lib/slack/routes/inventory'
 
 const prisma = new PrismaClient()
 

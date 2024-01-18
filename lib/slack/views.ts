@@ -1013,7 +1013,7 @@ const startTrade = (
             id: trade.id.toString(),
             ...metadata
           }),
-          action_id: 'close-thread'
+          action_id: 'close-trade'
         }
       ]
     }

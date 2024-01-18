@@ -13,12 +13,12 @@ import config from '../../config'
 import messages from './messages'
 import views from './views'
 import { mappedPermissionValues } from '../permissions'
-import { PrismaClient, PermissionLevels } from '@prisma/client'
+import { PrismaClient, PermissionLevels, Trade } from '@prisma/client'
 import { err, log } from '../logger'
 import { app } from '../api/init'
 import { v4 as uuid } from 'uuid'
-import { getKeyByValue, channels } from '../utils'
-import { findOrCreateIdentity } from '../db'
+import { getKeyByValue, channels, combineInventory } from '../utils'
+import { TradeWithTrades, findOrCreateIdentity } from '../db'
 
 const prisma = new PrismaClient()
 
@@ -906,18 +906,26 @@ slack.command('/bag-trade', async props => {
       }
     })
 
-    await props.client.chat.postMessage({
+    const { channel, ts } = await props.client.chat.postMessage({
       channel: props.body.channel_id,
       blocks: views.startTrade(props.context.userId, receiver, trade)
+    })
+
+    await props.client.chat.update({
+      channel,
+      ts,
+      blocks: views.startTrade(props.context.userId, receiver, trade, {
+        channel,
+        ts
+      })
     })
   })
 })
 
 slack.action('update-trade', async props => {
   await execute(props, async props => {
-    // TODO: Make sure user is allowed to update trade
     // @ts-expect-error
-    const id = props.action.value
+    const { id, channel, ts } = JSON.parse(props.action.value)
     const trade = await prisma.trade.findUnique({
       where: {
         id: Number(id)
@@ -945,43 +953,62 @@ slack.action('update-trade', async props => {
           include: {
             inventory: true
           }
-        })
+        }),
+        { channel, ts }
       )
     })
   })
 })
 
-// slack.action('close-trade', async props => {
-//   await execute(props, async props => {
-//     // Close trade, transfer items between users
-//     // @ts-expect-error
-//     const id: number = Number(props.action.value)
-//     const trade = await prisma.trade.findUnique({
-//       where: {
-//         id
-//       }
-//     })
+slack.view('add-trade', async props => {
+  await execute(props, async props => {
+    const user = await prisma.identity.findUnique({
+      where: {
+        slack: props.body.user.id
+      },
+      include: {
+        inventory: true
+      }
+    })
 
-//     console.log(trade, props.body.user.id)
-//     if (
-//       ![trade.initiatorIdentityId, trade.receiverIdentityId].includes(
-//         props.body.user.id
-//       )
-//     )
-//       return await props.say("Oh no! You can't close this trade.")
-//     return
+    let fields: {
+      item: string
+      quantity: number
+    } = {
+      item: undefined,
+      quantity: undefined
+    }
+    for (let field of Object.values(props.view.state.values))
+      fields[Object.keys(field)[0]] =
+        field[Object.keys(field)[0]].value ||
+        Object.values(field)[0].selected_option.value ||
+        ''
 
-//     // Make sure both sides have agreed
-//     if (!trade.initiatorAgreed || !trade.receiverAgreed) return props.say('')
+    const { channel, ts } = JSON.parse(props.view.private_metadata)
 
-//     return
+    const inventory = await combineInventory(user.inventory)
+    const [quantity, instances, item] = inventory.find(
+      ([_, __, item]) => item.name === fields.item
+    )
 
-//     await prisma.trade.update({
-//       where: { id },
-//       data: { closed: true }
-//     })
-//   })
-// })
+    // Make sure quantity is not greater than the actual amount
+    if (fields.quantity > quantity)
+      return props.client.chat.postMessage({
+        channel: props.context.userId,
+        user: props.context.userId,
+        text: `Woah woah woah! It doesn't look like you have ${fields.quantity} ${item.reaction} ${item.name} to trade.`
+      })
+
+    // Add to trade by creating instance
+
+    // Post in thread about trade
+    await props.client.chat.postMessage({
+      channel,
+      thread_ts: ts,
+      blocks: views.addTrade(user, fields.quantity, item)
+    })
+  })
+})
 
 slack.action('close-trade', async props => {
   await execute(props, async props => {
@@ -1021,9 +1048,59 @@ slack.action('close-trade', async props => {
       )
 
     // If both sides have agreed, close the trade
-    await prisma.trade.update({
+    const closed = await prisma.trade.update({
       where: { id },
-      data: { closed: true }
+      data: { closed: true },
+      include: {
+        initiatorTrades: true,
+        receiverTrades: true
+      }
+    })
+
+    const initiator = await prisma.identity.findUnique({
+      where: {
+        slack: trade.initiatorIdentityId
+      },
+      include: {
+        inventory: true
+      }
+    })
+    const receiver = await prisma.identity.findUnique({
+      where: {
+        slack: trade.receiverIdentityId
+      },
+      include: {
+        inventory: true
+      }
+    })
+
+    // @ts-expect-error
+    await props.client.chat.postMessage({
+      channel: closed.initiatorIdentityId,
+      user: closed.initiatorIdentityId,
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `Trade with <@${closed.receiverIdentityId}> closed!`
+          }
+        }
+      ]
+    })
+    // @ts-expect-error
+    await props.client.chat.postMessage({
+      channel: closed.receiverIdentityId,
+      user: closed.receiverIdentityId,
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `Trade with <@${closed.initiatorIdentityId}> closed!`
+          }
+        }
+      ]
     })
   })
 })
@@ -1076,6 +1153,8 @@ slack.command('/bag-inventory', async props => {
 
 slack.event('app_mention', async props => {
   await execute(props, async props => {
+    const thread_ts = props.body.event.thread_ts
+
     const removeUser = (text: string) => {
       let i
       for (i = 0; text[i - 2] != '>'; i++) {} // 2 to deal with the space that comes afterward
@@ -1088,7 +1167,8 @@ slack.event('app_mention', async props => {
         await props.client.chat.postMessage({
           channel: props.event.channel,
           user: props.context.userId,
-          blocks: views.helpDialog
+          blocks: views.helpDialog,
+          thread_ts
         })
         break
       default:
@@ -1107,7 +1187,8 @@ slack.event('app_mention', async props => {
 
           await props.client.chat.postMessage({
             channel: props.event.channel,
-            blocks: await views.showInventory(user)
+            blocks: await views.showInventory(user),
+            thread_ts
           })
 
           break
@@ -1118,7 +1199,8 @@ slack.event('app_mention', async props => {
 
           await props.client.chat.postMessage({
             channel: props.event.channel,
-            blocks: await views.showInventory(mention)
+            blocks: await views.showInventory(mention),
+            thread_ts
           })
 
           break
@@ -1135,7 +1217,8 @@ slack.event('app_mention', async props => {
               }
             },
             ...views.helpDialog
-          ]
+          ],
+          thread_ts
         })
     }
   })

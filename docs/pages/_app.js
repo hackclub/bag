@@ -24,13 +24,7 @@ export default function App({ Component, pageProps }) {
           }
         }
       }}>
-      <Meta
-        as={Head}
-        name="Hack Club"
-        title="bag"
-        description="TODO"
-        color="#ec3750"
-      />
+      <Meta as={Head} name="Hack Club" title="bag" color="#ec3750" />
       <Component {...pageProps} />
     </ThemeUIProvider>
   )

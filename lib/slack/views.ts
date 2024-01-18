@@ -974,7 +974,8 @@ const showInventory = async (
 const startTrade = (
   initiator: string,
   receiver: string,
-  trade: Trade
+  trade: Trade,
+  metadata?: object
 ): (Block | KnownBlock)[] => {
   return [
     {
@@ -994,7 +995,10 @@ const startTrade = (
             text: 'Add from inventory'
           },
           style: 'primary',
-          value: trade.id.toString(),
+          value: JSON.stringify({
+            id: trade.id.toString(),
+            ...metadata
+          }),
           action_id: 'update-trade'
         },
         {
@@ -1005,7 +1009,10 @@ const startTrade = (
             emoji: true
           },
           style: 'danger',
-          value: trade.id.toString(),
+          value: JSON.stringify({
+            id: trade.id.toString(),
+            ...metadata
+          }),
           action_id: 'close-thread'
         }
       ]
@@ -1013,7 +1020,49 @@ const startTrade = (
   ]
 }
 
-const tradeDialog = async (user: IdentityWithInventory): Promise<View> => {
+const addTrade = (
+  user: Identity,
+  quantity: number,
+  item: Item
+): (Block | KnownBlock)[] => {
+  return [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `<@${user.slack}> offered x${quantity} of ${item.reaction} ${item.name}!`
+      }
+    },
+    {
+      type: 'actions',
+      elements: [
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: 'Take off trade'
+          },
+          action_id: 'remove-trade',
+          style: 'danger'
+        }
+      ]
+    },
+    {
+      type: 'context',
+      elements: [
+        {
+          type: 'mrkdwn',
+          text: '_You can only remove items off trades before the other trader closes their end._'
+        }
+      ]
+    }
+  ]
+}
+
+const tradeDialog = async (
+  user: IdentityWithInventory,
+  thread: { channel: string; ts: string }
+): Promise<View> => {
   const inventory = await combineInventory(user.inventory)
   return {
     callback_id: 'add-trade',
@@ -1026,11 +1075,12 @@ const tradeDialog = async (user: IdentityWithInventory): Promise<View> => {
       text: 'Offer'
     },
     type: 'modal',
+    private_metadata: JSON.stringify(thread),
     blocks: [
       {
         type: 'input',
         element: {
-          action_id: 'trade',
+          action_id: 'item',
           type: 'static_select',
           placeholder: {
             type: 'plain_text',
@@ -1043,7 +1093,7 @@ const tradeDialog = async (user: IdentityWithInventory): Promise<View> => {
                 text: `x${quantity} ${item.reaction} ${instance[0].itemId}`,
                 emoji: true
               },
-              value: instance[0].id.toString()
+              value: instance[0].itemId
             }
           })
         },
@@ -1057,7 +1107,8 @@ const tradeDialog = async (user: IdentityWithInventory): Promise<View> => {
         element: {
           type: 'number_input',
           is_decimal_allowed: false,
-          action_id: 'quantity'
+          action_id: 'quantity',
+          min_value: '1'
         },
         label: {
           type: 'plain_text',
@@ -1087,5 +1138,6 @@ export default {
   appDialog,
   showInventory,
   startTrade,
+  addTrade,
   tradeDialog
 }

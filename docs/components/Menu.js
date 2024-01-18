@@ -1,13 +1,11 @@
-import { Box, Container } from 'theme-ui'
+import { Box, Container, Flex } from 'theme-ui'
 import Content from './Content'
 
 export default function Menu() {
   return (
-    <Box>
-      <Content>
-        <h1>💰</h1>
-        <h1>Bag</h1>
-      </Content>
-    </Box>
+    <Flex sx={{ justifyContent: 'right' }} px={3}>
+      <h1>💰</h1>
+      <h1>Bag</h1>
+    </Flex>
   )
 }

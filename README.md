@@ -2,24 +2,6 @@
 
 A new, improved version of the old `bag`!
 
-## Getting started
-
-Create an app in the Slack with `/create-app`. You'll get the app ID and key.
-
-To start using the bag with your app, create a JavaScript
-
-```js
-
-```
-
-## Reference
-
-For reference on commands in Slack, run `@bag help` in the Slack.
-
-Here's what you can do with your app:
-
-// TODO: Generate automatically
-
 ## Setup
 
 To run locally, make sure you have the following installed:

@@ -60,16 +60,15 @@ model Item {
 }
 
 model Instance {
-  id              Int      @id @default(autoincrement())
-  itemId          String // Item ID (ref)
-  identityId      String // Identity ID (ref)
-  item            Item     @relation(fields: [itemId], references: [name])
-  identity        Identity @relation(fields: [identityId], references: [slack])
-  quantity        Int      @default(0) // Quantity (if item.commodity == true)
-  metadata        Json     @default("{}")
-  initiatorTrades Trade[]  @relation("initiatorTrades")
-  receiverTrades  Trade[]  @relation("receiverTrades")
-  public          Boolean  @default(true)
+  id         Int             @id @default(autoincrement())
+  itemId     String // Item ID (ref)
+  identityId String // Identity ID (ref)
+  item       Item            @relation(fields: [itemId], references: [name])
+  identity   Identity        @relation(fields: [identityId], references: [slack])
+  quantity   Int             @default(0) // Quantity (if item.commodity == true)
+  metadata   Json            @default("{}")
+  public     Boolean         @default(true)
+  trades     TradeInstance[]
 }
 
 model Skill {
@@ -93,17 +92,26 @@ model SkillInstance {
 }
 
 model Trade {
-  id                  Int        @id @default(autoincrement())
+  id                  Int             @id @default(autoincrement())
   initiatorIdentityId String
   receiverIdentityId  String
-  initiator           Identity   @relation("initiator", fields: [initiatorIdentityId], references: [slack])
-  receiver            Identity   @relation("receiver", fields: [receiverIdentityId], references: [slack])
-  initiatorTrades     Instance[] @relation("initiatorTrades")
-  receiverTrades      Instance[] @relation("receiverTrades")
-  initiatorAgreed     Boolean    @default(false)
-  receiverAgreed      Boolean    @default(false)
-  public              Boolean    @default(true)
-  closed              Boolean    @default(false)
+  initiator           Identity        @relation("initiator", fields: [initiatorIdentityId], references: [slack])
+  receiver            Identity        @relation("receiver", fields: [receiverIdentityId], references: [slack])
+  initiatorTrades     TradeInstance[] @relation("initiatorTrades")
+  receiverTrades      TradeInstance[] @relation("receiverTrades")
+  initiatorAgreed     Boolean         @default(false)
+  receiverAgreed      Boolean         @default(false)
+  public              Boolean         @default(true)
+  closed              Boolean         @default(false)
+}
+
+model TradeInstance {
+  id              Int      @id @default(autoincrement())
+  instanceId      Int
+  instance        Instance @relation(fields: [instanceId], references: [id])
+  initiatorTrades Trade[]  @relation("initiatorTrades")
+  receiverTrades  Trade[]  @relation("receiverTrades")
+  quantity        Int      @default(1)
 }
 
 model Recipe {

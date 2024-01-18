@@ -106,15 +106,11 @@ const Content = ({ html, children }) =>
 export const Toc = ({ html, children }) =>
   html ? (
     <TocStyled
-      sx={{ fontSize: '1.1rem !important' }}
       as="article"
       className="docs"
       dangerouslySetInnerHTML={{ __html: html }}></TocStyled>
   ) : (
-    <TocStyled
-      sx={{ fontSize: '1.1rem !important' }}
-      as="article"
-      className="docs">
+    <TocStyled as="article" className="docs">
       {children}
     </TocStyled>
   )

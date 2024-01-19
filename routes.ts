@@ -767,36 +767,80 @@ export default (router: ConnectRouter) => {
           }
         })
 
-        initiator.inventory.map(async instance => {
-          if (
-            trade.initiatorTrades.find(
-              tradeInstance => tradeInstance.id === instance.id
+        await Promise.all(
+          initiator.inventory.map(async instance => {
+            const tradeInstance = trade.initiatorTrades.find(
+              tradeInstance => tradeInstance.instanceId === instance.id
             )
-          )
-            await prisma.instance.update({
-              where: {
-                id: instance.id
-              },
-              data: {
-                identityId: receiver.slack
+            if (tradeInstance) {
+              if (tradeInstance.quantity < instance.quantity) {
+                await prisma.instance.update({
+                  where: {
+                    id: instance.id
+                  },
+                  data: {
+                    quantity: instance.quantity - tradeInstance.quantity
+                  }
+                })
+                await prisma.instance.create({
+                  data: {
+                    itemId: instance.itemId,
+                    identityId: receiver.slack,
+                    quantity: tradeInstance.quantity,
+                    public: instance.public
+                  }
+                })
+              } else {
+                // Transfer entire instance over
+                await prisma.instance.update({
+                  where: {
+                    id: instance.id
+                  },
+                  data: {
+                    identityId: receiver.slack
+                  }
+                })
               }
-            })
-        })
-        receiver.inventory.map(async instance => {
-          if (
-            trade.receiverTrades.find(
-              tradeInstance => tradeInstance.id === instance.id
+            }
+          })
+        )
+        await Promise.all(
+          receiver.inventory.map(async instance => {
+            const tradeInstance = trade.receiverTrades.find(
+              tradeInstance => tradeInstance.instanceId === instance.id
             )
-          )
-            await prisma.instance.update({
-              where: {
-                id: instance.id
-              },
-              data: {
-                identityId: initiator.slack
+            if (tradeInstance) {
+              if (tradeInstance.quantity < instance.quantity) {
+                await prisma.instance.update({
+                  where: {
+                    id: instance.id
+                  },
+                  data: {
+                    quantity: instance.quantity - tradeInstance.quantity
+                  }
+                })
+                await prisma.instance.create({
+                  data: {
+                    itemId: instance.itemId,
+                    identityId: initiator.slack,
+                    quantity: tradeInstance.quantity,
+                    public: instance.public
+                  }
+                })
+              } else {
+                // Transfer entire instance over
+                await prisma.instance.update({
+                  where: {
+                    id: instance.id
+                  },
+                  data: {
+                    identityId: initiator.slack
+                  }
+                })
               }
-            })
-        })
+            }
+          })
+        )
 
         // Apps can close trades without both sides agreeing. This is so trades can be used to simulate other behavior, but also because it makes it more fun.
         let closed = await prisma.trade.update({

@@ -181,6 +181,16 @@ slack.command('/bag-item', async props => {
   })
 })
 
+slack.action('get-item', async props => {
+  await execute(props, async props => {
+    // @ts-expect-error
+    const item = JSON.parse(props.action.value)
+    return props.say({
+      blocks: getItem(item)
+    })
+  })
+})
+
 slack.view('create-item', async props => {
   await execute(props, async props => {
     let fields: {
@@ -230,7 +240,7 @@ slack.view('create-item', async props => {
 
 slack.action('approve-item', async props => {
   await execute(props, async props => {
-    // @ts-ignore-error
+    // @ts-expect-error
     let { user, item: fields } = JSON.parse(props.action.value)
 
     // Create item, and add to user's list of items they can access
@@ -252,7 +262,6 @@ slack.action('approve-item', async props => {
       `New item approved and created: ${item.name} ${item.reaction}`
     )
 
-    // @ts-ignore-error
     await props.say({
       channel: user,
       text: `New item approved and created: ${item.name} ${item.reaction}`
@@ -262,14 +271,14 @@ slack.action('approve-item', async props => {
 
 slack.action('deny-item', async props => {
   await execute(props, async props => {
-    // @ts-ignore-error
+    // @ts-expect-error
     let { user, item } = JSON.parse(props.action.value)
 
     await props.respond(
       `Request to create ${item.name} ${item.reaction} denied.`
     )
 
-    // @ts-ignore-error
+    // @ts-expect-error
     await props.client.chat.postMessage({
       channel: user,
       text: `Your request to create ${item.name} ${item.reaction} was denied.`

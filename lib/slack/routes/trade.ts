@@ -1,12 +1,6 @@
-import { IdentityWithInventory, combineInventory } from '../../db'
+import { IdentityWithInventory } from '../../db'
 import slack, { execute } from '../slack'
-import {
-  PrismaClient,
-  Trade,
-  Identity,
-  Item,
-  TradeInstance
-} from '@prisma/client'
+import { PrismaClient, Trade, Identity, Item, Instance } from '@prisma/client'
 import { Block, KnownBlock, View } from '@slack/bolt'
 
 const prisma = new PrismaClient()
@@ -41,10 +35,7 @@ slack.command('/bag-trade', async props => {
     await props.client.chat.update({
       channel,
       ts,
-      blocks: startTrade(props.context.userId, receiver, trade, {
-        channel,
-        ts
-      })
+      blocks: startTrade(props.context.userId, receiver, trade, { channel, ts })
     })
   })
 })
@@ -104,7 +95,7 @@ slack.view('add-trade', async props => {
       quantity: number
     } = {
       item: undefined,
-      quantity: undefined
+      quantity: 1
     }
     for (let field of Object.values(props.view.state.values))
       fields[Object.keys(field)[0]] =
@@ -118,17 +109,21 @@ slack.view('add-trade', async props => {
       ts
     } = JSON.parse(props.view.private_metadata)
 
-    const inventory = await combineInventory(user.inventory)
-    const [quantity, instances, item] = inventory.find(
-      ([_, __, item]) => item.name === fields.item
+    const instance = user.inventory.find(
+      instance => instance.itemId === fields.item
     )
+    const ref = await prisma.item.findUnique({
+      where: {
+        name: instance.itemId
+      }
+    })
 
     // Make sure quantity is not greater than the actual amount
-    if (fields.quantity > quantity)
+    if (fields.quantity > instance.quantity)
       return props.client.chat.postMessage({
         channel: props.context.userId,
         user: props.context.userId,
-        text: `Woah woah woah! It doesn't look like you have ${fields.quantity} ${item.reaction} ${item.name} to trade.`
+        text: `Woah woah woah! It doesn't look like you have ${fields.quantity} ${ref.reaction} ${ref.name} to trade.`
       })
 
     // Add to trade by creating instance
@@ -142,83 +137,19 @@ slack.view('add-trade', async props => {
         ? 'initiatorTrades'
         : 'recieverTrades'
 
-    // Calculate what instances need to be applied
-    let i = 0
-    let trades: number[] = []
-    for (let instance of instances) {
-      if (i + instance.quantity >= fields.quantity) {
-        // Stop here
-        const tradeInstance = await prisma.tradeInstance.create({
-          data: {
-            instanceId: instance.id,
-            quantity: fields.quantity - i,
-            [tradeKey]: { connect: trade }
-          }
-        })
-        trades.push(tradeInstance.id)
-        break
+    const create = await prisma.tradeInstance.create({
+      data: {
+        instanceId: instance.id,
+        quantity: Number(fields.quantity),
+        [tradeKey]: { connect: trade }
       }
-      i += instance.quantity
-      const tradeInstance = await prisma.tradeInstance.create({
-        data: {
-          instanceId: instance.id,
-          quantity: instance.quantity,
-          [tradeKey]: { connect: trade }
-        }
-      })
-      trades.push(tradeInstance.id)
-    }
+    })
 
     // Post in thread about trade
     await props.client.chat.postMessage({
       channel,
       thread_ts: ts,
-      blocks: addTrade(user, fields.quantity, item, trades, ts)
-    })
-  })
-})
-
-slack.action('remove-trade', async props => {
-  await execute(props, async props => {
-    // Remove item from trade
-    // @ts-expect-error
-    const { user, quantity, item, trades, ts } = JSON.parse(props.action.value)
-    for (let trade of trades) {
-      try {
-        await prisma.tradeInstance.delete({
-          where: {
-            id: trade
-          }
-        })
-      } catch {
-        // @ts-expect-error
-        return await props.client.chat.postEphemeral({
-          thread_ts: ts,
-          channel: props.body.channel.id,
-          user: user.slack,
-          blocks: [
-            {
-              type: 'section',
-              text: {
-                type: 'mrkdwn',
-                text: 'Item was already removed from trade!'
-              }
-            }
-          ]
-        })
-      }
-    }
-    await props.say({
-      thread_ts: ts,
-      blocks: [
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `<@${user.slack}> just removed x${quantity} of ${item.reaction} ${item.name} from the trade.`
-          }
-        }
-      ]
+      blocks: addTrade(user, create.id, ref, fields.quantity, { channel, ts })
     })
   })
 })
@@ -230,9 +161,7 @@ slack.action('close-trade', async props => {
     let { id, channel, ts } = JSON.parse(props.action.value)
     id = Number(id)
     let trade = await prisma.trade.findUnique({
-      where: {
-        id
-      }
+      where: { id }
     })
 
     if (
@@ -298,31 +227,133 @@ slack.action('close-trade', async props => {
     })
 
     // Now transfer items
+    await Promise.all(
+      initiator.inventory.map(async instance => {
+        const tradeInstance = closed.initiatorTrades.find(
+          tradeInstance => tradeInstance.instanceId === instance.id
+        )
+        if (tradeInstance) {
+          if (tradeInstance.quantity < instance.quantity) {
+            await prisma.instance.update({
+              where: {
+                id: instance.id
+              },
+              data: {
+                quantity: instance.quantity - tradeInstance.quantity
+              }
+            })
+            await prisma.instance.create({
+              data: {
+                itemId: instance.itemId,
+                identityId: receiver.slack,
+                quantity: tradeInstance.quantity,
+                public: instance.public
+              }
+            })
+          } else {
+            // Transfer entire instance over
+            await prisma.instance.update({
+              where: {
+                id: instance.id
+              },
+              data: {
+                identityId: receiver.slack
+              }
+            })
+          }
+        }
+      })
+    )
+    await Promise.all(
+      receiver.inventory.map(async instance => {
+        const tradeInstance = closed.receiverTrades.find(
+          tradeInstance => tradeInstance.instanceId === instance.id
+        )
+        if (tradeInstance) {
+          if (tradeInstance.quantity < instance.quantity) {
+            await prisma.instance.update({
+              where: {
+                id: instance.id
+              },
+              data: {
+                quantity: instance.quantity - tradeInstance.quantity
+              }
+            })
+            await prisma.instance.create({
+              data: {
+                itemId: instance.itemId,
+                identityId: initiator.slack,
+                quantity: tradeInstance.quantity,
+                public: instance.public
+              }
+            })
+          } else {
+            // Transfer entire instance over
+            await prisma.instance.update({
+              where: {
+                id: instance.id
+              },
+              data: {
+                identityId: initiator.slack
+              }
+            })
+          }
+        }
+      })
+    )
 
     // @ts-expect-error
     await props.client.chat.postMessage({
-      channel: closed.initiatorIdentityId,
-      user: closed.initiatorIdentityId,
+      channel,
+      ts,
       blocks: [
         {
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `Trade with <@${closed.receiverIdentityId}> closed!`
+            text: `Trade between <@${closed.initiatorIdentityId}> and <@${closed.receiverIdentityId}> closed!`
           }
         }
       ]
     })
+  })
+})
+
+slack.action('remove-trade', async props => {
+  await execute(props, async props => {
     // @ts-expect-error
-    await props.client.chat.postMessage({
-      channel: closed.receiverIdentityId,
-      user: closed.receiverIdentityId,
+    const { user, trade, item, quantity, ts } = JSON.parse(props.action.value)
+    try {
+      await prisma.tradeInstance.delete({
+        where: {
+          id: trade
+        }
+      })
+    } catch {
+      // @ts-expect-error
+      return await props.client.chat.postEphemeral({
+        thread_ts: ts,
+        channel: props.body.channel.id,
+        user: user.slack,
+        blocks: [
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: 'Item was already removed from trade!'
+            }
+          }
+        ]
+      })
+    }
+    await props.say({
+      thread_ts: ts,
       blocks: [
         {
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `Trade with <@${closed.initiatorIdentityId}> closed!`
+            text: `<@${user.slack}> just removed x${quantity} of ${item.reaction} ${item.name} from the trade.`
           }
         }
       ]
@@ -334,7 +365,7 @@ const startTrade = (
   initiator: string,
   receiver: string,
   trade: Trade,
-  metadata?: object
+  thread?: object
 ): (Block | KnownBlock)[] => {
   return [
     {
@@ -356,7 +387,7 @@ const startTrade = (
           style: 'primary',
           value: JSON.stringify({
             id: trade.id.toString(),
-            ...metadata
+            ...thread
           }),
           action_id: 'update-trade'
         },
@@ -370,51 +401,9 @@ const startTrade = (
           style: 'danger',
           value: JSON.stringify({
             id: trade.id.toString(),
-            ...metadata
+            ...thread
           }),
           action_id: 'close-trade'
-        }
-      ]
-    }
-  ]
-}
-
-const addTrade = (
-  user: Identity,
-  quantity: number,
-  item: Item,
-  trades: number[],
-  ts: string
-): (Block | KnownBlock)[] => {
-  return [
-    {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: `<@${user.slack}> offered x${quantity} of ${item.reaction} ${item.name}!`
-      }
-    },
-    {
-      type: 'actions',
-      elements: [
-        {
-          type: 'button',
-          text: {
-            type: 'plain_text',
-            text: 'Take off trade'
-          },
-          action_id: 'remove-trade',
-          value: JSON.stringify({ user, quantity, item, trades, ts }),
-          style: 'danger'
-        }
-      ]
-    },
-    {
-      type: 'context',
-      elements: [
-        {
-          type: 'mrkdwn',
-          text: '_You can only remove items off trades before the other trader closes their end._'
         }
       ]
     }
@@ -426,7 +415,6 @@ const tradeDialog = async (
   trade: number,
   thread: { channel: string; ts: string }
 ): Promise<View> => {
-  const inventory = await combineInventory(user.inventory)
   return {
     callback_id: 'add-trade',
     title: {
@@ -449,16 +437,24 @@ const tradeDialog = async (
             type: 'plain_text',
             text: 'Choose a item'
           },
-          options: inventory.map(([quantity, instance, item]) => {
-            return {
-              text: {
-                type: 'plain_text',
-                text: `x${quantity} ${item.reaction} ${instance[0].itemId}`,
-                emoji: true
-              },
-              value: instance[0].itemId
-            }
-          })
+          options: await Promise.all(
+            user.inventory.map(async instance => {
+              const item = await prisma.item.findUnique({
+                where: {
+                  name: instance.itemId
+                }
+              })
+
+              return {
+                text: {
+                  type: 'plain_text',
+                  text: `x${instance.quantity} ${item.reaction} ${instance.itemId}`,
+                  emoji: true
+                },
+                value: instance.itemId
+              }
+            })
+          )
         },
         label: {
           type: 'plain_text',
@@ -475,10 +471,51 @@ const tradeDialog = async (
         },
         label: {
           type: 'plain_text',
-          text: 'Quantity',
-          emoji: true
+          text: 'Quantity'
         }
       }
     ]
   }
+}
+
+const addTrade = (
+  user: Identity,
+  trade: number,
+  item: Item,
+  quantity: number,
+  thread: { channel: string; ts: string }
+): (Block | KnownBlock)[] => {
+  return [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `<@${user.slack}> offered x${quantity} of ${item.reaction} ${item.name}!`
+      }
+    },
+    {
+      type: 'actions',
+      elements: [
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: 'Take off trade'
+          },
+          action_id: 'remove-trade',
+          value: JSON.stringify({ user, trade, item, quantity, ...thread }),
+          style: 'danger'
+        }
+      ]
+    },
+    {
+      type: 'context',
+      elements: [
+        {
+          type: 'mrkdwn',
+          text: '_You can only remove items off trades before the other trader closes their end._'
+        }
+      ]
+    }
+  ]
 }

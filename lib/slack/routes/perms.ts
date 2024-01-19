@@ -38,7 +38,7 @@ slack.view('user-request-perms', async props => {
 
 slack.action('user-approve-perms', async props => {
   await execute(props, async props => {
-    // @ts-ignore-error
+    // @ts-expect-error
     let { user: userId, permissions } = JSON.parse(props.action.value)
     permissions = getKeyByValue(mappedPermissionValues, permissions)
 
@@ -54,7 +54,7 @@ slack.action('user-approve-perms', async props => {
     await props.respond(`${permissions} for <@${userId}> approved.`)
 
     // Let user know
-    // @ts-ignore-error
+    // @ts-expect-error
     await props.client.chat.postMessage({
       channel: userId,
       text: `Your request for ${permissions} permissions was approved!`
@@ -65,13 +65,13 @@ slack.action('user-approve-perms', async props => {
 slack.action('user-deny-perms', async props => {
   await execute(props, async props => {
     // Let user know
-    // @ts-ignore-error
+    // @ts-expect-error
     let { user: userId, permissions } = JSON.parse(props.action.value)
     permissions = getKeyByValue(mappedPermissionValues, permissions)
 
     await props.respond(`${permissions} for <@${userId}> denied.`)
 
-    // @ts-ignore-error
+    // @ts-expect-error
     await props.client.chat.postMessage({
       channel: userId,
       text: `Your request for ${permissions} was rejected.`

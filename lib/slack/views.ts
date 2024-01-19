@@ -62,12 +62,11 @@ const helpDialog: (Block | KnownBlock)[] = [
       type: 'mrkdwn',
       text: `Hi! I am a bag. Here's a list of available commands.
 
-\`/bag-item\`: Lets you create an item, if you're an admin. (I know, I know, but we have to have rules somewhere.)
-\`/bag-app\`: Lets you create an app. Most apps will, by default, start out in readonly public mode, and be private by default. You'll receive a DM from @bag with your app key, as well as the ability to edit app settings.
-\`/bag-perms\`: Request permissions for yourself. 
-\`/edit-app <id> <key>\`: Lets you edit an app and its settings, given you have the key.
-\`/get-app <name>\`: Lets you get info about an app, including its ID, given its name.
-\`/inventory me/@<person>\`: Same functionality as mentioning me, but you can also do this in DMs! 
+\`/bag-item\`: Options for items.
+\`/bag-app\`: Options for apps.
+\`/bag-request-perms\`: Request permissions for yourself. 
+\`/bag-inventory me/@<person>\`: Same functionality as mentioning me, but you can also do this in DMs! 
+\`/bag-trade\`: Start a trade with someone else!
 
 And of course, if you ever mention me, the @bag, I will help in any way possible! (Although I am just a measly bag.) Here is a list of things you can call me for:
 

@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
       - name: Install Node.js and npm
@@ -29,11 +29,22 @@ jobs:
       - name: Generate proto
         run: |
           npm run rpc:gen
-      - name: Build and publish client
+      - name: Build client
         run: |
           cp -r ./gen ./client
-          cd client && npm run build && npm publish && cd ..
+          cd client && npm run build && cd ..
       # - name: Generate documentation
       #   run: |
       #     npm run gen
       # TODO: Figure out how to generate documentation
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      - uses: JS-DevTools/npm-publish@v3
+        with:
+          package: ./client/package.json
+          token: ${{ secrets.NPM_TOKEN }}

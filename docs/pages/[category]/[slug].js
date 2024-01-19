@@ -1,13 +1,13 @@
-import { serialize } from 'next-mdx-remote/serialize'
-import { MDXRemote } from 'next-mdx-remote'
+import Content, { Toc } from '@/components/Content'
+import Menu from '@/components/Menu'
+import convertMDX, { generateToc } from '@/utils'
 import fs from 'fs'
+import matter from 'gray-matter'
+import 'highlight.js/styles/xcode.css'
+import { MDXRemote } from 'next-mdx-remote'
+import { serialize } from 'next-mdx-remote/serialize'
 import path from 'path'
 import { Container, Grid, Box, Flex } from 'theme-ui'
-import Content, { Toc } from '@/components/Content'
-import convertMDX, { generateToc } from '@/utils'
-import 'highlight.js/styles/xcode.css'
-import Menu from '@/components/Menu'
-import matter from 'gray-matter'
 
 export default function Doc({ source, toc, menu, menuHeaders }) {
   return (

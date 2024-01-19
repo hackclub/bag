@@ -120,7 +120,8 @@ slack.event('app_mention', async props => {
 })
 
 const showInventory = async (
-  user: IdentityWithInventory
+  user: IdentityWithInventory,
+  ts?: string
 ): Promise<(Block | KnownBlock)[]> => {
   const formatInventory = async (
     inventory: Instance[]

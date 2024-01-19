@@ -60,8 +60,13 @@ slack.command('/bag-app', async props => {
           const query = message.split(' ').slice(1).join('')
           if (query[0] !== '`' || query[query.length - 1] !== '`')
             throw new Error()
+          const where = JSON.parse(query.slice(1, query.length - 1))
+          delete where.key
+          delete where.specificApps
+          delete where.specificItems
+          delete where.specificRecipes
           let apps = await prisma.app.findMany({
-            where: JSON.parse(query.slice(1, query.length - 1))
+            where
           })
           if (!apps.length) throw new Error()
 
@@ -697,8 +702,8 @@ const appDialog: (Block | KnownBlock)[] = [
     text: {
       type: 'mrkdwn',
       text: `Options for \`bag-app\`:
-\`/bag-app list\`: List all the public apps that already exist.
-\`/bag-app search <query>\`: Query all the public apps by passing in a JSON query, based on the schema for apps at https://bag.hackclub.com.
+\`/bag-app list\`: List all the public apps in the bag.
+\`/bag-app search <query>\`: Query all the public apps by passing in a JSON query. Keys: \`name\`, \`description\`, \`permissions\`, \`public\`, and \`metadata\`.
 \`/bag-app create\`: Create an app.
 \`/bag-app edit <id> <key>\`: Edit an app.
 \`/bag-app <name>\`: View more info about an app.`

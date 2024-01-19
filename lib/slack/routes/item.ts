@@ -3,7 +3,7 @@ import { mappedPermissionValues } from '../../permissions'
 import { channels } from '../../utils'
 import slack, { execute } from '../slack'
 import { PrismaClient, PermissionLevels, Item } from '@prisma/client'
-import { Block, KnownBlock, View } from '@slack/bolt'
+import type { Block, KnownBlock, View } from '@slack/bolt'
 
 const prisma = new PrismaClient()
 
@@ -100,6 +100,12 @@ slack.command('/bag-item', async props => {
             text: "Oh no! Couldn't find any items matching your query. Make sure your query is properly formatted - that is, a valid JSON query encased in a `code snippet`."
           })
         }
+      case 'create':
+        // If admin, form directly creates item; otherwise, it opens a request to maintainers
+        return await props.client.views.open({
+          trigger_id: props.body.trigger_id,
+          view: createItem
+        })
       case 'edit':
         try {
           const name = message.split(' ')[1]
@@ -121,7 +127,7 @@ slack.command('/bag-item', async props => {
           )
             throw new Error()
 
-          await props.client.views.open({
+          return await props.client.views.open({
             trigger_id: props.body.trigger_id,
             view: editItem(item)
           })
@@ -132,17 +138,8 @@ slack.command('/bag-item', async props => {
             text: "Oh no! To edit an item you'll need to provide the name of the item and have the appropriate permissions."
           })
         }
-        break
-      case 'create':
-        // If admin, form directly creates item; otherwise, it opens a request to maintainers
-        return await props.client.views.open({
-          trigger_id: props.body.trigger_id,
-          view: createItem
-        })
       default:
-        // Either list item, or if no message is provided, show options
         if (message === '') {
-          // List options
           return await props.client.chat.postEphemeral({
             channel: props.body.channel_id,
             user: props.context.userId,
@@ -184,13 +181,98 @@ slack.command('/bag-item', async props => {
   })
 })
 
-slack.action('get-item', async props => {
+slack.view('create-item', async props => {
   await execute(props, async props => {
-    // @ts-expect-error
-    const item = JSON.parse(props.action.value)
-    return props.say({
-      // TODO: Post in thread
-      blocks: getItem(item)
+    let fields: {
+      name: string
+      reaction: string
+      description: string
+      commodity: boolean
+      tradable: boolean
+      public: boolean
+    } = {
+      name: undefined,
+      reaction: undefined,
+      description: undefined,
+      commodity: undefined,
+      tradable: undefined,
+      public: undefined
+    }
+    for (let field of Object.values(props.view.state.values)) {
+      fields[Object.keys(field)[0]] =
+        field[Object.keys(field)[0]].value ||
+        Object.values(field)[0].selected_option.value ||
+        ''
+      if (fields[Object.keys(field)[0]] === 'true')
+        fields[Object.keys(field)[0]] = true
+      else if (fields[Object.keys(field)[0]] === 'false')
+        fields[Object.keys(field)[0]] = false
+    }
+
+    const user = await prisma.identity.findUnique({
+      where: {
+        slack: props.context.userId
+      }
+    })
+    if (user.permissions !== PermissionLevels.ADMIN) {
+      // Request to create item
+      await props.client.chat.postMessage({
+        channel: user.slack,
+        text: 'Item creation request made! You should get a response sometime in the next 24 hours if today is a weekday, and 72 hours otherwise!'
+      })
+      return await props.client.chat.postMessage({
+        channel: channels.approvals,
+        blocks: approveOrDenyItem(fields, props.context.userId)
+      })
+    }
+  })
+})
+
+slack.action('approve-item', async props => {
+  await execute(props, async props => {
+    // @ts-ignore-error
+    let { user, item: fields } = JSON.parse(props.action.value)
+
+    // Create item, and add to user's list of items they can access
+    const item = await prisma.item.create({
+      data: fields
+    })
+    log('New item created: ', item.name)
+
+    await prisma.identity.update({
+      where: {
+        slack: user
+      },
+      data: {
+        specificItems: { push: item.name }
+      }
+    })
+
+    await props.respond(
+      `New item approved and created: ${item.name} ${item.reaction}`
+    )
+
+    // @ts-ignore-error
+    await props.say({
+      channel: user,
+      text: `New item approved and created: ${item.name} ${item.reaction}`
+    })
+  })
+})
+
+slack.action('deny-item', async props => {
+  await execute(props, async props => {
+    // @ts-ignore-error
+    let { user, item } = JSON.parse(props.action.value)
+
+    await props.respond(
+      `Request to create ${item.name} ${item.reaction} denied.`
+    )
+
+    // @ts-ignore-error
+    await props.client.chat.postMessage({
+      channel: user,
+      text: `Your request to create ${item.name} ${item.reaction} was denied.`
     })
   })
 })
@@ -199,17 +281,15 @@ slack.view('edit-item', async props => {
   await execute(props, async props => {
     let fields: {
       name: string
-      image: string
       description: string
       reaction: string
       commodity: boolean
       tradable: boolean
       public: boolean
     } = {
-      name: undefined,
-      image: undefined,
-      description: undefined,
-      reaction: undefined,
+      name: '',
+      description: '',
+      reaction: '',
       commodity: undefined,
       tradable: undefined,
       public: undefined
@@ -243,119 +323,31 @@ slack.view('edit-item', async props => {
   })
 })
 
-slack.view('create-item', async props => {
-  await execute(
-    props,
-    async props => {
-      let fields: {
-        name: string
-        reaction: string
-        description: string
-        commodity: boolean
-        tradable: boolean
-        public: boolean
-      } = {
-        name: undefined,
-        reaction: undefined,
-        description: undefined,
-        commodity: undefined,
-        tradable: undefined,
-        public: undefined
+// TODO: Should allow existing items to give permissions to new apps through a visual interface
+
+const getItem = (item: Item): (Block | KnownBlock)[] => {
+  console.log(item)
+  return [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `Here's ${item.reaction} *${item.name}*:
+
+>_${item.description}_
+
+Commodity: ${item.commodity ? 'Yes' : 'No'}
+Tradable: ${item.tradable ? 'Yes' : 'No'}
+Public: ${item.public ? 'Yes' : 'No'}
+Metadata: \`${
+          item.metadata === null || !Object.keys(item.metadata).length
+            ? '{}'
+            : item.metadata
+        }\`        `
       }
-      for (let field of Object.values(props.view.state.values)) {
-        fields[Object.keys(field)[0]] =
-          field[Object.keys(field)[0]].value ||
-          Object.values(field)[0].selected_option.value ||
-          ''
-        if (fields[Object.keys(field)[0]] === 'true')
-          fields[Object.keys(field)[0]] = true
-        else if (fields[Object.keys(field)[0]] === 'false')
-          fields[Object.keys(field)[0]] = false
-      }
-
-      const user = await prisma.identity.findUnique({
-        where: {
-          slack: props.context.userId
-        }
-      })
-      if (user.permissions !== PermissionLevels.ADMIN) {
-        // Request to create item
-        await props.client.chat.postMessage({
-          channel: user.slack,
-          text: 'Item creation request made! You should get a response sometime in the next 24 hours if today is a weekday, and 72 hours otherwise!'
-        })
-        return await props.client.chat.postMessage({
-          channel: channels.approvals,
-          blocks: approveOrDenyItem(fields, props.context.userId)
-        })
-      }
-
-      // Create item
-      const item = await prisma.item.create({
-        data: fields
-      })
-      log('New item created: ', item.name)
-      await props.client.chat.postMessage({
-        channel: props.context.userId,
-        user: props.context.userId,
-        text: `New item created: ${item.name} ${item.reaction}`
-      })
-    },
-    mappedPermissionValues.ADMIN
-  )
-})
-
-slack.action('approve-item', async props => {
-  await execute(props, async props => {
-    try {
-      // @ts-expect-error
-      let { user, item: fields } = JSON.parse(props.action.value)
-
-      // Create item, and add to user's list of items they can access
-      const item = await prisma.item.create({
-        data: fields
-      })
-      log('New item created: ', item.name)
-
-      await prisma.identity.update({
-        where: {
-          slack: user
-        },
-        data: {
-          specificItems: { push: item.name }
-        }
-      })
-
-      // @ts-expect-error
-      await props.client.chat.postMessage({
-        channel: user,
-        user,
-        text: `New item approved and created: ${item.name} ${item.reaction}`
-      })
-    } catch {
-      await props.say('Already applied.')
     }
-  })
-})
-
-slack.action('deny-item', async props => {
-  await execute(props, async props => {
-    try {
-      // @ts-expect-error
-      let { user, item } = JSON.parse(props.action.value)
-
-      // @ts-expect-error
-      await props.client.chat.postMessage({
-        channel: user,
-        text: `Your request to create ${item.name} ${item.reaction} was denied.`
-      })
-    } catch {
-      return await props.say('Already applied.')
-    }
-  })
-})
-
-// TODO: Should allow existing items to give permissions to new apps
+  ]
+}
 
 const createItem: View = {
   callback_id: 'create-item',
@@ -381,8 +373,7 @@ const createItem: View = {
       },
       label: {
         type: 'plain_text',
-        text: 'Name',
-        emoji: true
+        text: 'Name'
       }
     },
     {
@@ -398,8 +389,7 @@ const createItem: View = {
       },
       label: {
         type: 'plain_text',
-        text: 'Emoji',
-        emoji: true
+        text: 'Emoji'
       }
     },
     {
@@ -464,16 +454,14 @@ const createItem: View = {
           {
             text: {
               type: 'plain_text',
-              text: 'Can be traded',
-              emoji: true
+              text: 'Can be traded'
             },
             value: 'true'
           },
           {
             text: {
               type: 'plain_text',
-              text: "Can't be traded",
-              emoji: true
+              text: "Can't be traded"
             },
             value: 'false'
           }
@@ -518,26 +506,59 @@ const createItem: View = {
   ]
 }
 
-const getItem = (item: Item): (Block | KnownBlock)[] => {
-  console.log(item)
+const approveOrDenyItem = (
+  item: {
+    name: string
+    reaction: string
+    description: string
+    commodity: boolean
+    tradable: boolean
+    public: boolean
+  },
+  user: string
+): (Block | KnownBlock)[] => {
   return [
     {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `Here's ${item.reaction} *${item.name}*:
+        text: `<@${user}> just requested the creation of ${item.reaction} ${item.name}.
 
->_${item.description}_
+>${item.description}
 
-Commodity: ${item.commodity ? 'Yes' : 'No'}
-Tradable: ${item.tradable ? 'Yes' : 'No'}
-Public: ${item.public ? 'Yes' : 'No'}
-Metadata: \`${
-          item.metadata === null || !Object.keys(item.metadata).length
-            ? '{}'
-            : item.metadata
-        }\`        `
+Approve or deny:`
       }
+    },
+    {
+      type: 'actions',
+      elements: [
+        {
+          type: 'button',
+          style: 'primary',
+          text: {
+            type: 'plain_text',
+            text: 'Approve and create'
+          },
+          value: JSON.stringify({
+            item,
+            user
+          }),
+          action_id: 'approve-item'
+        },
+        {
+          type: 'button',
+          style: 'danger',
+          text: {
+            type: 'plain_text',
+            text: 'Deny'
+          },
+          value: JSON.stringify({
+            item,
+            user
+          }),
+          action_id: 'deny-item'
+        }
+      ]
     }
   ]
 }
@@ -575,23 +596,23 @@ const editItem = (item: Item): View => {
           text: 'Name of app'
         }
       },
-      {
-        type: 'input',
-        element: {
-          type: 'plain_text_input',
-          action_id: 'image',
-          placeholder: {
-            type: 'plain_text',
-            text: 'Link to image'
-          },
-          initial_value: item.image || ''
-        },
-        optional: true,
-        label: {
-          type: 'plain_text',
-          text: 'Image'
-        }
-      },
+      // {
+      //   type: 'input',
+      //   element: {
+      //     type: 'plain_text_input',
+      //     action_id: 'image',
+      //     placeholder: {
+      //       type: 'plain_text',
+      //       text: 'Link to image'
+      //     },
+      //     initial_value: item.image || ''
+      //   },
+      //   optional: true,
+      //   label: {
+      //     type: 'plain_text',
+      //     text: 'Image'
+      //   }
+      // },
       {
         type: 'input',
         element: {
@@ -747,66 +768,15 @@ const editItem = (item: Item): View => {
   }
 }
 
-const approveOrDenyItem = (
-  item: {
-    name: string
-    reaction: string
-    description: string
-    commodity: boolean
-    tradable: boolean
-    public: boolean
-  },
-  user: string
-): (Block | KnownBlock)[] => {
-  return [
-    {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: ''
-      }
-    },
-    {
-      type: 'actions',
-      elements: [
-        {
-          type: 'button',
-          style: 'primary',
-          text: {
-            type: 'plain_text',
-            text: 'Approve and create'
-          },
-          value: JSON.stringify({
-            item,
-            user
-          }),
-          action_id: 'approve-item'
-        },
-        {
-          type: 'button',
-          style: 'danger',
-          text: {
-            type: 'plain_text',
-            text: 'Deny'
-          },
-          value: JSON.stringify({
-            item,
-            user
-          }),
-          action_id: 'deny-item'
-        }
-      ]
-    }
-  ]
-}
-
-// TODO
 const itemDialog: (Block | KnownBlock)[] = [
   {
     type: 'section',
     text: {
       type: 'mrkdwn',
-      text: `Options for \`bag-item\`:`
+      text: `Options for \`bag-item\`:
+\`/bag-item list\`: List all public items in the bag.
+\`/bag-app search <query>\`: Query all the public apps by passing in a JSON query.
+\`/bag-app `
     }
   }
 ]

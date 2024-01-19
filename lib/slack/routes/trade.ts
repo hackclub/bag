@@ -137,7 +137,7 @@ slack.view('add-trade', async props => {
     const tradeKey =
       user.slack === trade.initiatorIdentityId
         ? 'initiatorTrades'
-        : 'recieverTrades'
+        : 'receiverTrades'
 
     const create = await prisma.tradeInstance.create({
       data: {

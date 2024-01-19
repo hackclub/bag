@@ -82,7 +82,10 @@ slack.command('/bag-item', async props => {
           return await props.client.chat.postEphemeral({
             channel: props.body.channel_id,
             user: props.context.userId,
-            text: `Oops, couldn't find a item named *${message}*.`
+            text: `Oops, couldn't find a item named *${props.body.text
+              .split(' ')
+              .slice(1)
+              .join(' ')}*.`
           })
         }
       case 'search':

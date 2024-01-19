@@ -101,7 +101,12 @@ export default (router: ConnectRouter) => {
             inventory: true
           }
         })
-        if (!identity) throw new Error('Identity not found')
+        if (!identity)
+          await prisma.identity.create({
+            data: {
+              slack: req.identityId
+            }
+          })
 
         let instance
         const existing = identity.inventory.find(

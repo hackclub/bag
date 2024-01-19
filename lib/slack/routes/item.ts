@@ -583,7 +583,7 @@ const editItem = (item: Item): View => {
     },
     submit: {
       type: 'plain_text',
-      text: 'Update app'
+      text: 'Update item'
     },
     type: 'modal',
     blocks: [

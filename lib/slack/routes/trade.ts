@@ -327,8 +327,14 @@ slack.action('close-trade', async props => {
 
 slack.action('remove-trade', async props => {
   await execute(props, async props => {
-    // @ts-expect-error
-    const { user, trade, item, quantity, ts } = JSON.parse(props.action.value)
+    const {
+      user,
+      trade,
+      item: itemId,
+      quantity,
+      ts
+      // @ts-expect-error
+    } = JSON.parse(props.action.value)
     try {
       await prisma.tradeInstance.delete({
         where: {
@@ -340,7 +346,7 @@ slack.action('remove-trade', async props => {
       return await props.client.chat.postEphemeral({
         thread_ts: ts,
         channel: props.body.channel.id,
-        user: user.slack,
+        user: user,
         blocks: [
           {
             type: 'section',
@@ -352,6 +358,13 @@ slack.action('remove-trade', async props => {
         ]
       })
     }
+
+    const item = await prisma.item.findUnique({
+      where: {
+        name: itemId
+      }
+    })
+
     await props.say({
       thread_ts: ts,
       blocks: [
@@ -359,7 +372,7 @@ slack.action('remove-trade', async props => {
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `<@${user.slack}> just removed x${quantity} of ${item.reaction} ${item.name} from the trade.`
+            text: `<@${user}> just removed x${quantity} of ${item.reaction} ${item.name} from the trade.`
           }
         }
       ]
@@ -509,7 +522,13 @@ const addTrade = (
             text: 'Take off trade'
           },
           action_id: 'remove-trade',
-          value: JSON.stringify({ user, trade, item, quantity, ...thread }),
+          value: JSON.stringify({
+            user: user.slack,
+            trade,
+            item: item.name,
+            quantity,
+            ...thread
+          }),
           style: 'danger'
         }
       ]

@@ -1,6 +1,6 @@
 {
   "name": "@hackclub/bag",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Hack Club's custom inventory system for Slack!",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

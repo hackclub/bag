@@ -20,41 +20,84 @@ slack.command('/bag-app', async props => {
     })
 
     switch (command) {
-      case 'list':
-        let apps = await prisma.app.findMany()
-        if (permission < mappedPermissionValues.READ_PRIVATE)
-          apps = apps.filter(app => app.public)
-        if (permission < mappedPermissionValues.WRITE)
-          apps = apps.filter(
-            app =>
-              app.public || user.specificApps.find(appId => appId === app.id)
-          )
-        let formatted = apps.map(app => getApp(app))
-        return await props.client.chat.postMessage({
-          channel: props.body.channel_id,
-          user: props.context.userId,
-          blocks: [
-            {
-              type: 'section',
-              text: {
-                type: 'mrkdwn',
-                text: `Here's a list of all the ${
-                  permission < mappedPermissionValues.READ_PRIVATE
-                    ? 'public '
-                    : ''
-                }apps currently in the bag:`
-              }
-            },
-            ...formatted.map(appBlock => appBlock[0]),
-            {
-              type: 'section',
-              text: {
-                type: 'mrkdwn',
-                text: 'You can write your own! Start by running `/bag-app create`.'
-              }
+      // case 'list':
+      //   let apps = await prisma.app.findMany()
+      //   if (permission < mappedPermissionValues.READ_PRIVATE)
+      //     apps = apps.filter(app => app.public)
+      //   if (permission < mappedPermissionValues.WRITE)
+      //     apps = apps.filter(
+      //       app =>
+      //         app.public || user.specificApps.find(appId => appId === app.id)
+      //     )
+      //   let formatted: (Block | KnownBlock)[] | (Block | KnownBlock)[][] =
+      //     apps.map(app => getApp(app))
+      //   formatted = formatted.map(appBlock => appBlock[0])
+      //   if (!formatted.length)
+      //     formatted = [
+      //       {
+      //         type: 'section',
+      //         text: {
+      //           type: 'mrkdwn',
+      //           text: 'No apps yet.'
+      //         }
+      //       }
+      //     ]
+      //   return await props.client.chat.postMessage({
+      //     channel: props.body.channel_id,
+      //     user: props.context.userId,
+      //     blocks: [
+      //       {
+      //         type: 'section',
+      //         text: {
+      //           type: 'mrkdwn',
+      //           text: `Here's a list of all the ${
+      //             permission < mappedPermissionValues.READ_PRIVATE
+      //               ? 'public '
+      //               : ''
+      //           }apps currently in the bag:`
+      //         }
+      //       },
+      //       ...formatted,
+      //       {
+      //         type: 'section',
+      //         text: {
+      //           type: 'mrkdwn',
+      //           text: 'You can write your own! Start by running `/bag-app create`.'
+      //         }
+      //       }
+      //     ]
+      //   })
+      case 'get':
+        try {
+          const app = await prisma.app.findUnique({
+            where: {
+              name: props.body.text.split(' ').slice(1).join(' ')
             }
-          ]
-        })
+          })
+
+          if (!app) throw new Error()
+          if (user.permissions === PermissionLevels.READ && !app.public)
+            throw new Error()
+          if (
+            mappedPermissionValues[user.permissions] <
+              mappedPermissionValues.ADMIN &&
+            !app.public &&
+            !user.specificApps.find(appId => appId === app.id)
+          )
+            throw new Error()
+
+          return await slack.client.chat.postMessage({
+            channel: props.body.channel_id,
+            user: props.context.userId,
+            blocks: getApp(app)
+          })
+        } catch {
+          return await slack.client.chat.postEphemeral({
+            channel: props.body.channel_id,
+            user: props.context.userId,
+            text: `Oops, couldn't find an app named *${props.command.text}*.`
+          })
+        }
       case 'search':
         try {
           const query = message.split(' ').slice(1).join('')
@@ -131,44 +174,11 @@ slack.command('/bag-app', async props => {
           view: editApp(app)
         })
       default:
-        if (message === '' || message === 'help') {
-          return await props.client.chat.postEphemeral({
-            channel: props.body.channel_id,
-            user: props.context.userId,
-            blocks: appDialog
-          })
-        } else {
-          try {
-            const app = await prisma.app.findUnique({
-              where: {
-                name: message
-              }
-            })
-
-            if (!app) throw new Error()
-            if (user.permissions === PermissionLevels.READ && !app.public)
-              throw new Error()
-            if (
-              mappedPermissionValues[user.permissions] <
-                mappedPermissionValues.ADMIN &&
-              !app.public &&
-              !user.specificApps.find(appId => appId === app.id)
-            )
-              throw new Error()
-
-            return await slack.client.chat.postMessage({
-              channel: props.body.channel_id,
-              user: props.context.userId,
-              blocks: getApp(app)
-            })
-          } catch {
-            return await slack.client.chat.postEphemeral({
-              channel: props.body.channel_id,
-              user: props.context.userId,
-              text: `Oops, couldn't find an app named *${props.command.text}*.`
-            })
-          }
-        }
+        return await props.client.chat.postEphemeral({
+          channel: props.body.channel_id,
+          user: props.context.userId,
+          blocks: appDialog
+        })
     }
   })
 })
@@ -701,11 +711,10 @@ const appDialog: (Block | KnownBlock)[] = [
     text: {
       type: 'mrkdwn',
       text: `Options for \`bag-app\`:
-\`/bag-app list\`: List all the public apps in the bag.
 \`/bag-app search <query>\`: Query all the public apps by passing in a JSON query. Keys: \`name\`, \`description\`, \`permissions\`, \`public\`, and \`metadata\`.
 \`/bag-app create\`: Create an app.
 \`/bag-app edit <id> <key>\`: Edit an app.
-\`/bag-app <name>\`: View more info about an app.`
+\`/bag-app get <name>\`: View more info about an app.`
     }
   }
 ]

@@ -19,41 +19,72 @@ slack.command('/bag-item', async props => {
     })
 
     switch (command) {
-      case 'list':
-        let items = await prisma.item.findMany()
-        if (permission < mappedPermissionValues.READ_PRIVATE)
-          items = items.filter(item => item.public)
-        else if (permission < mappedPermissionValues.WRITE)
-          items = items.filter(
-            item =>
-              item.public ||
-              user.specificItems.find(itemId => itemId === item.name)
-          )
-        const formatted = items.map(item => getItem(item))
-        return await props.client.chat.postMessage({
-          channel: props.body.channel_id,
-          blocks: [
-            {
-              type: 'section',
-              text: {
-                type: 'mrkdwn',
-                text: `Here's a list of all the ${
-                  permission < mappedPermissionValues.READ_PRIVATE
-                    ? 'public '
-                    : ''
-                }items currently in the bag:`
-              }
-            },
-            ...formatted.map(itemBlock => itemBlock[0]),
-            {
-              type: 'section',
-              text: {
-                type: 'mrkdwn',
-                text: "If you'd like to snap your fingers like Thanos and suggest an item to be added to the bag, you can run `/bag-item create`!"
-              }
+      // case 'list':
+      //   let items = await prisma.item.findMany()
+      //   if (permission < mappedPermissionValues.READ_PRIVATE)
+      //     items = items.filter(item => item.public)
+      //   else if (permission < mappedPermissionValues.WRITE)
+      //     items = items.filter(
+      //       item =>
+      //         item.public ||
+      //         user.specificItems.find(itemId => itemId === item.name)
+      //     )
+      //   const formatted = items.map(item => getItem(item))
+      //   return await props.client.chat.postMessage({
+      //     channel: props.body.channel_id,
+      //     blocks: [
+      //       {
+      //         type: 'section',
+      //         text: {
+      //           type: 'mrkdwn',
+      //           text: `Here's a list of all the ${
+      //             permission < mappedPermissionValues.READ_PRIVATE
+      //               ? 'public '
+      //               : ''
+      //           }items currently in the bag:`
+      //         }
+      //       },
+      //       ...formatted.map(itemBlock => itemBlock[0]),
+      //       {
+      //         type: 'section',
+      //         text: {
+      //           type: 'mrkdwn',
+      //           text: "If you'd like to snap your fingers like Thanos and suggest an item to be added to the bag, you can run `/bag-item create`!"
+      //         }
+      //       }
+      //     ]
+      //   })
+      case 'get':
+        try {
+          const item = await prisma.item.findUnique({
+            where: {
+              name: props.body.text.split(' ').slice(1).join(' ')
             }
-          ]
-        })
+          })
+
+          if (!item) throw new Error()
+          if (user.permissions === PermissionLevels.READ && !item.public)
+            throw new Error()
+          if (
+            mappedPermissionValues[user.permissions] <
+              mappedPermissionValues.WRITE &&
+            !item.public &&
+            !user.specificItems.find(itemId => itemId === item.name)
+          )
+            throw new Error()
+
+          return await props.client.chat.postMessage({
+            channel: props.body.channel_id,
+            user: props.context.userId,
+            blocks: getItem(item)
+          })
+        } catch {
+          return await props.client.chat.postEphemeral({
+            channel: props.body.channel_id,
+            user: props.context.userId,
+            text: `Oops, couldn't find a item named *${message}*.`
+          })
+        }
       case 'search':
         try {
           const query = message.split(' ').slice(1).join('')
@@ -139,44 +170,11 @@ slack.command('/bag-item', async props => {
           })
         }
       default:
-        if (message === '') {
-          return await props.client.chat.postEphemeral({
-            channel: props.body.channel_id,
-            user: props.context.userId,
-            blocks: itemDialog
-          })
-        } else {
-          try {
-            const item = await prisma.item.findUnique({
-              where: {
-                name: props.command.text
-              }
-            })
-
-            if (!item) throw new Error()
-            if (user.permissions === PermissionLevels.READ && !item.public)
-              throw new Error()
-            if (
-              mappedPermissionValues[user.permissions] <
-                mappedPermissionValues.WRITE &&
-              !item.public &&
-              !user.specificItems.find(itemId => itemId === item.name)
-            )
-              throw new Error()
-
-            return await props.client.chat.postMessage({
-              channel: props.body.channel_id,
-              user: props.context.userId,
-              blocks: getItem(item)
-            })
-          } catch {
-            return await props.client.chat.postEphemeral({
-              channel: props.body.channel_id,
-              user: props.context.userId,
-              text: `Oops, couldn't find a item named *${message}*.`
-            })
-          }
-        }
+        return await props.client.chat.postEphemeral({
+          channel: props.body.channel_id,
+          user: props.context.userId,
+          blocks: itemDialog
+        })
     }
   })
 })
@@ -783,9 +781,10 @@ const itemDialog: (Block | KnownBlock)[] = [
     text: {
       type: 'mrkdwn',
       text: `Options for \`bag-item\`:
-\`/bag-item list\`: List all public items in the bag.
-\`/bag-app search <query>\`: Query all the public apps by passing in a JSON query.
-\`/bag-app `
+\`/bag-item search <query>\`: Query all the public apps by passing in a JSON query.
+\`/bag-item create\`: Create an item.
+\`/bag-item edit <name>\`: Edit an item.
+\`/bag-item get <name>\`: View more info about an item.`
     }
   }
 ]

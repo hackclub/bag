@@ -1,4 +1,4 @@
-import { IdentityWithInventory } from '../../db'
+import { IdentityWithInventory, findOrCreateIdentity } from '../../db'
 import slack, { execute } from '../slack'
 import { PrismaClient, Trade, Identity, Item, Instance } from '@prisma/client'
 import { Block, KnownBlock, View } from '@slack/bolt'
@@ -14,28 +14,30 @@ slack.command('/bag-trade', async props => {
         text: 'Oh no! You need to mention a user in order to start a trade with them.'
       })
 
-    const receiver = props.command.text.slice(
-      2,
-      props.command.text.indexOf('|')
+    const receiver = await findOrCreateIdentity(
+      props.command.text.slice(2, props.command.text.indexOf('|'))
     )
 
     // Create trade
     const trade = await prisma.trade.create({
       data: {
         initiatorIdentityId: props.context.userId,
-        receiverIdentityId: receiver
+        receiverIdentityId: receiver.slack
       }
     })
 
     const { channel, ts } = await props.client.chat.postMessage({
       channel: props.body.channel_id,
-      blocks: startTrade(props.context.userId, receiver, trade)
+      blocks: startTrade(props.context.userId, receiver.slack, trade)
     })
 
     await props.client.chat.update({
       channel,
       ts,
-      blocks: startTrade(props.context.userId, receiver, trade, { channel, ts })
+      blocks: startTrade(props.context.userId, receiver.slack, trade, {
+        channel,
+        ts
+      })
     })
   })
 })
@@ -144,6 +146,10 @@ slack.view('add-trade', async props => {
         [tradeKey]: { connect: trade }
       }
     })
+
+    console.log(
+      addTrade(user, create.id, ref, fields.quantity, { channel, ts })
+    )
 
     // Post in thread about trade
     await props.client.chat.postMessage({

@@ -129,17 +129,33 @@ slack.event('app_mention', async props => {
   })
 })
 
-// TODO: Add button to view more info about each inventory item
 const showInventory = async (
   user: IdentityWithInventory
 ): Promise<(Block | KnownBlock)[]> => {
-  const formatInventory = async (inventory: Instance[]): Promise<string> => {
-    let result: string[] = []
+  const formatInventory = async (
+    inventory: Instance[]
+  ): Promise<(Block | KnownBlock)[]> => {
+    let result: (Block | KnownBlock)[] = []
     const combined = await combineInventory(inventory)
     for (let [quantity, _, ref] of combined) {
-      result.push(`x${quantity} ${ref.reaction} ${ref.name}`)
+      result.push({
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `x${quantity} ${ref.reaction} ${ref.name}`
+        },
+        accessory: {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: "What's this?"
+          },
+          value: JSON.stringify(ref),
+          action_id: 'get-item'
+        }
+      })
     }
-    return result.join('\n')
+    return result
   }
 
   let text = []
@@ -147,19 +163,28 @@ const showInventory = async (
     text.push(`<@${user.slack}> is an admin and has:`)
   else text.push(`<@${user.slack}> has:`)
 
-  if (!user.inventory.length)
+  if (!user.inventory.length) {
     text.push(
       ' nothing. Nothing? The bag is empty? Are you sure? Time to go out and do some stuff.'
     )
-  else text.push('\n' + (await formatInventory(user.inventory)))
-
-  return [
-    {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: text.join('')
+    return [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: text.join('')
+        }
       }
-    }
-  ]
+    ]
+  } else
+    return [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: text.join('')
+        }
+      },
+      ...(await formatInventory(user.inventory))
+    ]
 }

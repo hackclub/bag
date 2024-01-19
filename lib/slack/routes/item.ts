@@ -184,6 +184,17 @@ slack.command('/bag-item', async props => {
   })
 })
 
+slack.action('get-item', async props => {
+  await execute(props, async props => {
+    // @ts-expect-error
+    const item = JSON.parse(props.action.value)
+    return props.say({
+      // TODO: Post in thread
+      blocks: getItem(item)
+    })
+  })
+})
+
 slack.view('edit-item', async props => {
   await execute(props, async props => {
     let fields: {

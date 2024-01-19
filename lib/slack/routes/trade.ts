@@ -1,7 +1,13 @@
-import slack, { execute } from '../slack'
-import { PrismaClient, Trade, Identity, Item } from '@prisma/client'
-import { Block, KnownBlock, View } from '@slack/bolt'
 import { IdentityWithInventory, combineInventory } from '../../db'
+import slack, { execute } from '../slack'
+import {
+  PrismaClient,
+  Trade,
+  Identity,
+  Item,
+  TradeInstance
+} from '@prisma/client'
+import { Block, KnownBlock, View } from '@slack/bolt'
 
 const prisma = new PrismaClient()
 
@@ -138,33 +144,81 @@ slack.view('add-trade', async props => {
 
     // Calculate what instances need to be applied
     let i = 0
+    let trades: number[] = []
     for (let instance of instances) {
       if (i + instance.quantity >= fields.quantity) {
         // Stop here
-        await prisma.tradeInstance.create({
+        const tradeInstance = await prisma.tradeInstance.create({
           data: {
             instanceId: instance.id,
             quantity: fields.quantity - i,
             [tradeKey]: { connect: trade }
           }
         })
+        trades.push(tradeInstance.id)
         break
       }
       i += instance.quantity
-      await prisma.tradeInstance.create({
+      const tradeInstance = await prisma.tradeInstance.create({
         data: {
           instanceId: instance.id,
           quantity: instance.quantity,
           [tradeKey]: { connect: trade }
         }
       })
+      trades.push(tradeInstance.id)
     }
 
     // Post in thread about trade
     await props.client.chat.postMessage({
       channel,
       thread_ts: ts,
-      blocks: addTrade(user, fields.quantity, item)
+      blocks: addTrade(user, fields.quantity, item, trades, ts)
+    })
+  })
+})
+
+slack.action('remove-trade', async props => {
+  await execute(props, async props => {
+    // Remove item from trade
+    // @ts-expect-error
+    const { user, quantity, item, trades, ts } = JSON.parse(props.action.value)
+    for (let trade of trades) {
+      try {
+        await prisma.tradeInstance.delete({
+          where: {
+            id: trade
+          }
+        })
+      } catch {
+        // @ts-expect-error
+        return await props.client.chat.postEphemeral({
+          thread_ts: ts,
+          channel: props.body.channel.id,
+          user: user.slack,
+          blocks: [
+            {
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text: 'Item was already removed from trade!'
+              }
+            }
+          ]
+        })
+      }
+    }
+    await props.say({
+      thread_ts: ts,
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `<@${user.slack}> just removed x${quantity} of ${item.reaction} ${item.name} from the trade.`
+          }
+        }
+      ]
     })
   })
 })
@@ -328,7 +382,9 @@ const startTrade = (
 const addTrade = (
   user: Identity,
   quantity: number,
-  item: Item
+  item: Item,
+  trades: number[],
+  ts: string
 ): (Block | KnownBlock)[] => {
   return [
     {
@@ -348,6 +404,7 @@ const addTrade = (
             text: 'Take off trade'
           },
           action_id: 'remove-trade',
+          value: JSON.stringify({ user, quantity, item, trades, ts }),
           style: 'danger'
         }
       ]

@@ -1,13 +1,13 @@
-import { ConnectRouter } from '@connectrpc/connect'
+import config from './config'
 import { ElizaService } from './gen/eliza_connect'
+import { InstanceWithItem, TradeWithTrades } from './lib/db'
 import { log } from './lib/logger'
 import { mappedPermissionValues } from './lib/permissions'
+import { getKeyByValue } from './lib/utils'
+import { ConnectRouter } from '@connectrpc/connect'
 import { App, PermissionLevels, PrismaClient } from '@prisma/client'
 import { WebClient } from '@slack/web-api'
-import config from './config'
 import { v4 as uuid } from 'uuid'
-import { getKeyByValue } from './lib/utils'
-import { InstanceWithItem, TradeWithTrades } from './lib/db'
 
 const web = new WebClient(config.SLACK_BOT_TOKEN)
 const prisma = new PrismaClient()
@@ -39,7 +39,11 @@ export async function execute(
     delete req.appId
     delete req.key
     const result = await func(req, app)
-    return result
+    let formatted = {}
+    for (let [key, value] of Object.entries(result)) {
+      formatted[key] = format(value)
+    }
+    return formatted
   } catch (error) {
     return { response: error.toString() }
   }
@@ -65,7 +69,7 @@ export default (router: ConnectRouter) => {
             key: uuid()
           }
         })
-        return { app: format(created) }
+        return { app: created }
       },
       mappedPermissionValues.ADMIN
     )
@@ -154,7 +158,7 @@ export default (router: ConnectRouter) => {
           ]
         })
 
-        return { instance: format(instance) }
+        return { instance: instance }
       },
       mappedPermissionValues.WRITE_SPECIFIC
     )
@@ -170,7 +174,7 @@ export default (router: ConnectRouter) => {
           data: req.item
         })
         log('New item created: ', item.name)
-        return { item: format(item) }
+        return { item }
       },
       mappedPermissionValues.ADMIN
     )
@@ -222,7 +226,7 @@ export default (router: ConnectRouter) => {
           })
         return {
           recipe: {
-            ...format(recipe),
+            ...recipe,
             inputIds: req.inputs,
             outputIds: req.outputs
           }
@@ -254,7 +258,7 @@ export default (router: ConnectRouter) => {
             }
           })
 
-        return { trade: format(trade) }
+        return { trade: trade }
       },
       mappedPermissionValues.WRITE_SPECIFIC
     )
@@ -282,7 +286,7 @@ export default (router: ConnectRouter) => {
       if (app.permissions === PermissionLevels.READ)
         user.inventory = user.inventory.filter(instance => instance.public)
 
-      return { identity: format(user) }
+      return { identity: user }
     })
   })
 
@@ -309,7 +313,7 @@ export default (router: ConnectRouter) => {
       if (app.permissions === PermissionLevels.READ)
         user.inventory = user.inventory.filter(instance => instance.public)
 
-      return { inventory: format(user.inventory) }
+      return { inventory: user.inventory }
     })
   })
 
@@ -330,7 +334,7 @@ export default (router: ConnectRouter) => {
       if (app.permissions === PermissionLevels.READ)
         items = items.filter(item => item.public)
 
-      return { items: format(items) }
+      return { items }
     })
   })
 
@@ -350,7 +354,7 @@ export default (router: ConnectRouter) => {
             mappedPermissionValues.WRITE &&
           !app.specificItems.find(itemId => itemId === instance.itemId)
         )
-          return { instance: format(instance) }
+          return { instance }
       } catch {
         throw new Error('Instance not found')
       }
@@ -378,7 +382,7 @@ export default (router: ConnectRouter) => {
             throw new Error()
         }
 
-        return { app: format(appSearch) }
+        return { app: appSearch }
       } catch {
         throw new Error('App not found')
       }
@@ -410,7 +414,7 @@ export default (router: ConnectRouter) => {
         )
           throw new Error()
 
-        return { trade: format(trade) }
+        return { trade }
       } catch {
         throw new Error('Trade not found')
       }
@@ -442,7 +446,7 @@ export default (router: ConnectRouter) => {
 
         return {
           recipe: {
-            ...format(recipe),
+            ...recipe,
             inputIds: recipe.inputs.map(input => input.name),
             outputIds: recipe.outputs.map(output => output.name)
           }
@@ -479,7 +483,7 @@ export default (router: ConnectRouter) => {
             }
           })
 
-          return { identity: format(updated) }
+          return { identity: updated }
         },
         mappedPermissionValues.WRITE_SPECIFIC
       )
@@ -553,7 +557,7 @@ export default (router: ConnectRouter) => {
             ]
           })
 
-        return { instance: format(instance) }
+        return { instance }
       },
       mappedPermissionValues.WRITE_SPECIFIC
     )
@@ -575,7 +579,7 @@ export default (router: ConnectRouter) => {
           },
           data: req.new
         })
-        return { item: format(item) }
+        return { item }
       },
       mappedPermissionValues.WRITE_SPECIFIC
     )
@@ -610,7 +614,7 @@ export default (router: ConnectRouter) => {
         },
         data: Object.assign(old, req.new)
       })
-      return { app: format(updated) }
+      return { app: updated }
     })
   })
 
@@ -687,7 +691,7 @@ export default (router: ConnectRouter) => {
 
         return {
           recipe: {
-            ...format(recipe),
+            ...recipe,
             inputIds: req.new.inputIds,
             outputIds: req.new.outputIds
           }
@@ -719,7 +723,7 @@ export default (router: ConnectRouter) => {
             id: req.instanceId
           }
         })
-        return { deletedInstance: format(deleted) }
+        return { deletedInstance: deleted }
       },
       mappedPermissionValues.WRITE_SPECIFIC
     )
@@ -805,7 +809,7 @@ export default (router: ConnectRouter) => {
         })
 
         return {
-          trade: format(closed),
+          trade: closed,
           initiator: await prisma.identity.findUnique({
             where: {
               slack: closed.initiatorIdentityId

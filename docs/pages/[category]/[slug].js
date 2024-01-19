@@ -59,6 +59,10 @@ export async function getStaticProps({ params }) {
       )
       push.push([`${title}/${file}`, matter(content).data.title])
     }
+    push = push.sort((a, b) => {
+      if (a[2] < b[2]) return -1
+      return 1
+    })
     gen[toTitleCase(title)] = push
   }
   return {

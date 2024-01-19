@@ -55,8 +55,13 @@ export async function getStaticProps() {
       const content = fs.readFileSync(
         path.join(process.cwd(), 'content', title, file)
       )
-      push.push([`${title}/${file}`, matter(content).data.title])
+      const meta = matter(content)
+      push.push([`${title}/${file}`, meta.data.title, meta.data.order])
     }
+    push = push.sort((a, b) => {
+      if (a[2] < b[2]) return -1
+      return 1
+    })
     gen[toTitleCase(title)] = push
   }
   return {

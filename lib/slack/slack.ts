@@ -1,3 +1,11 @@
+import config from '../../config'
+import { app } from '../api/init'
+import { err } from '../logger'
+import { mappedPermissionValues } from '../permissions'
+import messages from './messages'
+import views from './views'
+import { PermissionLevels } from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
 import {
   App,
   ExpressReceiver,
@@ -9,14 +17,6 @@ import {
   SlackActionMiddlewareArgs
 } from '@slack/bolt'
 import { StringIndexed } from '@slack/bolt/dist/types/helpers'
-import messages from './messages'
-import config from '../../config'
-import { app } from '../api/init'
-import { err } from '../logger'
-import { PermissionLevels } from '@prisma/client'
-import { mappedPermissionValues } from '../permissions'
-import { PrismaClient } from '@prisma/client'
-import views from './views'
 
 const prisma = new PrismaClient()
 
@@ -87,19 +87,6 @@ export async function execute(
           slack: props.context.userId
         }
       })
-
-      // For now, temporarily block if it's not in whitelist
-      // For now, temporarily block if it's not in whitelist
-      if (
-        !['U03MNFDRSGJ', 'UDK5M9Y13', 'U032A2PMSE9', 'U05TXCSCK7E'].includes(
-          user.slack
-        )
-      )
-        return await props.client.chat.postMessage({
-          channel: user.slack,
-          user: user.slack,
-          text: "You found something... but it's not quite ready yet."
-        })
     }
 
     const permissionLevel = mappedPermissionValues[user.permissions]

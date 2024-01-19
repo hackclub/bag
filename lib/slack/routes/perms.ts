@@ -51,39 +51,31 @@ slack.action('user-approve-perms', async props => {
         permissions: permissions as PermissionLevels
       }
     })
-    await props.respond(
-      `${
-        permissions[0].toUpperCase() + permissions.slice(1)
-      } for <@${userId}> approved.`
-    )
+    await props.respond(`${permissions} for <@${userId}> approved.`)
 
     // Let user know
     // @ts-ignore-error
     await props.client.chat.postMessage({
       channel: userId,
-      text: `Your request for ${
-        permissions[0].toUpperCase() + permissions.slice(1)
-      } permissions was approved!`
+      text: `Your request for ${permissions} permissions was approved!`
     })
   })
 })
 
 slack.action('user-deny-perms', async props => {
   await execute(props, async props => {
-    try {
-      // Let user know
-      // @ts-ignore-error
-      let { user: userId, permissions } = JSON.parse(props.action.value)
-      permissions = getKeyByValue(mappedPermissionValues, permissions)
+    // Let user know
+    // @ts-ignore-error
+    let { user: userId, permissions } = JSON.parse(props.action.value)
+    permissions = getKeyByValue(mappedPermissionValues, permissions)
 
-      // @ts-ignore-error
-      await props.client.chat.postMessage({
-        channel: userId,
-        text: `Your request for ${permissions} was rejected.`
-      })
-    } catch {
-      return await props.say('Permissions already applied.')
-    }
+    await props.respond(`${permissions} for <@${userId}> denied.`)
+
+    // @ts-ignore-error
+    await props.client.chat.postMessage({
+      channel: userId,
+      text: `Your request for ${permissions} was rejected.`
+    })
   })
 })
 

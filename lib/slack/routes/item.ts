@@ -1,9 +1,9 @@
+import { log } from '../../logger'
+import { mappedPermissionValues } from '../../permissions'
+import { channels } from '../../utils'
 import slack, { execute } from '../slack'
 import { PrismaClient, PermissionLevels, Item } from '@prisma/client'
-import { mappedPermissionValues } from '../../permissions'
 import { Block, KnownBlock, View } from '@slack/bolt'
-import { channels } from '../../utils'
-import { log } from '../../logger'
 
 const prisma = new PrismaClient()
 
@@ -529,7 +529,7 @@ const getItem = (item: Item): (Block | KnownBlock)[] => {
 
 >_${item.description}_
 
-Is this a commodity? ${item.commodity ? 'Yes' : 'No'}
+Commodity: ${item.commodity ? 'Yes' : 'No'}
 Tradable: ${item.tradable ? 'Yes' : 'No'}
 Public: ${item.public ? 'Yes' : 'No'}
 Metadata: \`${

@@ -1,23 +1,18 @@
-import slack, { execute } from '../slack'
-import { PrismaClient, PermissionLevels, Identity } from '@prisma/client'
-import { channels, getKeyByValue } from '../../utils'
 import { mappedPermissionValues } from '../../permissions'
-import { View, Block, KnownBlock, PlainTextOption } from '@slack/bolt'
+import { channels, getKeyByValue } from '../../utils'
+import slack, { execute } from '../slack'
 import { cascadingPermissions } from '../views'
+import { PrismaClient, PermissionLevels } from '@prisma/client'
+import type { View, Block, KnownBlock, PlainTextOption } from '@slack/bolt'
 
 const prisma = new PrismaClient()
 
 slack.command('/bag-request-perms', async props => {
   await execute(props, async props => {
     // Let user request permissions
-    const user = await prisma.identity.findUnique({
-      where: {
-        slack: props.context.userId
-      }
-    })
     return await props.client.views.open({
       trigger_id: props.body.trigger_id,
-      view: requestPerms(user)
+      view: requestPerms
     })
   })
 })
@@ -43,37 +38,33 @@ slack.view('user-request-perms', async props => {
 
 slack.action('user-approve-perms', async props => {
   await execute(props, async props => {
-    try {
-      // @ts-expect-error
-      let { user: userId, permissions } = JSON.parse(props.action.value)
-      permissions = getKeyByValue(mappedPermissionValues, permissions)
+    // @ts-ignore-error
+    let { user: userId, permissions } = JSON.parse(props.action.value)
+    permissions = getKeyByValue(mappedPermissionValues, permissions)
 
-      // Approve user
-      await prisma.identity.update({
-        where: {
-          slack: userId
-        },
-        data: {
-          permissions: permissions as PermissionLevels
-        }
-      })
-      await props.say(
-        `${
-          permissions[0].toUpperCase() + permissions.slice(1)
-        } for <@${userId}> approved.`
-      )
+    // Approve user
+    await prisma.identity.update({
+      where: {
+        slack: userId
+      },
+      data: {
+        permissions: permissions as PermissionLevels
+      }
+    })
+    await props.respond(
+      `${
+        permissions[0].toUpperCase() + permissions.slice(1)
+      } for <@${userId}> approved.`
+    )
 
-      // Let user know
-      // @ts-expect-error
-      await props.client.chat.postMessage({
-        channel: userId,
-        text: `Your request for ${
-          permissions[0].toUpperCase() + permissions.slice(1)
-        } permissions was approved!`
-      })
-    } catch {
-      return await props.say('Permissions already applied.')
-    }
+    // Let user know
+    // @ts-ignore-error
+    await props.client.chat.postMessage({
+      channel: userId,
+      text: `Your request for ${
+        permissions[0].toUpperCase() + permissions.slice(1)
+      } permissions was approved!`
+    })
   })
 })
 
@@ -81,14 +72,14 @@ slack.action('user-deny-perms', async props => {
   await execute(props, async props => {
     try {
       // Let user know
-      // @ts-expect-error
+      // @ts-ignore-error
       let { user: userId, permissions } = JSON.parse(props.action.value)
       permissions = getKeyByValue(mappedPermissionValues, permissions)
 
-      // @ts-expect-error
+      // @ts-ignore-error
       await props.client.chat.postMessage({
         channel: userId,
-        text: `Your request for ${permissions} permissions was rejected.`
+        text: `Your request for ${permissions} was rejected.`
       })
     } catch {
       return await props.say('Permissions already applied.')
@@ -96,38 +87,35 @@ slack.action('user-deny-perms', async props => {
   })
 })
 
-const requestPerms = (user: Identity): View => {
-  return {
-    callback_id: 'user-request-perms',
-    title: {
-      type: 'plain_text',
-      text: 'Request permissions'
-    },
-    submit: {
-      type: 'plain_text',
-      text: 'Request permissons'
-    },
-    type: 'modal',
-    blocks: [
-      {
-        type: 'input',
-        element: {
-          type: 'static_select',
-          placeholder: {
-            type: 'plain_text',
-            text: 'Permission'
-          },
-          options: cascadingPermissions as Array<PlainTextOption>,
-          action_id: 'permissions'
-        },
-        label: {
+const requestPerms: View = {
+  callback_id: 'user-request-perms',
+  title: {
+    type: 'plain_text',
+    text: 'Request permissions'
+  },
+  submit: {
+    type: 'plain_text',
+    text: 'Request permissons'
+  },
+  type: 'modal',
+  blocks: [
+    {
+      type: 'input',
+      element: {
+        type: 'static_select',
+        placeholder: {
           type: 'plain_text',
-          text: 'Select a personal permission level',
-          emoji: true
-        }
+          text: 'Permission'
+        },
+        options: cascadingPermissions as Array<PlainTextOption>,
+        action_id: 'permissions'
+      },
+      label: {
+        type: 'plain_text',
+        text: 'Select a personal permission level'
       }
-    ]
-  }
+    }
+  ]
 }
 
 const approveOrDenyPerms = (

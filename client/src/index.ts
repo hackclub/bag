@@ -1,7 +1,7 @@
-import { PromiseClient, createPromiseClient } from '@connectrpc/connect'
-import { createConnectTransport } from '@connectrpc/connect-node'
 import { ElizaService } from '../gen/eliza_connect'
 import * as methods from '../gen/eliza_pb'
+import { PromiseClient, createPromiseClient } from '@connectrpc/connect'
+import { createConnectTransport } from '@connectrpc/connect-node'
 import 'dotenv/config'
 
 type RecursivePartial<T> = {
@@ -39,7 +39,7 @@ export class App {
     baseUrl?: string
   }) {
     const transport = createConnectTransport({
-      baseUrl: options.baseUrl || 'https://bag.hackclub.com',
+      baseUrl: options.baseUrl || 'https://bag-client.hackclub.com',
       httpVersion: '1.1'
     })
 

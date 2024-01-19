@@ -308,10 +308,7 @@ slack.action('close-trade', async props => {
       })
     )
 
-    // @ts-expect-error
-    await props.client.chat.postMessage({
-      channel,
-      ts,
+    await props.respond({
       blocks: [
         {
           type: 'section',

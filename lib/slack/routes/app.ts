@@ -50,7 +50,7 @@ slack.command('/bag-app', async props => {
               type: 'section',
               text: {
                 type: 'mrkdwn',
-                text: 'You can write your own! Start by running `/create-app`.'
+                text: 'You can write your own! Start by running `/bag-app create`.'
               }
             }
           ]

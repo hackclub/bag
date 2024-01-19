@@ -39,7 +39,9 @@ export class App {
     baseUrl?: string
   }) {
     const transport = createConnectTransport({
-      baseUrl: options.baseUrl || 'https://bag-client.hackclub.com',
+      baseUrl: options.baseUrl
+        ? options.baseUrl
+        : 'https://bag-client.hackclub.com',
       httpVersion: '1.1'
     })
 

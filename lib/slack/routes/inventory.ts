@@ -1,12 +1,8 @@
+import { findOrCreateIdentity, type IdentityWithInventory } from '../../db'
 import slack, { execute } from '../slack'
 import views from '../views'
-import { Block, KnownBlock } from '@slack/bolt'
 import { PrismaClient, Instance } from '@prisma/client'
-import {
-  findOrCreateIdentity,
-  combineInventory,
-  type IdentityWithInventory
-} from '../../db'
+import { Block, KnownBlock } from '@slack/bolt'
 
 const prisma = new PrismaClient()
 
@@ -69,13 +65,12 @@ slack.event('app_mention', async props => {
     const message = removeUser(props.event.text)
     switch (message) {
       case 'help':
-        await props.client.chat.postMessage({
+        return await props.client.chat.postMessage({
           channel: props.event.channel,
           user: props.context.userId,
           blocks: views.helpDialog,
           thread_ts
         })
-        break
       default:
         if (message.startsWith('me')) {
           const userId = props.context.userId
@@ -90,25 +85,20 @@ slack.event('app_mention', async props => {
           if (message !== 'me private')
             user.inventory = user.inventory.filter(item => item.public)
 
-          await props.client.chat.postMessage({
+          return await props.client.chat.postMessage({
             channel: props.event.channel,
             blocks: await showInventory(user),
             thread_ts
           })
-
-          break
         } else if (message.startsWith('<@')) {
-          // Mentioning user
           const mentionId = message.slice(2, message.length - 1) // Remove the formatted ID
           const mention = await findOrCreateIdentity(mentionId)
 
-          await props.client.chat.postMessage({
+          return await props.client.chat.postMessage({
             channel: props.event.channel,
             blocks: await showInventory(mention),
             thread_ts
           })
-
-          break
         }
         await props.client.chat.postEphemeral({
           channel: props.event.channel,
@@ -135,27 +125,29 @@ const showInventory = async (
   const formatInventory = async (
     inventory: Instance[]
   ): Promise<(Block | KnownBlock)[]> => {
-    let result: (Block | KnownBlock)[] = []
-    const combined = await combineInventory(inventory)
-    for (let [quantity, _, ref] of combined) {
-      result.push({
+    let formatted: (Block | KnownBlock)[] = []
+    for (let instance of inventory) {
+      const item = await prisma.item.findUnique({
+        where: { name: instance.itemId }
+      })
+      formatted.push({
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `x${quantity} ${ref.reaction} ${ref.name}`
+          text: `x${instance.quantity} ${item.reaction} ${item.name}`
         },
         accessory: {
           type: 'button',
           text: {
             type: 'plain_text',
-            text: "What's this?"
+            text: 'Info'
           },
-          value: JSON.stringify(ref),
+          value: JSON.stringify(item),
           action_id: 'get-item'
         }
       })
     }
-    return result
+    return formatted
   }
 
   let text = []

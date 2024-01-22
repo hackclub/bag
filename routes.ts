@@ -169,9 +169,7 @@ export default (router: ConnectRouter) => {
                   ' and ' +
                   formatted[formatted.length - 1]
                 }! They're all in your inventory now.${
-                  req.note
-                    ? " There's a note attached to it:\n\n>" + req.note
-                    : ''
+                  req.note ? '\n\n>' + req.note : ''
                 }`
               }
             }
@@ -263,9 +261,7 @@ export default (router: ConnectRouter) => {
                 text: `*${app.name}* just sent you x${req.quantity || 1} ${
                   item.reaction
                 } *${item.name}*! It's in your inventory now.${
-                  req.note
-                    ? " There's a note attached to it: \n\n>" + req.note
-                    : ''
+                  req.note ? '\n\n>' + req.note : ''
                 }`
               }
             }
@@ -642,11 +638,7 @@ export default (router: ConnectRouter) => {
                   type: 'mrkdwn',
                   text: `*${app.name}* just removed ${
                     (instance as InstanceWithItem).item.name
-                  } from your inventory!${
-                    req.note
-                      ? " There's a note attached to it: \n\n>" + req.note
-                      : ''
-                  }`
+                  } from your inventory!${req.note ? '\n\n>' + req.note : ''}`
                 }
               }
             ]
@@ -661,11 +653,7 @@ export default (router: ConnectRouter) => {
                   type: 'mrkdwn',
                   text: `*${app.name}* just updated ${
                     (instance as InstanceWithItem).item.name
-                  } from your inventory!${
-                    req.note
-                      ? " There's a note attached to it: \n\n>" + req.note
-                      : ''
-                  }`
+                  } from your inventory!${req.note ? '\n\n>' + req.note : ''}`
                 }
               }
             ]

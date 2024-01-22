@@ -133,7 +133,7 @@ slack.view('give', async props => {
       text: `<@${giver.slack}> just gave you x${fields.quantity} ${
         ref.reaction
       } *${ref.name}*! It's in your inventory now.${
-        fields.note ? " There's a note attached to it: \n\n>" + fields.note : ''
+        fields.note ? '\n\n>' + fields.note : ''
       }`
     })
   })

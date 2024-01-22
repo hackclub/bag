@@ -78,7 +78,107 @@ export default (router: ConnectRouter) => {
   router.rpc(ElizaService, ElizaService.methods.createInstances, async req => {
     return await execute(
       req,
-      async (req, app) => {},
+      async (req, app) => {
+        let created = []
+        let formatted = []
+
+        let identity = await prisma.identity.findUnique({
+          where: {
+            slack: req.identityId
+          },
+          include: {
+            inventory: true
+          }
+        })
+        if (!identity)
+          identity = await prisma.identity.create({
+            data: {
+              slack: req.identityId
+            },
+            include: {
+              inventory: true
+            }
+          })
+
+        for (let instance of req.instances) {
+          const item = await prisma.item.findUnique({
+            where: {
+              name: instance.itemId
+            }
+          })
+          if (!item) throw new Error('Item not found')
+          if (
+            app.permissions === PermissionLevels.WRITE_SPECIFIC &&
+            !app.specificItems.find(item => item === req.itemId)
+          )
+            throw new Error('Not enough permissions to create instance')
+
+          // Create instance
+          let create
+          const existing = identity.inventory.find(
+            instance => instance.itemId === item.name
+          )
+          if (existing !== undefined)
+            create = await prisma.instance.update({
+              where: {
+                id: existing.id
+              },
+              data: {
+                quantity: existing.quantity + Math.max(instance.quantity, 1),
+                metadata: instance.metadata
+                  ? {
+                      ...(existing.metadata as object),
+                      ...JSON.parse(req.metadata)
+                    }
+                  : existing.metadata
+              },
+              include: {
+                item: true
+              }
+            })
+          else
+            create = await prisma.instance.create({
+              data: {
+                itemId: item.name,
+                identityId: req.identityId,
+                quantity: instance.quantity || 1,
+                metadata: instance.metadata ? JSON.parse(instance.metadata) : {}
+              },
+              include: {
+                item: true
+              }
+            })
+          created.push(create)
+          formatted.push(
+            `x${instance.quantity} ${item.reaction} *${item.name}*`
+          )
+        }
+
+        // Send message to instance receiver
+        await web.chat.postMessage({
+          channel: req.identityId,
+          blocks: [
+            {
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text: `*${app.name}* just sent you ${
+                  formatted.slice(0, formatted.length - 1).join(', ') +
+                  (formatted.length > 2 ? ',' : '') +
+                  ' and ' +
+                  formatted[formatted.length - 1]
+                }! They're all in your inventory now.${
+                  req.note
+                    ? " There's a note attached to it:\n\n>" + req.note
+                    : ''
+                }`
+              }
+            }
+          ]
+        })
+
+        return { instances: created }
+      },
       mappedPermissionValues.WRITE_SPECIFIC
     )
   })

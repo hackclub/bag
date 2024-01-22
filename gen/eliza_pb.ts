@@ -411,9 +411,9 @@ export class CreateInstancesRequest extends Message<CreateInstancesRequest> {
   key = "";
 
   /**
-   * @generated from field: repeated connectrpc.eliza.v1.Instance items = 3;
+   * @generated from field: repeated connectrpc.eliza.v1.Instance instances = 3;
    */
-  items: Instance[] = [];
+  instances: Instance[] = [];
 
   /**
    * @generated from field: string identityId = 4;
@@ -435,7 +435,7 @@ export class CreateInstancesRequest extends Message<CreateInstancesRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "items", kind: "message", T: Instance, repeated: true },
+    { no: 3, name: "instances", kind: "message", T: Instance, repeated: true },
     { no: 4, name: "identityId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "note", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
@@ -467,9 +467,9 @@ export class CreateInstancesResponse extends Message<CreateInstancesResponse> {
   response?: string;
 
   /**
-   * @generated from field: optional connectrpc.eliza.v1.Instance instance = 2;
+   * @generated from field: repeated connectrpc.eliza.v1.Instance instances = 2;
    */
-  instance?: Instance;
+  instances: Instance[] = [];
 
   constructor(data?: PartialMessage<CreateInstancesResponse>) {
     super();
@@ -480,7 +480,7 @@ export class CreateInstancesResponse extends Message<CreateInstancesResponse> {
   static readonly typeName = "connectrpc.eliza.v1.CreateInstancesResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 2, name: "instance", kind: "message", T: Instance, opt: true },
+    { no: 2, name: "instances", kind: "message", T: Instance, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstancesResponse {

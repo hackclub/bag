@@ -150,6 +150,8 @@ const showInventory = async (
     }
     return (
       formatted.slice(0, formatted.length - 1).join(', ') +
+      (formatted.length > 2 ? ',' : '') +
+      ' and ' +
       formatted[formatted.length - 1]
     )
   }

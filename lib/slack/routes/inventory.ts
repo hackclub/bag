@@ -6,7 +6,7 @@ import { Block, KnownBlock } from '@slack/bolt'
 
 const prisma = new PrismaClient()
 
-slack.command('/bag-inventory', async props => {
+slack.command('/inventory', async props => {
   await execute(props, async props => {
     const message = props.command.text
     if (message.startsWith('me')) {
@@ -24,17 +24,34 @@ slack.command('/bag-inventory', async props => {
 
       return await props.respond({
         response_type: 'in_channel',
-        blocks: await showInventory(user)
+        blocks: [
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `<@${user.slack}> ran \`/inventory ${message}\`:`
+            }
+          },
+          ...(await showInventory(user))
+        ]
       })
-    }
-    if (message.startsWith('<@')) {
+    } else if (message.startsWith('<@')) {
       // Mentioning user
       const mentionId = message.slice(2, message.indexOf('|'))
       const mention = await findOrCreateIdentity(mentionId)
 
       return await props.respond({
         response_type: 'in_channel',
-        blocks: await showInventory(mention)
+        blocks: [
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `<@${props.context.userId}> ran \`/inventory ${message}\`:`
+            }
+          },
+          ...(await showInventory(mention))
+        ]
       })
     }
     await props.respond({
@@ -43,10 +60,9 @@ slack.command('/bag-inventory', async props => {
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: "Sorry, can't help you with that, I'm just a measly bag, it's the stuff inside that's useful... maybe this is helpful? :point_down:"
+            text: 'Try running `/inventory me`, `/inventory private`, or `/inventory <mention someone>`!'
           }
-        },
-        ...views.helpDialog
+        }
       ]
     })
   })
@@ -108,10 +124,9 @@ slack.event('app_mention', async props => {
               type: 'section',
               text: {
                 type: 'mrkdwn',
-                text: "Sorry, can't help you with that, I'm just a measly bag, it's the stuff inside that's useful... maybe this is helpful? :point_down:"
+                text: 'Try running `@bag me`, `@bag me private`, `@bag <mention someone>`!'
               }
-            },
-            ...views.helpDialog
+            }
           ],
           thread_ts
         })
@@ -123,32 +138,20 @@ const showInventory = async (
   user: IdentityWithInventory,
   ts?: string
 ): Promise<(Block | KnownBlock)[]> => {
-  const formatInventory = async (
-    inventory: Instance[]
-  ): Promise<(Block | KnownBlock)[]> => {
-    let formatted: (Block | KnownBlock)[] = []
+  const formatInventory = async (inventory: Instance[]): Promise<string> => {
+    let formatted: string[] = []
     for (let instance of inventory) {
       const item = await prisma.item.findUnique({
-        where: { name: instance.itemId }
-      })
-      formatted.push({
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: `x${instance.quantity} ${item.reaction} ${item.name}`
-        },
-        accessory: {
-          type: 'button',
-          text: {
-            type: 'plain_text',
-            text: 'Info'
-          },
-          value: JSON.stringify(item),
-          action_id: 'get-item'
+        where: {
+          name: instance.itemId
         }
       })
+      formatted.push(` x${instance.quantity} ${item.reaction} ${item.name}`)
     }
-    return formatted
+    return (
+      formatted.slice(0, formatted.length - 1).join(', ') +
+      formatted[formatted.length - 1]
+    )
   }
 
   let text = []
@@ -156,28 +159,28 @@ const showInventory = async (
     text.push(`<@${user.slack}> is an admin and has:`)
   else text.push(`<@${user.slack}> has:`)
 
-  if (!user.inventory.length) {
+  if (!user.inventory.length)
     text.push(
       ' nothing. Nothing? The bag is empty? Are you sure? Time to go out and do some stuff.'
     )
-    return [
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: text.join('')
-        }
+  else text.push(await formatInventory(user.inventory))
+
+  return [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: text.join('')
       }
-    ]
-  } else
-    return [
-      {
-        type: 'section',
-        text: {
+    },
+    {
+      type: 'context',
+      elements: [
+        {
           type: 'mrkdwn',
-          text: text.join('')
+          text: 'To get more info about an item try `/item get <name>`!'
         }
-      },
-      ...(await formatInventory(user.inventory))
-    ]
+      ]
+    }
+  ]
 }

@@ -6,26 +6,26 @@ features:
     always_online: false
   slash_commands:
     - command: /bag-item
-      url: https://08b3-71-235-174-134.ngrok-free.app/slack/events
+      url: https://c8b7-71-235-174-134.ngrok-free.app/slack/events
       description: Create and edit items.
       usage_hint: help
       should_escape: false
     - command: /bag-app
-      url: https://08b3-71-235-174-134.ngrok-free.app/slack/events
+      url: https://c8b7-71-235-174-134.ngrok-free.app/slack/events
       description: Create and edit apps.
       usage_hint: help
       should_escape: false
     - command: /bag-request-perms
-      url: https://08b3-71-235-174-134.ngrok-free.app/slack/events
+      url: https://c8b7-71-235-174-134.ngrok-free.app/slack/events
       description: Request user permissions.
       should_escape: false
     - command: /bag-inventory
-      url: https://08b3-71-235-174-134.ngrok-free.app/slack/events
+      url: https://c8b7-71-235-174-134.ngrok-free.app/slack/events
       description: View Hack Clubbers' inventories.
       usage_hint: '[mention]'
       should_escape: true
     - command: /bag-trade
-      url: https://08b3-71-235-174-134.ngrok-free.app/slack/events
+      url: https://c8b7-71-235-174-134.ngrok-free.app/slack/events
       description: Start a trade.
       usage_hint: '[mention]'
       should_escape: true
@@ -97,14 +97,14 @@ oauth_config:
       - usergroups:write
 settings:
   event_subscriptions:
-    request_url: https://08b3-71-235-174-134.ngrok-free.app/slack/events
+    request_url: https://c8b7-71-235-174-134.ngrok-free.app/slack/events
     bot_events:
       - app_mention
       - message.channels
       - message.groups
   interactivity:
     is_enabled: true
-    request_url: https://08b3-71-235-174-134.ngrok-free.app/slack/events
+    request_url: https://c8b7-71-235-174-134.ngrok-free.app/slack/events
   org_deploy_enabled: false
   socket_mode_enabled: false
   token_rotation_enabled: false

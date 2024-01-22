@@ -7,7 +7,7 @@ import type { Block, KnownBlock, View } from '@slack/bolt'
 
 const prisma = new PrismaClient()
 
-slack.command('/bag-item', async props => {
+slack.command('/item', async props => {
   await execute(props, async (props, permission) => {
     const message = props.command.text
     const command = message.split(' ')[0]
@@ -73,7 +73,7 @@ slack.command('/bag-item', async props => {
           )
             throw new Error()
 
-          return await props.client.chat.postMessage({
+          return await props.client.chat.postEphemeral({
             channel: props.body.channel_id,
             user: props.context.userId,
             blocks: getItem(item)
@@ -346,10 +346,9 @@ const getItem = (item: Item): (Block | KnownBlock)[] => {
 
 >_${item.description}_
 
-Commodity: ${item.commodity ? 'Yes' : 'No'}
-Tradable: ${item.tradable ? 'Yes' : 'No'}
-Public: ${item.public ? 'Yes' : 'No'}
-Metadata: \`${
+Is this a commodity? ${item.commodity ? 'Yes' : 'No'}
+Is this tradable? ${item.tradable ? 'Yes' : 'No'}
+Extra info: \`${
           item.metadata === null || !Object.keys(item.metadata).length
             ? '{}'
             : item.metadata
@@ -778,16 +777,16 @@ const editItem = (item: Item): View => {
   }
 }
 
+// \`/bag-item search <query>\`: Query all the public apps by passing in a JSON query.
+// \`/bag-item create\`: Create an item.
+// \`/bag-item edit <name>\`: Edit an item.
 const itemDialog: (Block | KnownBlock)[] = [
   {
     type: 'section',
     text: {
       type: 'mrkdwn',
       text: `Options for \`bag-item\`:
-\`/bag-item search <query>\`: Query all the public apps by passing in a JSON query.
-\`/bag-item create\`: Create an item.
-\`/bag-item edit <name>\`: Edit an item.
-\`/bag-item get <name>\`: View more info about an item.`
+\`/item get <name>\`: View more info about an item.`
     }
   }
 ]

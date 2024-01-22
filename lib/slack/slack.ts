@@ -89,6 +89,18 @@ export async function execute(
       })
     }
 
+    // For now, temporarily block if it's not in whitelist
+    if (
+      !['U03MNFDRSGJ', 'UDK5M9Y13', 'U032A2PMSE9', 'U05TXCSCK7E'].includes(
+        user.slack
+      )
+    )
+      return await props.client.chat.postMessage({
+        channel: user.slack,
+        user: user.slack,
+        text: "You found something... but it's not quite ready yet."
+      })
+
     const permissionLevel = mappedPermissionValues[user.permissions]
     if (!(permissionLevel >= permission))
       return await props.client.chat.postEphemeral({
@@ -100,6 +112,7 @@ export async function execute(
     await func(props, mappedPermissionValues[user.permissions])
   } catch (error) {
     err(error)
+    console.log(error.code, error)
     props.client.chat.postMessage({
       channel: props.context.userId,
       user: props.context.userId,

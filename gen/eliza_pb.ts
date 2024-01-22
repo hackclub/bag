@@ -397,6 +397,110 @@ export class Recipe extends Message<Recipe> {
 }
 
 /**
+ * @generated from message connectrpc.eliza.v1.CreateInstancesRequest
+ */
+export class CreateInstancesRequest extends Message<CreateInstancesRequest> {
+  /**
+   * @generated from field: int32 appId = 1;
+   */
+  appId = 0;
+
+  /**
+   * @generated from field: string key = 2;
+   */
+  key = "";
+
+  /**
+   * @generated from field: repeated connectrpc.eliza.v1.Instance items = 3;
+   */
+  items: Instance[] = [];
+
+  /**
+   * @generated from field: string identityId = 4;
+   */
+  identityId = "";
+
+  /**
+   * @generated from field: optional string note = 5;
+   */
+  note?: string;
+
+  constructor(data?: PartialMessage<CreateInstancesRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "connectrpc.eliza.v1.CreateInstancesRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "items", kind: "message", T: Instance, repeated: true },
+    { no: 4, name: "identityId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "note", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstancesRequest {
+    return new CreateInstancesRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateInstancesRequest {
+    return new CreateInstancesRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateInstancesRequest {
+    return new CreateInstancesRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateInstancesRequest | PlainMessage<CreateInstancesRequest> | undefined, b: CreateInstancesRequest | PlainMessage<CreateInstancesRequest> | undefined): boolean {
+    return proto3.util.equals(CreateInstancesRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message connectrpc.eliza.v1.CreateInstancesResponse
+ */
+export class CreateInstancesResponse extends Message<CreateInstancesResponse> {
+  /**
+   * @generated from field: optional string response = 1;
+   */
+  response?: string;
+
+  /**
+   * @generated from field: optional connectrpc.eliza.v1.Instance instance = 2;
+   */
+  instance?: Instance;
+
+  constructor(data?: PartialMessage<CreateInstancesResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "connectrpc.eliza.v1.CreateInstancesResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "instance", kind: "message", T: Instance, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstancesResponse {
+    return new CreateInstancesResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateInstancesResponse {
+    return new CreateInstancesResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateInstancesResponse {
+    return new CreateInstancesResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateInstancesResponse | PlainMessage<CreateInstancesResponse> | undefined, b: CreateInstancesResponse | PlainMessage<CreateInstancesResponse> | undefined): boolean {
+    return proto3.util.equals(CreateInstancesResponse, a, b);
+  }
+}
+
+/**
  * @generated from message connectrpc.eliza.v1.CreateInstanceRequest
  */
 export class CreateInstanceRequest extends Message<CreateInstanceRequest> {

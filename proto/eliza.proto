@@ -4,6 +4,7 @@ package connectrpc.eliza.v1;
 
 service ElizaService {
   rpc CreateApp(CreateAppRequest) returns (CreateAppResponse) {}  // Should be able to create apps as an admin
+  rpc CreateInstances(CreateInstancesRequest) returns (CreateInstancesResponse) {}  // Should be able to create and assign multiple instances, depending on permissions
   rpc CreateInstance(CreateInstanceRequest) returns (CreateInstanceResponse) {}  // Should be able to create and assign instances, depending on permissions
   rpc CreateItem(CreateItemRequest) returns (CreateItemResponse) {}  // Should be able to create items, depending on permissions
   rpc CreateRecipe(CreateRecipeRequest) returns (CreateRecipeResponse) {}  // Should be able to create recipes that include items the app has access to
@@ -77,6 +78,19 @@ message Recipe {
   repeated string outputIds = 3;
   repeated Item inputs = 4;
   repeated Item outputs = 5;
+}
+
+message CreateInstancesRequest {
+  int32 appId = 1;
+  string key = 2;
+  repeated Instance items = 3;
+  string identityId = 4;
+  optional string note = 5;
+}
+
+message CreateInstancesResponse {
+  optional string response = 1;
+  optional Instance instance = 2;
 }
 
 message CreateInstanceRequest {

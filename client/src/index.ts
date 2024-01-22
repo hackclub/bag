@@ -73,6 +73,17 @@ export class App {
     )
   }
 
+  async createInstances(
+    request: RecursivePartial<methods.CreateInstancesRequest>
+  ) {
+    return App.format(
+      await this.client.createInstances({
+        ...this.request,
+        ...request
+      })
+    )
+  }
+
   async createInstance(
     request: RecursivePartial<methods.CreateInstanceRequest>
   ) {

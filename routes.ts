@@ -75,6 +75,14 @@ export default (router: ConnectRouter) => {
     )
   })
 
+  router.rpc(ElizaService, ElizaService.methods.createInstances, async req => {
+    return await execute(
+      req,
+      async (req, app) => {},
+      mappedPermissionValues.WRITE_SPECIFIC
+    )
+  })
+
   router.rpc(ElizaService, ElizaService.methods.createInstance, async req => {
     return await execute(
       req,

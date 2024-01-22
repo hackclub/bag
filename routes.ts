@@ -154,6 +154,9 @@ export default (router: ConnectRouter) => {
           )
         }
 
+        console.log(created)
+        console.log(formatted)
+
         // Send message to instance receiver
         await web.chat.postMessage({
           channel: req.identityId,

@@ -5,9 +5,9 @@ features:
     display_name: bag
     always_online: false
   slash_commands:
-    - command: /bag-item
+    - command: /item
       url: https://bag-client.hackclub.com/slack/events
-      description: Create and edit items.
+      description: View info about items!
       usage_hint: help
       should_escape: false
     - command: /bag-app
@@ -15,18 +15,19 @@ features:
       description: Create and edit apps.
       usage_hint: help
       should_escape: false
-    - command: /bag-request-perms
+    - command: /inventory
       url: https://bag-client.hackclub.com/slack/events
-      description: Request user permissions.
-      should_escape: false
-    - command: /bag-inventory
-      url: https://bag-client.hackclub.com/slack/events
-      description: View Hack Clubbers' inventories.
+      description: View someone's inventory!
       usage_hint: '[mention]'
       should_escape: true
-    - command: /bag-trade
+    - command: /trade
       url: https://bag-client.hackclub.com/slack/events
       description: Start a trade.
+      usage_hint: '[mention]'
+      should_escape: true
+    - command: /give
+      url: https://bag-client.hackclub.com/slack/events
+      description: Give someone an item!
       usage_hint: '[mention]'
       should_escape: true
 oauth_config:

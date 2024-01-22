@@ -100,7 +100,7 @@ export default (router: ConnectRouter) => {
             }
           })
 
-        console.log(req.instances)
+        console.log('Instances', req.instances)
         for (let instance of req.instances) {
           const item = await prisma.item.findUnique({
             where: {

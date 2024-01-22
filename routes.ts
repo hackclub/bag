@@ -106,6 +106,7 @@ export default (router: ConnectRouter) => {
               name: instance.itemId
             }
           })
+          console.log(instance, item)
           if (!item) throw new Error('Item not found')
           if (
             app.permissions === PermissionLevels.WRITE_SPECIFIC &&

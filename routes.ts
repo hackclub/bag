@@ -100,13 +100,13 @@ export default (router: ConnectRouter) => {
             }
           })
 
+        console.log(req.instances)
         for (let instance of req.instances) {
           const item = await prisma.item.findUnique({
             where: {
               name: instance.itemId
             }
           })
-          console.log(instance, item)
           if (!item) throw new Error('Item not found')
           if (
             app.permissions === PermissionLevels.WRITE_SPECIFIC &&
@@ -154,9 +154,6 @@ export default (router: ConnectRouter) => {
             `x${instance.quantity} ${item.reaction} *${item.name}*`
           )
         }
-
-        console.log(created)
-        console.log(formatted)
 
         // Send message to instance receiver
         await web.chat.postMessage({

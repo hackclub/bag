@@ -6,26 +6,26 @@ features:
     always_online: false
   slash_commands:
     - command: /bag-item
-      url: https://bag-client.hackclub.com
+      url: https://bag-client.hackclub.com/slack/events
       description: Create and edit items.
       usage_hint: help
       should_escape: false
     - command: /bag-app
-      url: https://bag-client.hackclub.com
+      url: https://bag-client.hackclub.com/slack/events
       description: Create and edit apps.
       usage_hint: help
       should_escape: false
     - command: /bag-request-perms
-      url: https://bag-client.hackclub.com
+      url: https://bag-client.hackclub.com/slack/events
       description: Request user permissions.
       should_escape: false
     - command: /bag-inventory
-      url: https://bag-client.hackclub.com
+      url: https://bag-client.hackclub.com/slack/events
       description: View Hack Clubbers' inventories.
       usage_hint: '[mention]'
       should_escape: true
     - command: /bag-trade
-      url: https://bag-client.hackclub.com
+      url: https://bag-client.hackclub.com/slack/events
       description: Start a trade.
       usage_hint: '[mention]'
       should_escape: true
@@ -97,14 +97,14 @@ oauth_config:
       - usergroups:write
 settings:
   event_subscriptions:
-    request_url: https://bag-client.hackclub.com
+    request_url: https://bag-client.hackclub.com/slack/events
     bot_events:
       - app_mention
       - message.channels
       - message.groups
   interactivity:
     is_enabled: true
-    request_url: https://bag-client.hackclub.com
+    request_url: https://bag-client.hackclub.com/slack/events
   org_deploy_enabled: false
   socket_mode_enabled: false
   token_rotation_enabled: false

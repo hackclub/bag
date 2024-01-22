@@ -91,9 +91,13 @@ export async function execute(
 
     // For now, temporarily block if it's not in whitelist
     if (
-      !['U03MNFDRSGJ', 'UDK5M9Y13', 'U032A2PMSE9', 'U05TXCSCK7E'].includes(
-        user.slack
-      )
+      ![
+        'U03MNFDRSGJ',
+        'UDK5M9Y13',
+        'U032A2PMSE9',
+        'U05TXCSCK7E',
+        'U0C7B14Q3'
+      ].includes(user.slack)
     )
       return await props.client.chat.postMessage({
         channel: user.slack,

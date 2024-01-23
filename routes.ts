@@ -5,7 +5,7 @@ import { log } from './lib/logger'
 import { mappedPermissionValues } from './lib/permissions'
 import { getKeyByValue } from './lib/utils'
 import { ConnectRouter } from '@connectrpc/connect'
-import { App, PermissionLevels, PrismaClient } from '@prisma/client'
+import { App, Instance, PermissionLevels, PrismaClient } from '@prisma/client'
 import { WebClient } from '@slack/web-api'
 import { v4 as uuid } from 'uuid'
 
@@ -156,6 +156,17 @@ export default (router: ConnectRouter) => {
         }
 
         // Send message to instance receiver
+        let text = []
+        if (req.show !== false)
+          text.push(
+            `*${app.name}* just sent you ${
+              formatted.slice(0, formatted.length - 1).join(', ') +
+              (formatted.length > 2 ? ',' : '') +
+              ' and ' +
+              formatted[formatted.length - 1]
+            }! They're all in your inventory now.`
+          )
+        if (req.note) text.push(`\n\n>${req.note}`)
         await web.chat.postMessage({
           channel: req.identityId,
           blocks: [
@@ -163,14 +174,7 @@ export default (router: ConnectRouter) => {
               type: 'section',
               text: {
                 type: 'mrkdwn',
-                text: `*${app.name}* just sent you ${
-                  formatted.slice(0, formatted.length - 1).join(', ') +
-                  (formatted.length > 2 ? ',' : '') +
-                  ' and ' +
-                  formatted[formatted.length - 1]
-                }! They're all in your inventory now.${
-                  req.note ? '\n\n>' + req.note : ''
-                }`
+                text: text.join('')
               }
             }
           ]
@@ -251,6 +255,14 @@ export default (router: ConnectRouter) => {
           })
 
         // Send message to instance receiver
+        let text = []
+        if (req.show !== false)
+          text.push(
+            `*${app.name}* just sent you x${req.quantity || 1} ${
+              item.reaction
+            } *${item.name}*! It's in your inventory now.`
+          )
+        if (req.note) text.push(`\n\n${req.note}`)
         await web.chat.postMessage({
           channel: req.identityId,
           blocks: [
@@ -258,11 +270,7 @@ export default (router: ConnectRouter) => {
               type: 'section',
               text: {
                 type: 'mrkdwn',
-                text: `*${app.name}* just sent you x${req.quantity || 1} ${
-                  item.reaction
-                } *${item.name}*! It's in your inventory now.${
-                  req.note ? '\n\n>' + req.note : ''
-                }`
+                text: text.join('')
               }
             }
           ]
@@ -618,6 +626,7 @@ export default (router: ConnectRouter) => {
           data: req.new
         })
 
+        let text = []
         if (instance.quantity === 0) {
           // Delete instance
           instance = await prisma.instance.delete({
@@ -629,35 +638,33 @@ export default (router: ConnectRouter) => {
             }
           })
 
-          await web.chat.postMessage({
-            channel: req.identityId,
-            blocks: [
-              {
-                type: 'section',
-                text: {
-                  type: 'mrkdwn',
-                  text: `*${app.name}* just removed ${
-                    (instance as InstanceWithItem).item.name
-                  } from your inventory!${req.note ? '\n\n>' + req.note : ''}`
-                }
+          if (req.show !== false)
+            text.push(
+              `*${app.name}* just removed ${
+                (instance as InstanceWithItem).item.name
+              } from your inventory!`
+            )
+        } else {
+          if (req.show !== false)
+            text.push(
+              `*${app.name}* just updated ${
+                (instance as InstanceWithItem).item.name
+              } from your inventory!`
+            )
+        }
+        if (req.note) text.push(`\n\n${req.note}`)
+        await web.chat.postMessage({
+          channel: req.identityId,
+          blocks: [
+            {
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text: text.join('')
               }
-            ]
-          })
-        } else
-          await web.chat.postMessage({
-            channel: req.identityId,
-            blocks: [
-              {
-                type: 'section',
-                text: {
-                  type: 'mrkdwn',
-                  text: `*${app.name}* just updated ${
-                    (instance as InstanceWithItem).item.name
-                  } from your inventory!${req.note ? '\n\n>' + req.note : ''}`
-                }
-              }
-            ]
-          })
+            }
+          ]
+        })
 
         return { instance }
       },

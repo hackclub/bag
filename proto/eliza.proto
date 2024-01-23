@@ -85,7 +85,8 @@ message CreateInstancesRequest {
   string key = 2;
   repeated Instance instances = 3;
   string identityId = 4;
-  optional string note = 5;
+  optional bool show = 5;
+  optional string note = 6;
 }
 
 message CreateInstancesResponse {
@@ -101,7 +102,8 @@ message CreateInstanceRequest {
   int32 quantity = 5;
   optional string metadata = 6;
   optional bool public = 7;
-  optional string note = 8;
+  optional bool show = 8;
+  optional string note = 9;
 }
 
 message CreateInstanceResponse {
@@ -255,7 +257,8 @@ message UpdateInstanceRequest {
   string key = 2;
   int32 instanceId = 3;
   Instance new = 4;
-  optional string note = 5;
+  optional bool show = 5;
+  optional string note = 6;
 }
 
 message UpdateInstanceResponse {

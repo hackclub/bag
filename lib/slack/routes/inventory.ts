@@ -181,7 +181,7 @@ const showInventory = async (
       elements: [
         {
           type: 'mrkdwn',
-          text: 'To get more info about an item try `/item get <name>`!'
+          text: 'To get more info about an item try `/item <name>`!'
         }
       ]
     }

@@ -421,7 +421,12 @@ export class CreateInstancesRequest extends Message<CreateInstancesRequest> {
   identityId = "";
 
   /**
-   * @generated from field: optional string note = 5;
+   * @generated from field: optional bool show = 5;
+   */
+  show?: boolean;
+
+  /**
+   * @generated from field: optional string note = 6;
    */
   note?: string;
 
@@ -437,7 +442,8 @@ export class CreateInstancesRequest extends Message<CreateInstancesRequest> {
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "instances", kind: "message", T: Instance, repeated: true },
     { no: 4, name: "identityId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "note", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "show", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 6, name: "note", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstancesRequest {
@@ -540,7 +546,12 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
   public?: boolean;
 
   /**
-   * @generated from field: optional string note = 8;
+   * @generated from field: optional bool show = 8;
+   */
+  show?: boolean;
+
+  /**
+   * @generated from field: optional string note = 9;
    */
   note?: string;
 
@@ -559,7 +570,8 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
     { no: 5, name: "quantity", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 6, name: "metadata", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 7, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 8, name: "note", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 8, name: "show", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 9, name: "note", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstanceRequest {
@@ -1805,7 +1817,12 @@ export class UpdateInstanceRequest extends Message<UpdateInstanceRequest> {
   new?: Instance;
 
   /**
-   * @generated from field: optional string note = 5;
+   * @generated from field: optional bool show = 5;
+   */
+  show?: boolean;
+
+  /**
+   * @generated from field: optional string note = 6;
    */
   note?: string;
 
@@ -1821,7 +1838,8 @@ export class UpdateInstanceRequest extends Message<UpdateInstanceRequest> {
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "instanceId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 4, name: "new", kind: "message", T: Instance },
-    { no: 5, name: "note", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "show", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 6, name: "note", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateInstanceRequest {

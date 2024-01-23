@@ -3,33 +3,37 @@ display_information:
 features:
   bot_user:
     display_name: bag
-    always_online: false
+    always_online: true
   slash_commands:
     - command: /item
-      url: https://bag-client.hackclub.com/slack/events
+      url: https://c8b7-71-235-174-134.ngrok-free.app/slack/events
       description: View info about items!
-      usage_hint: help
+      usage_hint: '[name]'
       should_escape: false
     - command: /bag-app
-      url: https://bag-client.hackclub.com/slack/events
+      url: https://c8b7-71-235-174-134.ngrok-free.app/slack/events
       description: Create and edit apps.
       usage_hint: help
       should_escape: false
     - command: /inventory
-      url: https://bag-client.hackclub.com/slack/events
+      url: https://c8b7-71-235-174-134.ngrok-free.app/slack/events
       description: View someone's inventory!
       usage_hint: '[mention]'
       should_escape: true
     - command: /trade
-      url: https://bag-client.hackclub.com/slack/events
+      url: https://c8b7-71-235-174-134.ngrok-free.app/slack/events
       description: Start a trade.
       usage_hint: '[mention]'
       should_escape: true
     - command: /give
-      url: https://bag-client.hackclub.com/slack/events
+      url: https://c8b7-71-235-174-134.ngrok-free.app/slack/events
       description: Give someone an item!
       usage_hint: '[mention]'
       should_escape: true
+    - command: /bag-request-perms
+      url: https://c8b7-71-235-174-134.ngrok-free.app/slack/events
+      description: ...
+      should_escape: false
 oauth_config:
   scopes:
     bot:
@@ -98,14 +102,14 @@ oauth_config:
       - usergroups:write
 settings:
   event_subscriptions:
-    request_url: https://bag-client.hackclub.com/slack/events
+    request_url: https://c8b7-71-235-174-134.ngrok-free.app/slack/events
     bot_events:
       - app_mention
       - message.channels
       - message.groups
   interactivity:
     is_enabled: true
-    request_url: https://bag-client.hackclub.com/slack/events
+    request_url: https://c8b7-71-235-174-134.ngrok-free.app/slack/events
   org_deploy_enabled: false
   socket_mode_enabled: false
   token_rotation_enabled: false

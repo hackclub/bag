@@ -54,40 +54,6 @@ slack.command('/item', async props => {
       //       }
       //     ]
       //   })
-      case 'get':
-        try {
-          const item = await prisma.item.findUnique({
-            where: {
-              name: props.body.text.split(' ').slice(1).join(' ')
-            }
-          })
-
-          if (!item) throw new Error()
-          if (user.permissions === PermissionLevels.READ && !item.public)
-            throw new Error()
-          if (
-            mappedPermissionValues[user.permissions] <
-              mappedPermissionValues.WRITE &&
-            !item.public &&
-            !user.specificItems.find(itemId => itemId === item.name)
-          )
-            throw new Error()
-
-          return await props.client.chat.postEphemeral({
-            channel: props.body.channel_id,
-            user: props.context.userId,
-            blocks: getItem(item)
-          })
-        } catch {
-          return await props.client.chat.postEphemeral({
-            channel: props.body.channel_id,
-            user: props.context.userId,
-            text: `Oops, couldn't find a item named *${props.body.text
-              .split(' ')
-              .slice(1)
-              .join(' ')}*.`
-          })
-        }
       case 'search':
         try {
           const query = message.split(' ').slice(1).join('')
@@ -173,11 +139,42 @@ slack.command('/item', async props => {
           })
         }
       default:
-        return await props.client.chat.postEphemeral({
-          channel: props.body.channel_id,
-          user: props.context.userId,
-          blocks: itemDialog
-        })
+        try {
+          const items = await prisma.item.findMany({
+            where: {
+              name: {
+                equals: props.body.text.split(' ').join(' ').toLowerCase(),
+                mode: 'insensitive'
+              }
+            }
+          })
+
+          if (!items.length) throw new Error()
+          const item = items[0]
+          if (user.permissions === PermissionLevels.READ && !item.public)
+            throw new Error()
+          if (
+            mappedPermissionValues[user.permissions] <
+              mappedPermissionValues.WRITE &&
+            !item.public &&
+            !user.specificItems.find(itemId => itemId === item.name)
+          )
+            throw new Error()
+
+          return await props.client.chat.postEphemeral({
+            channel: props.body.channel_id,
+            user: props.context.userId,
+            blocks: getItem(item)
+          })
+        } catch {
+          return await props.client.chat.postEphemeral({
+            channel: props.body.channel_id,
+            user: props.context.userId,
+            text: `Oops, couldn't find a item named *${props.body.text
+              .split(' ')
+              .join(' ')}*.`
+          })
+        }
     }
   })
 })
@@ -786,7 +783,7 @@ const itemDialog: (Block | KnownBlock)[] = [
     text: {
       type: 'mrkdwn',
       text: `Options for \`bag-item\`:
-\`/item get <name>\`: View more info about an item.`
+\`/item <name>\`: View more info about an item.`
     }
   }
 ]

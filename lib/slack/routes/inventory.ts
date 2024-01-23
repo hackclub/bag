@@ -6,7 +6,7 @@ import { Block, KnownBlock } from '@slack/bolt'
 
 const prisma = new PrismaClient()
 
-slack.command('/inventory', async props => {
+slack.command('/bag', async props => {
   await execute(props, async props => {
     const message = props.command.text
     if (message.startsWith('me')) {

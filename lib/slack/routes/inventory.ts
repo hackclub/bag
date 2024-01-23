@@ -29,7 +29,7 @@ slack.command('/bag', async props => {
             type: 'section',
             text: {
               type: 'mrkdwn',
-              text: `<@${user.slack}> ran \`/inventory ${message}\`:`
+              text: `<@${user.slack}> ran \`/bag ${message}\`:`
             }
           },
           ...(await showInventory(user))
@@ -47,7 +47,7 @@ slack.command('/bag', async props => {
             type: 'section',
             text: {
               type: 'mrkdwn',
-              text: `<@${props.context.userId}> ran \`/inventory ${message}\`:`
+              text: `<@${props.context.userId}> ran \`/bag ${message}\`:`
             }
           },
           ...(await showInventory(mention))

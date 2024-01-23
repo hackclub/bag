@@ -11,7 +11,7 @@ slack.command('/trade', async props => {
       return await props.client.chat.postEphemeral({
         channel: props.body.channel_id,
         user: props.context.userId,
-        text: 'Oh no! You need to mention a user in order to start a trade with them.'
+        text: 'To start a trade, run `/trade @<person>`!'
       })
 
     const user = await prisma.identity.findUnique({

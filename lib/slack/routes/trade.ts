@@ -532,7 +532,7 @@ const startTrade = (
           type: 'button',
           text: {
             type: 'plain_text',
-            text: 'Add from inventory'
+            text: 'Add from bag'
           },
           style: 'primary',
           value: JSON.stringify({
@@ -579,7 +579,7 @@ const tradeDialog = async (
     callback_id: 'add-trade',
     title: {
       type: 'plain_text',
-      text: 'Add from inventory'
+      text: 'Add from bag'
     },
     submit: {
       type: 'plain_text',

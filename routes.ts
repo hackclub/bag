@@ -164,7 +164,7 @@ export default (router: ConnectRouter) => {
               (formatted.length > 2 ? ',' : '') +
               ' and ' +
               formatted[formatted.length - 1]
-            }! They're all in your inventory now.`
+            }! They're all in your bag now.`
           )
         if (req.note) text.push(`\n\n>${req.note}`)
         await web.chat.postMessage({
@@ -260,9 +260,9 @@ export default (router: ConnectRouter) => {
           text.push(
             `*${app.name}* just sent you x${req.quantity || 1} ${
               item.reaction
-            } *${item.name}*! It's in your inventory now.`
+            } *${item.name}*! It's in your bag now.`
           )
-        if (req.note) text.push(`\n\n${req.note}`)
+        if (req.note) text.push(`\n\n>${req.note}`)
         await web.chat.postMessage({
           channel: req.identityId,
           blocks: [
@@ -642,14 +642,14 @@ export default (router: ConnectRouter) => {
             text.push(
               `*${app.name}* just removed ${
                 (instance as InstanceWithItem).item.name
-              } from your inventory!`
+              } from your bag!`
             )
         } else {
           if (req.show !== false)
             text.push(
               `*${app.name}* just updated ${
                 (instance as InstanceWithItem).item.name
-              } from your inventory!`
+              } from your bag!`
             )
         }
         if (req.note) text.push(`\n\n${req.note}`)

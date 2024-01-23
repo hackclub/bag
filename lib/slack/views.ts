@@ -63,14 +63,14 @@ const helpDialog: (Block | KnownBlock)[] = [
       text: `Hi! I am a bag. Here's a list of available commands.
 
 \`/item <item>\`: Get info about an item.
-\`/inventory me/@<person>\`: Check out your inventory, or view somebody else's!
+\`/bag me/@<person>\`: Check out your bag, or view somebody else's!
 \`/trade @<person>\`: Start a trade with someone else!
 \`/give @<person>\`: Start a trade with someone else!
 
 And of course, here is a list of things of things you can mention me for:
 
-* \`me\`: Check out your inventory! This will list all public items. You can also list private items with \`me private\` instead.
-* \`@<person>\`: Check out another Hack Clubber's inventory! This will list all their public items.`
+* \`me\`: Check out your bag! This will list all public items. You can also list private items with \`me private\` instead.
+* \`@<person>\`: Check out another Hack Clubber's bag! This will list all their public items.`
     }
   }
 ]

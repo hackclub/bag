@@ -62,14 +62,13 @@ const helpDialog: (Block | KnownBlock)[] = [
       type: 'mrkdwn',
       text: `Hi! I am a bag. Here's a list of available commands.
 
-\`/item get <item>\`: Get info about an item.
+\`/item <item>\`: Get info about an item.
 \`/inventory me/@<person>\`: Check out your inventory, or view somebody else's!
-\`/trade\`: Start a trade with someone else!
-\`/give\`: Start a trade with someone else!
+\`/trade @<person>\`: Start a trade with someone else!
+\`/give @<person>\`: Start a trade with someone else!
 
 And of course, here is a list of things of things you can mention me for:
 
-* \`help\`: Call me for help!
 * \`me\`: Check out your inventory! This will list all public items. You can also list private items with \`me private\` instead.
 * \`@<person>\`: Check out another Hack Clubber's inventory! This will list all their public items.`
     }

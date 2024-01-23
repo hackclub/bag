@@ -11,7 +11,7 @@ slack.command('/give', async props => {
       return await props.client.chat.postEphemeral({
         channel: props.body.channel_id,
         user: props.context.userId,
-        text: 'Oh no! You need to mention a user in order to start a trade with them.'
+        text: 'To give someone something, run `/give @<person>`!'
       })
 
     const user = await prisma.identity.findUnique({
@@ -58,7 +58,7 @@ slack.view('give', async props => {
     for (let field of Object.values(props.view.state.values))
       fields[Object.keys(field)[0]] =
         field[Object.keys(field)[0]].value ||
-        Object.values(field)[0].selected_option.value ||
+        Object.values(field)[0].selected_option?.value ||
         ''
 
     const { receiverId, channel } = JSON.parse(props.view.private_metadata)

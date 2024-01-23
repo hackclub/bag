@@ -69,7 +69,7 @@ const helpDialog: (Block | KnownBlock)[] = [
 
 And of course, here is a list of things of things you can mention me for:
 
-* \`me\`: Check out your bag! This will list all public items. You can also list private items with \`me private\` instead.
+* \`me\`: Check out your bag! This will list all your public items.
 * \`@<person>\`: Check out another Hack Clubber's bag! This will list all their public items.`
     }
   }

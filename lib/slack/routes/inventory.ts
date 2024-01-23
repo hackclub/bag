@@ -60,7 +60,7 @@ slack.command('/bag', async props => {
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: 'Try running `/bag me`, `/bag private`, or `/bag <mention someone>`!'
+            text: 'Try running `/bag me` or `/bag <mention someone>`!'
           }
         }
       ]

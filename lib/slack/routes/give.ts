@@ -110,21 +110,30 @@ slack.view('give', async props => {
           item: true
         }
       })
+    } else {
+      transfer = await prisma.instance.create({
+        data: {
+          ...instance,
+          quantity: fields.quantity
+        }
+      })
+    }
+
+    let updated = await prisma.instance.update({
+      where: {
+        id: instance.id
+      },
+      data: {
+        // Adjust quantity
+        quantity: instance.quantity - fields.quantity
+      }
+    })
+    if (!updated.quantity)
       await prisma.instance.delete({
         where: {
           id: instance.id
         }
       })
-    } else {
-      transfer = await prisma.instance.update({
-        where: {
-          id: instance.id
-        },
-        data: {
-          identityId: receiver.slack
-        }
-      })
-    }
 
     // Leave note for receiver
     await props.client.chat.postMessage({

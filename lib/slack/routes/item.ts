@@ -167,6 +167,12 @@ slack.command('/item', async props => {
             blocks: getItem(item)
           })
         } catch {
+          if (!props.body.text.length)
+            return await props.client.chat.postEphemeral({
+              channel: props.body.channel_id,
+              user: props.context.userId,
+              text: `Try running \`/item <item>\`!`
+            })
           return await props.client.chat.postEphemeral({
             channel: props.body.channel_id,
             user: props.context.userId,

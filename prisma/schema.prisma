@@ -61,9 +61,9 @@ model Item {
 model Instance {
   id         Int             @id @default(autoincrement())
   itemId     String
-  identityId String
+  identityId String?
   item       Item            @relation(fields: [itemId], references: [name])
-  identity   Identity        @relation(fields: [identityId], references: [slack])
+  identity   Identity?       @relation(fields: [identityId], references: [slack])
   quantity   Int             @default(0)
   metadata   Json            @default("{}")
   public     Boolean         @default(true)

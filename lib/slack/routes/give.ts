@@ -13,6 +13,15 @@ slack.command('/give', async props => {
         user: props.context.userId,
         text: 'To give someone something, run `/give @<person>`!'
       })
+    else if (
+      props.context.userId ==
+      props.command.text.slice(2, props.command.text.indexOf('|'))
+    )
+      return await props.client.chat.postEphemeral({
+        channel: props.body.channel_id,
+        user: props.context.userId,
+        text: "Erm, you can't really give yourself something..."
+      })
 
     const user = await prisma.identity.findUnique({
       where: {
@@ -60,6 +69,7 @@ slack.view('give', async props => {
         field[Object.keys(field)[0]].value ||
         Object.values(field)[0].selected_option?.value ||
         ''
+    fields.quantity = Number(fields.quantity)
 
     const { receiverId, channel } = JSON.parse(props.view.private_metadata)
 
@@ -111,9 +121,12 @@ slack.view('give', async props => {
         }
       })
     } else {
+      const transferData = Object.assign({}, instance)
+      delete transferData.id
       transfer = await prisma.instance.create({
         data: {
-          ...instance,
+          ...transferData,
+          identityId: receiver.slack,
           quantity: fields.quantity
         }
       })
@@ -128,12 +141,17 @@ slack.view('give', async props => {
         quantity: instance.quantity - fields.quantity
       }
     })
-    if (!updated.quantity)
-      await prisma.instance.delete({
+    if (!updated.quantity) {
+      // Detach user from instance
+      await prisma.instance.update({
         where: {
           id: instance.id
+        },
+        data: {
+          identity: { disconnect: true }
         }
       })
+    }
 
     // Leave note for receiver
     await props.client.chat.postMessage({

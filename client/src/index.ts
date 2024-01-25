@@ -53,6 +53,7 @@ export class App {
 
   static format(obj: any) {
     // Format: convert metadata to JSON, etc.
+    if (obj.response) throw new Error(obj.response)
     for (let [entry, value] of Object.entries(obj)) {
       if (entry === 'metadata') {
         obj[entry] = JSON.parse(value as string)

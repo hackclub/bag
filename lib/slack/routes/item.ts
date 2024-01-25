@@ -161,21 +161,18 @@ slack.command('/item', async props => {
           )
             throw new Error()
 
-          return await props.client.chat.postEphemeral({
-            channel: props.body.channel_id,
-            user: props.context.userId,
+          return await props.respond({
+            response_type: 'ephemeral',
             blocks: getItem(item)
           })
         } catch {
           if (!props.body.text.length)
-            return await props.client.chat.postEphemeral({
-              channel: props.body.channel_id,
-              user: props.context.userId,
+            return await props.respond({
+              response_type: 'ephemeral',
               text: `Try running \`/item <item>\`!`
             })
-          return await props.client.chat.postEphemeral({
-            channel: props.body.channel_id,
-            user: props.context.userId,
+          return await props.respond({
+            response_type: 'ephemeral',
             text: `Oops, couldn't find a item named *${props.body.text
               .split(' ')
               .join(' ')}*.`

@@ -1,115 +1,116 @@
 display_information:
   name: bag
+  description: Own and trade items in Slack!
+  background_color: '#000000'
+  long_description:
+    "Bringing private property and ruthless capitalist intrigue to Slack, courtesy of Hack Club HQ <3\r
+
+    \r
+
+    Check your inventory: `/bag`\r
+
+    Check your friend's inventory: `/bag @name`\r
+
+    Inspect an item: `/item :-item-tag:`\r
+
+    Start a trade: `/trade @name`"
 features:
   bot_user:
     display_name: bag
     always_online: true
   slash_commands:
     - command: /item
-      url: https://bag-client.hackclub.com/slack/events
+      url: https://25f2-71-235-174-134.ngrok-free.app/slack/events
       description: View info about items!
       usage_hint: '[name]'
       should_escape: false
-    - command: /bag-app
-      url: https://bag-client.hackclub.com/slack/events
-      description: Create and edit apps.
-      usage_hint: help
-      should_escape: false
     - command: /bag
-      url: https://bag-client.hackclub.com/slack/events
+      url: https://25f2-71-235-174-134.ngrok-free.app/slack/events
       description: View someone's inventory!
       usage_hint: '[mention]'
       should_escape: true
     - command: /trade
-      url: https://bag-client.hackclub.com/slack/events
+      url: https://25f2-71-235-174-134.ngrok-free.app/slack/events
       description: Start a trade.
       usage_hint: '[mention]'
       should_escape: true
     - command: /give
-      url: https://bag-client.hackclub.com/slack/events
+      url: https://25f2-71-235-174-134.ngrok-free.app/slack/events
       description: Give someone an item!
       usage_hint: '[mention]'
       should_escape: true
-    - command: /bag-request-perms
-      url: https://bag-client.hackclub.com/slack/events
-      description: ...
-      should_escape: false
 oauth_config:
   scopes:
-    bot:
+    user:
       - chat:write
-      - commands
+    bot:
       - app_mentions:read
-      - bookmarks:read
-      - bookmarks:write
-      - calls:read
-      - calls:write
       - channels:history
       - channels:join
       - channels:manage
       - channels:read
       - channels:write.invites
       - channels:write.topic
+      - chat:write
       - chat:write.customize
       - chat:write.public
+      - commands
       - conversations.connect:manage
       - conversations.connect:read
       - conversations.connect:write
-      - dnd:read
       - emoji:read
-      - files:read
-      - files:write
       - groups:history
       - groups:read
       - groups:write
-      - im:read
-      - groups:write.topic
       - groups:write.invites
-      - im:write
-      - im:write.topic
+      - groups:write.topic
       - im:history
+      - im:read
+      - im:write
+      - im:write.invites
+      - im:write.topic
       - incoming-webhook
-      - metadata.message:read
       - links.embed:write
-      - mpim:history
-      - links:write
-      - mpim:write.invites
       - links:read
+      - links:write
+      - metadata.message:read
+      - mpim:history
+      - mpim:read
       - mpim:write
+      - mpim:write.invites
       - mpim:write.topic
-      - reactions:read
       - pins:read
       - pins:write
-      - reminders:read
+      - reactions:read
       - reactions:write
-      - im:write.invites
-      - remote_files:read
+      - reminders:read
       - reminders:write
-      - mpim:read
+      - remote_files:read
+      - remote_files:share
       - remote_files:write
       - team.billing:read
-      - triggers:read
       - team.preferences:read
-      - triggers:write
       - team:read
-      - remote_files:share
-      - users.profile:read
-      - users:read.email
-      - users:read
-      - users:write
-      - workflow.steps:execute
+      - triggers:read
+      - triggers:write
       - usergroups:read
       - usergroups:write
+      - users.profile:read
+      - users:read
+      - users:read.email
+      - users:write
+      - files:read
+      - files:write
 settings:
   event_subscriptions:
-    request_url: https://bag-client.hackclub.com/slack/events
+    request_url: https://25f2-71-235-174-134.ngrok-free.app/slack/events
     bot_events:
       - app_mention
       - message.channels
       - message.groups
   interactivity:
     is_enabled: true
-    request_url: https://bag-client.hackclub.com/slack/events
+    request_url: https://25f2-71-235-174-134.ngrok-free.app/slack/events
   org_deploy_enabled: false
   socket_mode_enabled: false
   token_rotation_enabled: false

@@ -827,6 +827,7 @@ export default (router: ConnectRouter) => {
         )
           throw new Error('Invalid permissions')
 
+        // TODO: Delete attached references
         const deleted = await prisma.instance.delete({
           where: {
             id: req.instanceId

@@ -603,6 +603,19 @@ const tradeDialog = async (
           }
         })
       } else {
+        // Check to make sure it's not being offered in another trade
+        const beingOffered = await prisma.trade.findFirst({
+          where: {
+            closed: false, // Not closed
+            OR: [
+              { initiatorTrades: { some: { id: instance.id } } },
+              {
+                receiverTrades: { some: { id: instance.id } }
+              }
+            ] // Either in initiatorTrades or receiverTrades
+          }
+        })
+        console.log(beingOffered)
         notOffering.push({
           text: {
             type: 'plain_text',
@@ -767,7 +780,6 @@ const showTrade = async (
   thread?: { channel: string; ts: string },
   closed?: boolean
 ): Promise<(Block | KnownBlock)[]> => {
-  console.log(thread)
   const trade = await prisma.trade.findUnique({
     where: {
       id: tradeId

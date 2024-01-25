@@ -615,7 +615,6 @@ const tradeDialog = async (
         //     ] // Either in initiatorTrades or receiverTrades
         //   }
         // })
-        console.log(beingOffered)
         notOffering.push({
           text: {
             type: 'plain_text',

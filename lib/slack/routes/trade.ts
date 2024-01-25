@@ -133,6 +133,20 @@ slack.action('edit-offer', async props => {
     // @ts-expect-error
     const { tradeId, channel, ts } = JSON.parse(props.action.value)
 
+    const trade = await prisma.trade.findUnique({
+      where: { id: tradeId }
+    })
+    if (
+      ![trade.initiatorIdentityId, trade.receiverIdentityId].includes(
+        props.body.user.id
+      )
+    )
+      return await props.respond({
+        response_type: 'ephemeral',
+        replace_original: false,
+        text: "Woah woah woah! You'll allowed to spectate on the trade and that's it."
+      })
+
     // @ts-expect-error
     await props.client.views.open({
       // @ts-expect-error
@@ -229,16 +243,25 @@ slack.action('accept-trade', async props => {
     if (!trade.initiatorAgreed || !trade.receiverAgreed) {
       await props.respond({
         response_type: 'ephemeral',
+        replace_original: false,
         text: `Cool! Waiting for <@${
           props.body.user.id === trade.initiatorIdentityId
             ? trade.receiverIdentityId
             : trade.initiatorIdentityId
         }> to accept.`
       })
-      await props.respond({
-        response_type: 'ephemeral',
-        text: `<@${props.body.user.id}> just accepted the trade and is waiting for you to accept or decline.`
-      })
+      try {
+        // @ts-expect-error
+        await props.client.chat.postEphemeral({
+          channel,
+          ts,
+          user:
+            props.body.user.id === trade.initiatorIdentityId
+              ? trade.receiverIdentityId
+              : trade.initiatorIdentityId,
+          text: `<@${props.body.user.id}> just accepted the trade and is waiting for you to accept or decline.`
+        })
+      } catch {}
       // @ts-expect-error
       return await props.client.chat.update({
         channel,
@@ -684,7 +707,8 @@ const tradeDialog = async (
           type: 'number_input',
           is_decimal_allowed: false,
           action_id: 'quantity',
-          min_value: '1'
+          min_value: '1',
+          initial_value: '1'
         },
         label: {
           type: 'plain_text',
@@ -761,7 +785,8 @@ const startTrade = async (
           type: 'number_input',
           is_decimal_allowed: false,
           action_id: 'quantity',
-          min_value: '1'
+          min_value: '1',
+          initial_value: '1'
         },
         label: {
           type: 'plain_text',

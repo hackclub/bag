@@ -142,10 +142,17 @@ slack.command('/item', async props => {
         try {
           const items = await prisma.item.findMany({
             where: {
-              name: {
-                equals: props.body.text.split(' ').join(' ').toLowerCase(),
-                mode: 'insensitive'
-              }
+              OR: [
+                {
+                  name: {
+                    equals: props.body.text.split(' ').join(' ').toLowerCase(),
+                    mode: 'insensitive'
+                  }
+                },
+                {
+                  reaction: props.body.text
+                }
+              ]
             }
           })
 

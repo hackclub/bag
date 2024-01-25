@@ -604,17 +604,17 @@ const tradeDialog = async (
         })
       } else {
         // Check to make sure it's not being offered in another trade
-        const beingOffered = await prisma.trade.findFirst({
-          where: {
-            closed: false, // Not closed
-            OR: [
-              { initiatorTrades: { some: { id: instance.id } } },
-              {
-                receiverTrades: { some: { id: instance.id } }
-              }
-            ] // Either in initiatorTrades or receiverTrades
-          }
-        })
+        // const beingOffered = await prisma.trade.findFirst({
+        //   where: {
+        //     closed: false, // Not closed
+        //     OR: [
+        //       { initiatorTrades: { some: { id: instance.id } } },
+        //       {
+        //         receiverTrades: { some: { id: instance.id } }
+        //       }
+        //     ] // Either in initiatorTrades or receiverTrades
+        //   }
+        // })
         console.log(beingOffered)
         notOffering.push({
           text: {

@@ -1,5 +1,6 @@
 import { findOrCreateIdentity } from '../../db'
 import slack, { execute } from '../slack'
+import views from '../views'
 import { PrismaClient } from '@prisma/client'
 import { Block, Button, KnownBlock, View } from '@slack/bolt'
 
@@ -72,9 +73,19 @@ slack.command('/trade', async props => {
       })
 
     // Initiator should first select an item
-    await props.client.views.open({
+    const { view } = await props.client.views.open({
       trigger_id: props.body.trigger_id,
-      view: await startTrade(user.slack, receiver.slack, props.body.channel_id)
+      view: views.loadingDialog('Start trade')
+    })
+
+    const updated = await startTrade(
+      user.slack,
+      receiver.slack,
+      props.body.channel_id
+    )
+    await props.client.views.update({
+      view_id: view.id,
+      view: updated
     })
   })
 })
@@ -164,9 +175,19 @@ slack.action('edit-offer', async props => {
       })
 
     // @ts-expect-error
-    await props.client.views.open({
+    const { view } = await props.client.views.open({
       // @ts-expect-error
       trigger_id: props.body.trigger_id,
+      view: views.loadingDialog('Edit trade')
+    })
+
+    const updated = await tradeDialog(props.body.user.id, tradeId, {
+      channel,
+      ts
+    })
+    // @ts-expect-error
+    await props.client.views.update({
+      view_id: view.id,
       view: await tradeDialog(props.body.user.id, tradeId, { channel, ts })
     })
   })

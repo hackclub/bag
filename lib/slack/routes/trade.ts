@@ -7,12 +7,15 @@ const prisma = new PrismaClient()
 
 slack.command('/trade', async props => {
   await execute(props, async props => {
-    console.log(
-      await props.client.conversations.info({
-        channel: props.body.channel_id
+    const conversation = await props.client.conversations.info({
+      channel: props.body.channel_id
+    })
+    if (conversation.channel.is_im || conversation.channel.is_mpim)
+      return await props.respond({
+        response_type: 'ephemeral',
+        text: "Trading in DMs isn't allowed yet."
       })
-    )
-    if (!/^<@[A-Z0-9]+\|[\d\w\s]+>$/gm.test(props.command.text))
+    else if (!/^<@[A-Z0-9]+\|[\d\w\s]+>$/gm.test(props.command.text))
       return await props.respond({
         response_type: 'ephemeral',
         text: 'To start a trade, run `/trade @<person>`!'
@@ -224,9 +227,7 @@ slack.action('accept-trade', async props => {
     // @ts-expect-error
     let { tradeId, channel, ts } = JSON.parse(props.action.value)
     let trade = await prisma.trade.findUnique({
-      where: {
-        id: Number(tradeId)
-      }
+      where: { id: Number(tradeId) }
     })
 
     if (
@@ -295,7 +296,7 @@ slack.action('accept-trade', async props => {
       include: { initiatorTrades: true, receiverTrades: true }
     })
 
-    const initiator = await prisma.identity.findUnique({
+    let initiator = await prisma.identity.findUnique({
       where: {
         slack: trade.initiatorIdentityId
       },
@@ -303,7 +304,7 @@ slack.action('accept-trade', async props => {
         inventory: true
       }
     })
-    const receiver = await prisma.identity.findUnique({
+    let receiver = await prisma.identity.findUnique({
       where: {
         slack: trade.receiverIdentityId
       },
@@ -311,141 +312,6 @@ slack.action('accept-trade', async props => {
         inventory: true
       }
     })
-
-    // Now transfer items
-    for (let trade of closed.initiatorTrades) {
-      const instance = await prisma.instance.findUnique({
-        where: { id: trade.instanceId }
-      })
-      if (trade.quantity < instance.quantity) {
-        await prisma.instance.update({
-          where: { id: instance.id },
-          data: { quantity: instance.quantity - trade.quantity }
-        })
-
-        const existing = receiver.inventory.find(
-          receiverInstance => receiverInstance.itemId === instance.itemId
-        )
-        if (existing !== undefined) {
-          // Add to existing instance
-          await prisma.instance.update({
-            where: { id: existing.id },
-            data: {
-              quantity: existing.quantity + trade.quantity,
-              metadata: instance.metadata
-                ? {
-                    ...(existing.metadata as object),
-                    ...(instance.metadata as object)
-                  }
-                : existing.metadata
-            }
-          })
-        } else
-          await prisma.instance.create({
-            data: {
-              itemId: instance.itemId,
-              identityId: receiver.slack,
-              quantity: trade.quantity,
-              public: instance.public
-            }
-          })
-      } else {
-        // Transfer entire instance over
-        const existing = receiver.inventory.find(
-          receiverInstance => receiverInstance.itemId === instance.itemId
-        )
-        if (existing !== undefined) {
-          // Add to existing instance
-          await prisma.instance.update({
-            where: { id: existing.id },
-            data: {
-              quantity: existing.quantity + trade.quantity,
-              metadata: instance.metadata
-                ? {
-                    ...(existing.metadata as object),
-                    ...(instance.metadata as object)
-                  }
-                : existing.metadata
-            }
-          })
-        } else
-          await prisma.instance.update({
-            where: {
-              id: instance.id
-            },
-            data: {
-              identityId: receiver.slack
-            }
-          })
-      }
-    }
-
-    for (let trade of closed.receiverTrades) {
-      const instance = await prisma.instance.findUnique({
-        where: { id: trade.instanceId }
-      })
-      if (trade.quantity < instance.quantity) {
-        await prisma.instance.update({
-          where: { id: instance.id },
-          data: { quantity: instance.quantity - trade.quantity }
-        })
-
-        const existing = initiator.inventory.find(
-          initiatorInstance => initiatorInstance.itemId === instance.itemId
-        )
-        if (existing !== undefined) {
-          // Add to existing instance
-          await prisma.instance.update({
-            where: { id: existing.id },
-            data: {
-              quantity: existing.quantity + trade.quantity,
-              metadata: instance.metadata
-                ? {
-                    ...(existing.metadata as object),
-                    ...(instance.metadata as object)
-                  }
-                : existing.metadata
-            }
-          })
-        } else
-          await prisma.instance.create({
-            data: {
-              itemId: instance.itemId,
-              identityId: initiator.slack,
-              quantity: trade.quantity,
-              public: instance.public
-            }
-          })
-      } else {
-        // Transfer entire instance over
-        const existing = initiator.inventory.find(
-          receiverInstance => receiverInstance.itemId === instance.itemId
-        )
-        if (existing !== undefined) {
-          // Add to existing instance
-          await prisma.instance.update({
-            where: { id: existing.id },
-            data: {
-              quantity: existing.quantity + trade.quantity,
-              metadata: instance.metadata
-                ? {
-                    ...(existing.metadata as object),
-                    ...(instance.metadata as object)
-                  }
-                : existing.metadata
-            }
-          })
-        } else
-          await prisma.instance.update({
-            where: {
-              id: instance.id
-            },
-            data: {
-              identityId: initiator.slack
-            }
-          })
-      }
-    }
 
     // @ts-expect-error
     await props.client.chat.update({
@@ -459,6 +325,167 @@ slack.action('accept-trade', async props => {
         true
       )
     })
+
+    // Now transfer items
+    for (let offer of closed.initiatorTrades) {
+      const instance = await prisma.instance.findUnique({
+        where: { id: offer.instanceId }
+      })
+      if (offer.quantity < instance.quantity) {
+        // Subtract from quantity
+        await prisma.instance.update({
+          where: { id: instance.id },
+          data: { quantity: instance.quantity - offer.quantity }
+        })
+
+        const existing = receiver.inventory.find(
+          receiverInstance => receiverInstance.itemId === instance.itemId
+        )
+        if (existing !== undefined) {
+          // Add to existing instance
+          await prisma.instance.update({
+            where: { id: existing.id },
+            data: {
+              quantity: existing.quantity + offer.quantity,
+              metadata: instance.metadata
+                ? {
+                    ...(existing.metadata as object),
+                    ...(instance.metadata as object)
+                  }
+                : existing.metadata
+            }
+          })
+        } else
+          await prisma.instance.create({
+            data: {
+              itemId: instance.itemId,
+              identityId: receiver.slack,
+              quantity: offer.quantity,
+              public: instance.public
+            }
+          })
+      } else {
+        // Transfer entire instance over
+        const existing = receiver.inventory.find(
+          receiverInstance => receiverInstance.itemId === instance.itemId
+        )
+        if (existing !== undefined) {
+          // Add to existing instance
+          await prisma.instance.update({
+            where: { id: existing.id },
+            data: {
+              quantity: existing.quantity + offer.quantity,
+              metadata: instance.metadata
+                ? {
+                    ...(existing.metadata as object),
+                    ...(instance.metadata as object)
+                  }
+                : existing.metadata
+            }
+          })
+          await prisma.instance.update({
+            where: { id: instance.id },
+            data: {
+              identity: { disconnect: true }
+            }
+          })
+        } else
+          await prisma.instance.update({
+            where: { id: instance.id },
+            data: { identityId: receiver.slack }
+          })
+      }
+    }
+
+    initiator = await prisma.identity.findUnique({
+      where: {
+        slack: trade.initiatorIdentityId
+      },
+      include: {
+        inventory: true
+      }
+    })
+    receiver = await prisma.identity.findUnique({
+      where: {
+        slack: trade.receiverIdentityId
+      },
+      include: {
+        inventory: true
+      }
+    })
+
+    for (let offer of closed.receiverTrades) {
+      const instance = await prisma.instance.findUnique({
+        where: { id: offer.instanceId }
+      })
+      if (offer.quantity < instance.quantity) {
+        await prisma.instance.update({
+          where: { id: instance.id },
+          data: { quantity: instance.quantity - offer.quantity }
+        })
+
+        const existing = initiator.inventory.find(
+          initiatorInstance => initiatorInstance.itemId === instance.itemId
+        )
+        if (existing !== undefined) {
+          //  Add to existing instance
+          await prisma.instance.update({
+            where: { id: existing.id },
+            data: {
+              quantity: existing.quantity + offer.quantity,
+              metadata: instance.metadata
+                ? {
+                    ...(existing.metadata as object),
+                    ...(instance.metadata as object)
+                  }
+                : existing.metadata
+            }
+          })
+        } else
+          await prisma.instance.create({
+            data: {
+              itemId: instance.itemId,
+              identityId: initiator.slack,
+              quantity: offer.quantity,
+              public: instance.public
+            }
+          })
+      } else {
+        // Transfer entire instance over
+        const existing = initiator.inventory.find(
+          receiverInstance => receiverInstance.itemId === instance.itemId
+        )
+        if (existing !== undefined) {
+          // Add to existing instance
+          await prisma.instance.update({
+            where: { id: existing.id },
+            data: {
+              quantity: existing.quantity + offer.quantity,
+              metadata: instance.metadata
+                ? {
+                    ...(existing.metadata as object),
+                    ...(instance.metadata as object)
+                  }
+                : existing.metadata
+            }
+          })
+          await prisma.instance.update({
+            where: { id: instance.id },
+            data: {
+              identity: { disconnect: true }
+            }
+          })
+          receiver.inventory = receiver.inventory.filter(
+            old => !(old.id === instance.id)
+          )
+          console.log(receiver.inventory)
+        } else
+          await prisma.instance.update({
+            where: { id: instance.id },
+            data: { identityId: initiator.slack }
+          })
+      }
+    }
   })
 })
 
@@ -530,7 +557,7 @@ slack.view('add-trade', async props => {
         where: { id: fields.instance.id },
         include: { item: true }
       })
-      await props.client.chat.postEphemeral({
+      return await props.client.chat.postEphemeral({
         channel,
         user: props.body.user.id,
         text: `Woah woah woah! It doesn't look like you have ${fields.quantity} ${instance.item.reaction} ${instance.item.name} to trade. You could possibly be trading ${instance.item.reaction} ${instance.item.name} in another open trade.`
@@ -616,6 +643,30 @@ const tradeDialog = async (
       const ref = await prisma.item.findUnique({
         where: { name: instance.itemId }
       })
+      const otherTrades = await prisma.trade.findMany({
+        where: {
+          closed: false, // Not closed
+          OR: [
+            { initiatorTrades: { some: { instanceId: instance.id } } },
+            {
+              receiverTrades: { some: { instanceId: instance.id } }
+            }
+          ], // Either in initiatorTrades or receiverTrades
+          NOT: [{ id: tradeId }] // Not this trade
+        },
+        include: {
+          initiatorTrades: true,
+          receiverTrades: true
+        }
+      })
+      let otherOffers = otherTrades
+        .map(offer => ({
+          ...offer,
+          trades: [...offer.initiatorTrades, ...offer.receiverTrades]
+        }))
+        .filter(offer =>
+          offer.trades.find(trade => trade.instanceId === instance.id)
+        )
       if (tradeInstance) {
         alreadyOffering.push({
           type: 'section',
@@ -638,31 +689,6 @@ const tradeDialog = async (
           }
         })
       } else {
-        const otherTrades = await prisma.trade.findMany({
-          where: {
-            closed: false, // Not closed
-            OR: [
-              { initiatorTrades: { some: { instanceId: instance.id } } },
-              {
-                receiverTrades: { some: { instanceId: instance.id } }
-              }
-            ], // Either in initiatorTrades or receiverTrades
-            NOT: [{ id: tradeId }] // Not this trade
-          },
-          include: {
-            initiatorTrades: true,
-            receiverTrades: true
-          }
-        })
-        console.log(otherTrades)
-        let otherOffers = otherTrades
-          .map(offer => ({
-            ...offer,
-            trades: [...offer.initiatorTrades, ...offer.receiverTrades]
-          }))
-          .filter(offer =>
-            offer.trades.find(trade => trade.instanceId === instance.id)
-          )
         let quantityLeft = otherOffers.reduce((acc, curr) => {
           return (
             acc -
@@ -680,18 +706,18 @@ const tradeDialog = async (
               quantity: quantityLeft
             })
           })
-        for (let offer of otherOffers) {
-          notOffering.push(
-            `x${
-              offer.trades.find(trade => trade.instanceId === instance.id)
-                .quantity
-            } ${ref.reaction} ${ref.name} in trade with <@${
-              offer.initiatorIdentityId === userId
-                ? offer.receiverIdentityId
-                : offer.initiatorIdentityId
-            }>`
-          )
-        }
+      }
+      for (let offer of otherOffers) {
+        notOffering.push(
+          `x${
+            offer.trades.find(trade => trade.instanceId === instance.id)
+              .quantity
+          } ${ref.reaction} ${ref.name} in trade with <@${
+            offer.initiatorIdentityId === userId
+              ? offer.receiverIdentityId
+              : offer.initiatorIdentityId
+          }>`
+        )
       }
     })
   )
@@ -962,31 +988,30 @@ const showTrade = async (
 
   let actions: Button[] = []
   if (!trade.initiatorAgreed && !trade.receiverAgreed)
-    actions.push(
-      {
-        type: 'button',
-        text: {
-          type: 'plain_text',
-          text: 'Edit offer'
-        },
-        action_id: 'edit-offer',
-        value: JSON.stringify({
-          tradeId,
-          ...thread
-        }),
-        style: 'primary'
+    actions.push({
+      type: 'button',
+      text: {
+        type: 'plain_text',
+        text: 'Edit offer'
       },
-      {
-        type: 'button',
-        text: {
-          type: 'plain_text',
-          text: 'Decline trade'
-        },
-        value: JSON.stringify({ tradeId, ...thread }),
-        action_id: 'decline-trade',
-        style: 'danger'
-      }
-    )
+      action_id: 'edit-offer',
+      value: JSON.stringify({
+        tradeId,
+        ...thread
+      }),
+      style: 'primary'
+    })
+  if (!closed && (!trade.initiatorAgreed || !trade.receiverAgreed))
+    actions.push({
+      type: 'button',
+      text: {
+        type: 'plain_text',
+        text: 'Decline trade'
+      },
+      value: JSON.stringify({ tradeId, ...thread }),
+      action_id: 'decline-trade',
+      style: 'danger'
+    })
   if (!closed && trade.initiatorTrades.length && trade.receiverTrades.length)
     actions.push({
       type: 'button',

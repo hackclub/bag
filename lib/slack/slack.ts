@@ -127,11 +127,14 @@ export async function execute(
     props.client.chat.postMessage({
       channel: props.context.userId,
       user: props.context.userId,
-      blocks: views.error(`Oops, there was an error:
+      blocks:
+        process.env.NODE_ENV === 'development'
+          ? views.error(`Oops, there was an error:
 \`\`\`
 ${error}
 \`\`\`
 Try again?`)
+          : views.error('Oops, there was an error. Try again?')
     })
   }
 }

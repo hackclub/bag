@@ -1,4 +1,4 @@
-import { Block, KnownBlock } from '@slack/bolt'
+import { Block, KnownBlock, View } from '@slack/bolt'
 
 const error = (err: string) => {
   return [
@@ -75,7 +75,31 @@ And of course, here is a list of things of things you can mention me for:
   }
 ]
 
+const loadingDialog = (title: string): View => {
+  return {
+    type: 'modal',
+    title: {
+      type: 'plain_text',
+      text: title
+    },
+    close: {
+      type: 'plain_text',
+      text: 'Cancel'
+    },
+    blocks: [
+      {
+        type: 'section',
+        text: {
+          type: 'plain_text',
+          text: ':spin-loading: Loading...'
+        }
+      }
+    ]
+  }
+}
+
 export default {
   error,
-  helpDialog
+  helpDialog,
+  loadingDialog
 }

@@ -39,6 +39,8 @@ type EventMiddleware = SlackEventMiddlewareArgs<'app_mention'> &
   AllMiddlewareArgs<StringIndexed>
 type ViewMiddleware = SlackViewMiddlewareArgs<SlackViewAction> &
   AllMiddlewareArgs<StringIndexed>
+type ActionMiddleware = SlackActionMiddlewareArgs &
+  AllMiddlewareArgs<StringIndexed>
 type Middleware = CommandMiddleware | EventMiddleware | ViewMiddleware
 
 // @ts-expect-error
@@ -63,6 +65,11 @@ export async function execute(
 export async function execute(
   props: ViewMiddleware,
   func: (props: ViewMiddleware, permission?: number) => any,
+  permission?: number
+)
+export async function execute(
+  props: ActionMiddleware,
+  func: (props: ActionMiddleware, permission?: number) => any,
   permission?: number
 )
 export async function execute(

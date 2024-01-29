@@ -341,7 +341,13 @@ slack.view('edit-item', async props => {
 })
 
 // TODO: Should allow existing items to give permissions to new apps through a visual interface
-
+// Is this a commodity? ${item.commodity ? 'Yes' : 'No'}
+// Is this tradable? ${item.tradable ? 'Yes' : 'No'}
+// Extra info: \`${
+//           item.metadata === null || !Object.keys(item.metadata).length
+//             ? '{}'
+//             : item.metadata
+//         }\`
 const getItem = (item: Item): (Block | KnownBlock)[] => {
   console.log(item)
   return [
@@ -351,15 +357,7 @@ const getItem = (item: Item): (Block | KnownBlock)[] => {
         type: 'mrkdwn',
         text: `Here's ${item.reaction} *${item.name}*:
 
->_${item.description}_
-
-Is this a commodity? ${item.commodity ? 'Yes' : 'No'}
-Is this tradable? ${item.tradable ? 'Yes' : 'No'}
-Extra info: \`${
-          item.metadata === null || !Object.keys(item.metadata).length
-            ? '{}'
-            : item.metadata
-        }\`        `
+>_${item.description}_`
       }
     }
   ]

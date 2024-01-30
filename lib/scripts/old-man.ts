@@ -1,5 +1,5 @@
-import { App } from '../../client/dist'
 import config from '../../config'
+import { App } from '@hackclub/bag'
 import cron from 'node-cron'
 
 export async function kickoff(slack: string) {

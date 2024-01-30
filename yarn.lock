@@ -169,6 +169,11 @@
   resolved "https://registry.yarnpkg.com/@bufbuild/protobuf/-/protobuf-1.5.0.tgz#6d119e2a562da48aa8cd93f1c0297b9bb32a9c93"
   integrity sha512-0Jg+B7Vl8YGCi7c3iZ8/38iTbZrwdU7or6QZlsA9lhSrhumaXOTMsGO8gqwDuus/THEkTiY3Uxn+PEJwgsLt0w==
 
+"@bufbuild/protobuf@^1.6.0":
+  version "1.7.1"
+  resolved "https://registry.yarnpkg.com/@bufbuild/protobuf/-/protobuf-1.7.1.tgz#ce295b06d3f2f38c2671ee315c4ad296bbcbb337"
+  integrity sha512-UlI3lKLFBjZQJ0cHf47YUH6DzZxZYWk3sf6dKYyPUaXrfXq4z+zZqNO3q0lPUzyJgh14s6VscjcNFBaQBhYd9Q==
+
 "@bufbuild/protoc-gen-es@^1.5.0":
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/@bufbuild/protoc-gen-es/-/protoc-gen-es-1.5.0.tgz#cadf0ea2a43b356533c359d2571c147e6ff5e736"
@@ -200,10 +205,22 @@
   dependencies:
     undici "^5.26.2"
 
+"@connectrpc/connect-node@^1.3.0":
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@connectrpc/connect-node/-/connect-node-1.3.0.tgz#da60ca53596de76151a66fde16bcf5455b12542e"
+  integrity sha512-2fV/z/8MUFOkTn2Gbm7T/qvRfkpt/D/w7ykYqACZRH6VNG/faY4lH2wUZiNkwv9tzTrECKOJFyPsaGs3nRYK3w==
+  dependencies:
+    undici "^5.28.2"
+
 "@connectrpc/connect@^1.1.3":
   version "1.1.3"
   resolved "https://registry.npmjs.org/@connectrpc/connect/-/connect-1.1.3.tgz"
   integrity sha512-AXkbsLQe2Nm7VuoN5nqp05GEb9mPa/f5oFzDqTbHME4i8TghTrlY03uefbhuAq4wjsnfDnmuxHZvn6ndlgXmbg==
+
+"@connectrpc/connect@^1.3.0":
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@connectrpc/connect/-/connect-1.3.0.tgz#2894629f7f11b46fef883a898dab529f84171bf3"
+  integrity sha512-kTeWxJnLLtxKc2ZSDN0rIBgwfP8RwcLknthX4AKlIAmN9ZC4gGnCbwp+3BKcP/WH5c8zGBAWqSY3zeqCM+ah7w==
 
 "@connectrpc/protoc-gen-connect-es@^1.1.4":
   version "1.1.4"
@@ -334,6 +351,15 @@
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/@fastify/busboy/-/busboy-2.1.0.tgz#0709e9f4cb252351c609c6e6d8d6779a8d25edff"
   integrity sha512-+KpH+QxZU7O4675t3mnkQKcZZg56u+K/Ct2K+N2AZYNVK8kyeo/bI18tI8aPm3tvNNRyTWfj6s5tnGNlcbQRsA==
+
+"@hackclub/bag@^1.0.6":
+  version "1.0.6"
+  resolved "https://registry.yarnpkg.com/@hackclub/bag/-/bag-1.0.6.tgz#6bd8df1c6daf4c6f51bf3901daddd510066b1819"
+  integrity sha512-Fk0LGz3Jvw0yZEf5uhA1n34b0SpJq5Gf6G7my6ChZcZw64KvDyv5GYGnmwqnWGrSE4YFT0yax+tngwEsVT6U0w==
+  dependencies:
+    "@bufbuild/protobuf" "^1.6.0"
+    "@connectrpc/connect" "^1.3.0"
+    "@connectrpc/connect-node" "^1.3.0"
 
 "@jridgewell/gen-mapping@^0.3.2":
   version "0.3.3"
@@ -2058,7 +2084,7 @@ undici-types@~5.26.4:
   resolved "https://registry.npmjs.org/undici-types/-/undici-types-5.26.5.tgz"
   integrity sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==
 
-undici@^5.26.2:
+undici@^5.26.2, undici@^5.28.2:
   version "5.28.2"
   resolved "https://registry.yarnpkg.com/undici/-/undici-5.28.2.tgz#fea200eac65fc7ecaff80a023d1a0543423b4c91"
   integrity sha512-wh1pHJHnUeQV5Xa8/kyQhO7WFa8M34l026L5P/+2TYiakvGy5Rdc8jWZVyG7ieht/0WgJLEd3kcU5gKx+6GC8w==

@@ -1,5 +1,5 @@
 import { findOrCreateIdentity } from '../../db'
-import { channelBlacklist } from '../../utils'
+import { channelBlacklist, userRegex } from '../../utils'
 import slack, { execute } from '../slack'
 import views from '../views'
 import { PrismaClient } from '@prisma/client'
@@ -30,7 +30,7 @@ slack.command('/trade', async props => {
       })
     }
 
-    if (!/^<@[A-Z0-9]+\|[\d\w\s]+>$/gm.test(props.command.text))
+    if (!userRegex.test(props.command.text))
       return await props.respond({
         response_type: 'ephemeral',
         text: 'To start a trade, run `/trade @<person>`!'

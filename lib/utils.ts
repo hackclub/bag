@@ -8,8 +8,6 @@ const maintainersYaml = fs.readFileSync(
 )
 export const maintainers = parse(maintainersYaml)
 
-console.log(maintainers)
-
 const channelsYaml = fs.readFileSync(
   path.join(process.cwd(), './blacklist.yaml'),
   'utf-8'
@@ -22,3 +20,5 @@ export const channels = {
 
 export const getKeyByValue = (obj, value) =>
   Object.keys(obj).find(key => obj[key] === value)
+
+export const userRegex = /^<@[\d\w]+\|[\s\S]+>$/gm

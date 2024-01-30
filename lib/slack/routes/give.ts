@@ -1,4 +1,5 @@
 import { findOrCreateIdentity } from '../../db'
+import { userRegex } from '../../utils'
 import slack, { execute } from '../slack'
 import views from '../views'
 import { PrismaClient } from '@prisma/client'
@@ -12,7 +13,7 @@ slack.command('/give', async props => {
       2,
       props.command.text.indexOf('|')
     )
-    if (!/^<@[\d\w\s]+\|[\d\w\s]+>$/gm.test(props.command.text)) {
+    if (!userRegex.test(props.command.text)) {
       console.log(props.command.text)
       return await props.client.chat.postEphemeral({
         channel: props.body.channel_id,

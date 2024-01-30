@@ -12,13 +12,14 @@ slack.command('/give', async props => {
       2,
       props.command.text.indexOf('|')
     )
-    if (!/^<@[A-Z0-9]+\|[\d\w\s]+>$/gm.test(props.command.text))
+    if (!/^<@[\d\w\s]+\|[\d\w\s]+>$/gm.test(props.command.text)) {
+      console.log(props.command.text)
       return await props.client.chat.postEphemeral({
         channel: props.body.channel_id,
         user: props.context.userId,
         text: 'To give someone something, run `/give @<person>`!'
       })
-    else if (props.context.userId == receiverId)
+    } else if (props.context.userId == receiverId)
       return await props.client.chat.postEphemeral({
         channel: props.body.channel_id,
         user: props.context.userId,

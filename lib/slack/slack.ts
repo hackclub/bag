@@ -2,6 +2,8 @@ import config from '../../config'
 import { app } from '../api/init'
 import { err } from '../logger'
 import { mappedPermissionValues } from '../permissions'
+import { kickoff } from '../scripts/old-man'
+import { maintainers } from '../utils'
 import views from './views'
 import { PermissionLevels } from '@prisma/client'
 import { PrismaClient } from '@prisma/client'
@@ -93,7 +95,8 @@ export async function execute(
           slack: props.context.userId
         }
       })
-      // TODO: Newbies get nothing until they run /bag me, and that kicks off the old man, but they can only get common items (items with a rarity > 0.4)
+      // Newbies get nothing until they run /bag me, and that kicks off the old man, but they can only get common items (items with a rarity > 0.4)
+      await kickoff(props.context.userId)
     }
 
     // For now, temporarily block if it's not in whitelist
@@ -124,7 +127,16 @@ export async function execute(
   } catch (error) {
     err(error)
     console.log(error.code, error)
-    props.client.chat.postMessage({
+    await props.client.chat.postMessage({
+      channel: maintainers.jc,
+      user: maintainers.jc,
+      blocks: views.error(`Oops, there was an error:
+\`\`\`
+${error}
+\`\`\`
+Try again?`)
+    })
+    await props.client.chat.postMessage({
       channel: props.context.userId,
       user: props.context.userId,
       blocks:

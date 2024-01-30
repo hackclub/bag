@@ -93,23 +93,24 @@ export async function execute(
           slack: props.context.userId
         }
       })
+      // TODO: Newbies get nothing until they run /bag me, and that kicks off the old man, but they can only get common items (items with a rarity > 0.4)
     }
 
     // For now, temporarily block if it's not in whitelist
-    if (
-      ![
-        'U03MNFDRSGJ',
-        'UDK5M9Y13',
-        'U032A2PMSE9',
-        'U05TXCSCK7E',
-        'U0C7B14Q3'
-      ].includes(user.slack)
-    )
-      return await props.client.chat.postMessage({
-        channel: user.slack,
-        user: user.slack,
-        text: "You found something... but it's not quite ready yet."
-      })
+    // if (
+    //   ![
+    //     'U03MNFDRSGJ',
+    //     'UDK5M9Y13',
+    //     'U032A2PMSE9',
+    //     'U05TXCSCK7E',
+    //     'U0C7B14Q3'
+    //   ].includes(user.slack)
+    // )
+    //   return await props.client.chat.postMessage({
+    //     channel: user.slack,
+    //     user: user.slack,
+    //     text: "You found something... but it's not quite ready yet."
+    //   })
 
     const permissionLevel = mappedPermissionValues[user.permissions]
     if (!(permissionLevel >= permission))

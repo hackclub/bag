@@ -1,24 +1,24 @@
-import { IdentityWithInventory, findOrCreateIdentity } from '../../db'
+import { findOrCreateIdentity } from '../../db'
 import slack, { execute } from '../slack'
 import views from '../views'
 import { PrismaClient } from '@prisma/client'
-import { View } from '@slack/bolt'
-import { Block, KnownBlock } from '@slack/web-api'
+import { View, Block, KnownBlock } from '@slack/bolt'
 
 const prisma = new PrismaClient()
 
 slack.command('/give', async props => {
   await execute(props, async props => {
+    const receiverId = props.command.text.slice(
+      2,
+      props.command.text.indexOf('|')
+    )
     if (!/^<@[A-Z0-9]+\|[\d\w\s]+>$/gm.test(props.command.text))
       return await props.client.chat.postEphemeral({
         channel: props.body.channel_id,
         user: props.context.userId,
         text: 'To give someone something, run `/give @<person>`!'
       })
-    else if (
-      props.context.userId ==
-      props.command.text.slice(2, props.command.text.indexOf('|'))
-    )
+    else if (props.context.userId == receiverId)
       return await props.client.chat.postEphemeral({
         channel: props.body.channel_id,
         user: props.context.userId,
@@ -31,12 +31,8 @@ slack.command('/give', async props => {
     })
 
     const user = await prisma.identity.findUnique({
-      where: {
-        slack: props.context.userId
-      },
-      include: {
-        inventory: true
-      }
+      where: { slack: props.context.userId },
+      include: { inventory: true }
     })
     if (!user.inventory.length)
       return await props.client.chat.postEphemeral({
@@ -45,9 +41,7 @@ slack.command('/give', async props => {
         text: "Looks like you don't have any items to give yet."
       })
 
-    const receiver = await findOrCreateIdentity(
-      props.command.text.slice(2, props.command.text.indexOf('|'))
-    )
+    const receiver = await findOrCreateIdentity(receiverId)
 
     await props.client.views.update({
       view_id: view.id,
@@ -63,19 +57,20 @@ slack.command('/give', async props => {
 slack.view('give', async props => {
   await execute(props, async props => {
     let fields: {
-      item: string
+      instance: any
       quantity: number
       note: string
     } = {
-      item: undefined,
+      instance: undefined,
       quantity: 1,
       note: undefined
     }
     for (let field of Object.values(props.view.state.values))
       fields[Object.keys(field)[0]] =
         field[Object.keys(field)[0]].value ||
-        Object.values(field)[0].selected_option?.value ||
+        Object.values(field)[0].selected_option.value ||
         ''
+    fields.instance = JSON.parse(fields.instance)
     fields.quantity = Number(fields.quantity)
 
     const { receiverId, channel } = JSON.parse(props.view.private_metadata)
@@ -85,15 +80,13 @@ slack.view('give', async props => {
       include: { inventory: true }
     })
     const instance = giver.inventory.find(
-      instance => instance.itemId === fields.item
+      instance => instance.id === fields.instance.id
     )
     const ref = await prisma.item.findUnique({
-      where: {
-        name: instance.itemId
-      }
+      where: { name: instance.itemId }
     })
 
-    if (fields.quantity > instance.quantity)
+    if (fields.quantity > fields.instance.quantity)
       return props.client.chat.postEphemeral({
         channel,
         user: props.context.userId,
@@ -109,7 +102,6 @@ slack.view('give', async props => {
       instance => instance.itemId === ref.name
     )
     if (existing !== undefined) {
-      // Add to existing instance
       transfer = await prisma.instance.update({
         where: {
           id: existing.id
@@ -179,14 +171,11 @@ const giveDialog = async (
   channel: string
 ): Promise<View> => {
   const giver = await prisma.identity.findUnique({
-    where: {
-      slack: giverId
-    },
-    include: {
-      inventory: true
-    }
+    where: { slack: giverId },
+    include: { inventory: true }
   })
 
+  let offers = []
   let notOffering = []
   for (let instance of giver.inventory) {
     const trades = await prisma.trade.findMany({
@@ -202,6 +191,9 @@ const giveDialog = async (
         receiverTrades: true
       }
     })
+    const item = await prisma.item.findUnique({
+      where: { name: instance.itemId }
+    })
     const otherOffers = trades
       .map(offer => ({
         ...offer,
@@ -210,14 +202,29 @@ const giveDialog = async (
       .filter(offer =>
         offer.trades.find(trade => trade.instanceId === instance.id)
       )
-    for (let offer of otherOffers) {
-      const ref = await prisma.item.findUnique({
-        where: { name: instance.itemId }
+    const quantityLeft = otherOffers.reduce((acc, curr) => {
+      return (
+        acc -
+        curr.trades.find(trade => trade.instanceId === instance.id).quantity
+      )
+    }, instance.quantity)
+    if (quantityLeft)
+      offers.push({
+        text: {
+          type: 'plain_text',
+          text: `x${quantityLeft} ${item.reaction} ${instance.itemId}`,
+          emoji: true
+        },
+        value: JSON.stringify({
+          id: instance.id,
+          quantity: quantityLeft
+        })
       })
+    for (let offer of otherOffers) {
       notOffering.push(
         `x${
           offer.trades.find(trade => trade.instanceId === instance.id).quantity
-        } ${ref.reaction} ${ref.name} in trade with <@${
+        } ${item.reaction} ${item.name} in trade with <@${
           offer.initiatorIdentityId === giver.slack
             ? offer.receiverIdentityId
             : offer.initiatorIdentityId
@@ -242,30 +249,13 @@ const giveDialog = async (
       {
         type: 'input',
         element: {
-          action_id: 'item',
+          action_id: 'instance',
           type: 'static_select',
           placeholder: {
             type: 'plain_text',
             text: 'Choose a item'
           },
-          options: await Promise.all(
-            giver.inventory.map(async instance => {
-              const item = await prisma.item.findUnique({
-                where: {
-                  name: instance.itemId
-                }
-              })
-
-              return {
-                text: {
-                  type: 'plain_text',
-                  text: `x${instance.quantity} ${item.reaction} ${instance.itemId}`,
-                  emoji: true
-                },
-                value: instance.itemId
-              }
-            })
-          )
+          options: offers
         },
         label: {
           type: 'plain_text',

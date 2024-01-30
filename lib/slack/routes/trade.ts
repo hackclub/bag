@@ -44,6 +44,11 @@ slack.command('/trade', async props => {
         text: "Erm, you can't really trade with yourself..."
       })
 
+    const receiverId = props.command.text.slice(
+      2,
+      props.command.text.indexOf('|')
+    )
+
     const user = await prisma.identity.findUnique({
       where: { slack: props.context.userId },
       include: { inventory: true }
@@ -54,9 +59,7 @@ slack.command('/trade', async props => {
         text: "Looks like you don't have any items to trade yet."
       })
 
-    const receiver = await findOrCreateIdentity(
-      props.command.text.slice(2, props.command.text.indexOf('|'))
-    )
+    const receiver = await findOrCreateIdentity(receiverId)
     if (!receiver.inventory.length)
       return await props.respond({
         response_type: 'ephemeral',
@@ -884,7 +887,7 @@ const startTrade = async (
       const item = await prisma.item.findUnique({
         where: { name: instance.itemId }
       })
-      let otherOffers = otherTrades
+      const otherOffers = otherTrades
         .map(offer => ({
           ...offer,
           trades: [...offer.initiatorTrades, ...offer.receiverTrades]
@@ -892,7 +895,7 @@ const startTrade = async (
         .filter(offer =>
           offer.trades.find(trade => trade.instanceId === instance.id)
         )
-      let quantityLeft = otherOffers.reduce((acc, curr) => {
+      const quantityLeft = otherOffers.reduce((acc, curr) => {
         return (
           acc -
           curr.trades.find(trade => trade.instanceId === instance.id).quantity

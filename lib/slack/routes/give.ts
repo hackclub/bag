@@ -1,7 +1,9 @@
 import { IdentityWithInventory, findOrCreateIdentity } from '../../db'
 import slack, { execute } from '../slack'
+import views from '../views'
 import { PrismaClient } from '@prisma/client'
 import { View } from '@slack/bolt'
+import { Block, KnownBlock } from '@slack/web-api'
 
 const prisma = new PrismaClient()
 
@@ -23,6 +25,11 @@ slack.command('/give', async props => {
         text: "Erm, you can't really give yourself something..."
       })
 
+    const { view } = await props.client.views.open({
+      trigger_id: props.body.trigger_id,
+      view: views.loadingDialog('Give from inventory')
+    })
+
     const user = await prisma.identity.findUnique({
       where: {
         slack: props.context.userId
@@ -42,8 +49,8 @@ slack.command('/give', async props => {
       props.command.text.slice(2, props.command.text.indexOf('|'))
     )
 
-    await props.client.views.open({
-      trigger_id: props.body.trigger_id,
+    await props.client.views.update({
+      view_id: view.id,
       view: await giveDialog(
         props.context.userId,
         receiver.slack,
@@ -180,7 +187,46 @@ const giveDialog = async (
     }
   })
 
-  return {
+  let notOffering = []
+  for (let instance of giver.inventory) {
+    const trades = await prisma.trade.findMany({
+      where: {
+        closed: false,
+        OR: [
+          { initiatorTrades: { some: { instanceId: instance.id } } },
+          { receiverTrades: { some: { instanceId: instance.id } } }
+        ]
+      },
+      include: {
+        initiatorTrades: true,
+        receiverTrades: true
+      }
+    })
+    const otherOffers = trades
+      .map(offer => ({
+        ...offer,
+        trades: [...offer.initiatorTrades, ...offer.receiverTrades]
+      }))
+      .filter(offer =>
+        offer.trades.find(trade => trade.instanceId === instance.id)
+      )
+    for (let offer of otherOffers) {
+      const ref = await prisma.item.findUnique({
+        where: { name: instance.itemId }
+      })
+      notOffering.push(
+        `x${
+          offer.trades.find(trade => trade.instanceId === instance.id).quantity
+        } ${ref.reaction} ${ref.name} in trade with <@${
+          offer.initiatorIdentityId === giver.slack
+            ? offer.receiverIdentityId
+            : offer.initiatorIdentityId
+        }>`
+      )
+    }
+  }
+
+  let view: View = {
     callback_id: 'give',
     title: {
       type: 'plain_text',
@@ -232,7 +278,8 @@ const giveDialog = async (
           type: 'number_input',
           is_decimal_allowed: false,
           action_id: 'quantity',
-          min_value: '1'
+          min_value: '1',
+          initial_value: '1'
         },
         label: {
           type: 'plain_text',
@@ -258,4 +305,23 @@ const giveDialog = async (
       }
     ]
   }
+  if (notOffering.length)
+    view.blocks.push(
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: "Items you own that you're currently offering in other trades:"
+        }
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: notOffering.join('\n')
+        }
+      }
+    )
+
+  return view
 }

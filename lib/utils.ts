@@ -8,6 +8,12 @@ const maintainersYaml = fs.readFileSync(
 )
 export const maintainers = parse(maintainersYaml)
 
+const channelsYaml = fs.readFileSync(
+  path.join(process.cwd(), './blacklist.yaml'),
+  'utf-8'
+)
+export const channelBlacklist = parse(channelsYaml)
+
 export const channels = {
   approvals: 'C06EB2Y3YAE'
 }

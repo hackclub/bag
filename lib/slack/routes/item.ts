@@ -176,7 +176,7 @@ slack.command('/item', async props => {
           if (!props.body.text.length)
             return await props.respond({
               response_type: 'ephemeral',
-              text: `Try running \`/item <item>\`!`
+              text: `Try running \`/item <name>\` or \`/item :-item-tag\`!`
             })
           return await props.respond({
             response_type: 'ephemeral',

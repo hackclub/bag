@@ -2,7 +2,6 @@ import config from '../../config'
 import { app } from '../api/init'
 import { err } from '../logger'
 import { mappedPermissionValues } from '../permissions'
-import messages from './messages'
 import views from './views'
 import { PermissionLevels } from '@prisma/client'
 import { PrismaClient } from '@prisma/client'
@@ -117,7 +116,7 @@ export async function execute(
       return await props.client.chat.postEphemeral({
         channel: user.slack,
         user: user.slack,
-        text: messages.invalidPerms
+        text: "Oh no! Looks like you don't have the perms to do that."
       })
 
     await func(props, mappedPermissionValues[user.permissions])

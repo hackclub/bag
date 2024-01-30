@@ -1,4 +1,5 @@
 import { findOrCreateIdentity, type IdentityWithInventory } from '../../db'
+import { channelBlacklist } from '../../utils'
 import slack, { execute } from '../slack'
 import views from '../views'
 import { PrismaClient, Instance } from '@prisma/client'
@@ -8,6 +9,17 @@ const prisma = new PrismaClient()
 
 slack.command('/bag', async props => {
   await execute(props, async props => {
+    try {
+      const conversation = await props.client.conversations.info({
+        channel: props.body.channel_id
+      })
+      if (channelBlacklist.includes(conversation.channel.name))
+        return await props.respond({
+          response_type: 'ephemeral',
+          text: "Running `/bag` in this channel isn't allowed. Try running `/bag` in a public channel, like <#C0266FRGV>!"
+        })
+    } catch {}
+
     const message = props.command.text
     if (message.startsWith('me')) {
       const userId = props.context.userId
@@ -70,6 +82,18 @@ slack.command('/bag', async props => {
 
 slack.event('app_mention', async props => {
   await execute(props, async props => {
+    try {
+      const conversation = await props.client.conversations.info({
+        channel: props.body.event.channel
+      })
+      if (channelBlacklist.includes(conversation.channel.name))
+        return await props.client.chat.postEphemeral({
+          channel: props.body.event.channel,
+          user: props.context.userId,
+          text: "Mentioning me in this channel isn't allowed. Try mentioning me in a public channel, like <#C0266FRGV>!"
+        })
+    } catch {}
+
     const thread_ts = props.body.event.thread_ts
 
     const removeUser = (text: string) => {

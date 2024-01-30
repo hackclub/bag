@@ -1,4 +1,5 @@
 import { findOrCreateIdentity } from '../../db'
+import { channelBlacklist } from '../../utils'
 import slack, { execute } from '../slack'
 import views from '../views'
 import { PrismaClient } from '@prisma/client'
@@ -8,15 +9,28 @@ const prisma = new PrismaClient()
 
 slack.command('/trade', async props => {
   await execute(props, async props => {
-    const conversation = await props.client.conversations.info({
-      channel: props.body.channel_id
-    })
-    if (conversation.channel.is_im || conversation.channel.is_mpim)
+    try {
+      const conversation = await props.client.conversations.info({
+        channel: props.body.channel_id
+      })
+      if (channelBlacklist.includes(conversation.channel.name))
+        return await props.respond({
+          response_type: 'ephemeral',
+          text: "Trading in this channel isn't allowed. Try running `/trade` in a public channel, like <#C0266FRGV>!"
+        })
+      else if (conversation.channel.is_im || conversation.channel.is_mpim)
+        return await props.respond({
+          response_type: 'ephemeral',
+          text: "Trading in DMs isn't allowed yet. Try running `/trade` in a public channel, like <#C0266FRGV>!"
+        })
+    } catch {
       return await props.respond({
         response_type: 'ephemeral',
-        text: "Trading in DMs isn't allowed yet."
+        text: "Trading in DMs isn't allowed yet. Try running `/trade` in a public channel, like <#C0266FRGV>!"
       })
-    else if (!/^<@[A-Z0-9]+\|[\d\w\s]+>$/gm.test(props.command.text))
+    }
+
+    if (!/^<@[A-Z0-9]+\|[\d\w\s]+>$/gm.test(props.command.text))
       return await props.respond({
         response_type: 'ephemeral',
         text: 'To start a trade, run `/trade @<person>`!'
@@ -171,7 +185,13 @@ slack.action('edit-offer', async props => {
       return await props.respond({
         response_type: 'ephemeral',
         replace_original: false,
-        text: "Woah woah woah! You'll allowed to spectate on the trade and that's it."
+        text: "Woah woah woah! You're not a party to that trade."
+      })
+    else if (trade.closed)
+      return await props.respond({
+        response_type: 'ephemeral',
+        replace_original: false,
+        text: 'Woah woah woah! Trade already confirmed and items transferred.'
       })
 
     // @ts-expect-error
@@ -209,7 +229,7 @@ slack.action('decline-trade', async props => {
     )
       return await props.respond({
         response_type: 'ephemeral',
-        text: "Woah woah woah! You'll allowed to spectate on the trade and that's it."
+        text: "Woah woah woah! You're not a party to that trade."
       })
 
     trade = await prisma.trade.update({
@@ -258,7 +278,7 @@ slack.action('accept-trade', async props => {
     )
       return await props.respond({
         response_type: 'ephemeral',
-        text: "Woah woah woah! You'll allowed to spectate on the trade and that's it."
+        text: "Woah woah woah! You're not a party to that trade."
       })
 
     const tradeKey =
@@ -283,7 +303,7 @@ slack.action('accept-trade', async props => {
           props.body.user.id === trade.initiatorIdentityId
             ? trade.receiverIdentityId
             : trade.initiatorIdentityId
-        }> to accept.`
+        }> to confirm.`
       })
       try {
         // @ts-expect-error
@@ -294,7 +314,7 @@ slack.action('accept-trade', async props => {
             props.body.user.id === trade.initiatorIdentityId
               ? trade.receiverIdentityId
               : trade.initiatorIdentityId,
-          text: `<@${props.body.user.id}> just accepted the trade and is waiting for you to accept or decline.`
+          text: `<@${props.body.user.id}> just confirmed the trade and is waiting for you to confirm or decline.`
         })
       } catch {}
       // @ts-expect-error
@@ -1038,7 +1058,7 @@ const showTrade = async (
       type: 'button',
       text: {
         type: 'plain_text',
-        text: 'Accept trade'
+        text: 'Confirm trade'
       },
       value: JSON.stringify({ tradeId, ...thread }),
       action_id: 'accept-trade',

@@ -20,22 +20,22 @@ features:
     always_online: true
   slash_commands:
     - command: /item
-      url: https://7c0c-2601-19b-c701-a310-9b1-6bfd-6960-1533.ngrok-free.app/slack/events
+      url: https://bag-client.hackclub.com/slack/events
       description: View info about items!
       usage_hint: '[name]'
       should_escape: false
     - command: /bag
-      url: https://7c0c-2601-19b-c701-a310-9b1-6bfd-6960-1533.ngrok-free.app/slack/events
+      url: https://bag-client.hackclub.com/slack/events
       description: View someone's inventory!
       usage_hint: '[mention]'
       should_escape: true
     - command: /trade
-      url: https://7c0c-2601-19b-c701-a310-9b1-6bfd-6960-1533.ngrok-free.app/slack/events
+      url: https://bag-client.hackclub.com/slack/events
       description: Start a trade.
       usage_hint: '[mention]'
       should_escape: true
     - command: /give
-      url: https://7c0c-2601-19b-c701-a310-9b1-6bfd-6960-1533.ngrok-free.app/slack/events
+      url: https://bag-client.hackclub.com/slack/events
       description: Give someone an item!
       usage_hint: '[mention]'
       should_escape: true
@@ -103,14 +103,14 @@ oauth_config:
       - files:write
 settings:
   event_subscriptions:
-    request_url: https://7c0c-2601-19b-c701-a310-9b1-6bfd-6960-1533.ngrok-free.app/slack/events
+    request_url: https://bag-client.hackclub.com/slack/events
     bot_events:
       - app_mention
       - message.channels
       - message.groups
   interactivity:
     is_enabled: true
-    request_url: https://7c0c-2601-19b-c701-a310-9b1-6bfd-6960-1533.ngrok-free.app/slack/events
+    request_url: https://bag-client.hackclub.com/slack/events
   org_deploy_enabled: false
   socket_mode_enabled: false
   token_rotation_enabled: false

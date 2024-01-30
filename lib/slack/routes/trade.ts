@@ -232,6 +232,7 @@ slack.action('decline-trade', async props => {
     )
       return await props.respond({
         response_type: 'ephemeral',
+        replace_original: false,
         text: "Woah woah woah! You're not a party to that trade."
       })
 
@@ -281,6 +282,7 @@ slack.action('accept-trade', async props => {
     )
       return await props.respond({
         response_type: 'ephemeral',
+        replace_original: false,
         text: "Woah woah woah! You're not a party to that trade."
       })
 

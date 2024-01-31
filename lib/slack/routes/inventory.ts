@@ -1,11 +1,10 @@
 import { findOrCreateIdentity, type IdentityWithInventory } from '../../db'
+import { prisma } from '../../db'
 import { channelBlacklist } from '../../utils'
 import slack, { execute } from '../slack'
 import views from '../views'
-import { PrismaClient, Instance } from '@prisma/client'
+import { Instance } from '@prisma/client'
 import { Block, KnownBlock } from '@slack/bolt'
-
-const prisma = new PrismaClient()
 
 slack.command('/bag', async props => {
   await execute(props, async props => {

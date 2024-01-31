@@ -1,6 +1,5 @@
-import { LoggerLevels, PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from './db'
+import { LoggerLevels } from '@prisma/client'
 
 export const err = (...text: any[]) => {
   text = text.map(arg => arg.toString())

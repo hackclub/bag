@@ -1,7 +1,7 @@
 // Type helpers for Prisma
 import { Prisma, PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
+export const prisma = new PrismaClient()
 
 const identityWithInventory = Prisma.validator<Prisma.IdentityDefaultArgs>()({
   include: { inventory: true }

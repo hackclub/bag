@@ -1,12 +1,12 @@
 import config from '../../config'
 import { app } from '../api/init'
+import { prisma } from '../db'
 import { err } from '../logger'
 import { mappedPermissionValues } from '../permissions'
 import { kickoff } from '../scripts/old-man'
 import { maintainers } from '../utils'
 import views from './views'
 import { PermissionLevels } from '@prisma/client'
-import { PrismaClient } from '@prisma/client'
 import {
   App,
   ExpressReceiver,
@@ -18,8 +18,6 @@ import {
   SlackActionMiddlewareArgs
 } from '@slack/bolt'
 import { StringIndexed } from '@slack/bolt/dist/types/helpers'
-
-const prisma = new PrismaClient()
 
 export const receiver = new ExpressReceiver({
   signingSecret: config.SLACK_SIGNING_SECRET,

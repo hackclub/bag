@@ -1,16 +1,16 @@
 import config from './config'
 import { ElizaService } from './gen/eliza_connect'
 import { InstanceWithItem, TradeWithTrades } from './lib/db'
+import { prisma } from './lib/db'
 import { log } from './lib/logger'
 import { mappedPermissionValues } from './lib/permissions'
 import { getKeyByValue } from './lib/utils'
 import { ConnectRouter } from '@connectrpc/connect'
-import { App, Instance, PermissionLevels, PrismaClient } from '@prisma/client'
+import { App, PermissionLevels } from '@prisma/client'
 import { WebClient } from '@slack/web-api'
 import { v4 as uuid } from 'uuid'
 
 const web = new WebClient(config.SLACK_BOT_TOKEN)
-const prisma = new PrismaClient()
 
 const format = obj => {
   if (obj.metadata) obj.metadata = JSON.stringify(obj.metadata)

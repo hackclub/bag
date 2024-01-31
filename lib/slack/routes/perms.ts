@@ -1,11 +1,10 @@
+import { prisma } from '../../db'
 import { mappedPermissionValues } from '../../permissions'
 import { channels, getKeyByValue } from '../../utils'
 import slack, { execute } from '../slack'
 import { cascadingPermissions } from '../views'
-import { PrismaClient, PermissionLevels } from '@prisma/client'
+import { PermissionLevels } from '@prisma/client'
 import type { View, Block, KnownBlock, PlainTextOption } from '@slack/bolt'
-
-const prisma = new PrismaClient()
 
 slack.command('/bag-request-perms', async props => {
   await execute(props, async props => {

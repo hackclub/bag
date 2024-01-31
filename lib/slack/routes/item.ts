@@ -1,11 +1,10 @@
+import { prisma } from '../../db'
 import { log } from '../../logger'
 import { mappedPermissionValues } from '../../permissions'
 import { channels } from '../../utils'
 import slack, { execute } from '../slack'
-import { PrismaClient, PermissionLevels, Item } from '@prisma/client'
+import { PermissionLevels, Item } from '@prisma/client'
 import type { Block, KnownBlock, View } from '@slack/bolt'
-
-const prisma = new PrismaClient()
 
 slack.command('/item', async props => {
   await execute(props, async (props, permission) => {

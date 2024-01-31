@@ -48,6 +48,14 @@ message Item {
   optional string metadata = 8;
 }
 
+message Skill {
+  optional string name = 1;
+  optional int32 maxLevel = 2;
+  optional string description = 3;
+  optional string reaction = 4;
+  optional string metadata = 5;
+}
+
 message Identity {
   optional string slack = 1;
   repeated Instance inventory = 2;
@@ -59,7 +67,17 @@ message Instance {
   optional string itemId = 2;
   optional string identityId = 3;
   optional int32 quantity = 4;
-  optional Item item = 5;
+  optional string metadata = 5;
+  optional Item item = 6;
+}
+
+message SkillInstance {
+  optional int32 id = 1;
+  optional string skillId = 2;
+  optional string identityId = 3;
+  optional int32 level = 4;
+  optional string metadata = 5;
+  optional Skill skill = 6;
 }
 
 message Trade {
@@ -76,8 +94,10 @@ message Recipe {
   int32 id = 1;
   repeated string inputIds = 2;
   repeated string outputIds = 3;
-  repeated Item inputs = 4;
-  repeated Item outputs = 5;
+  repeated string skillIds = 4;
+  repeated Item inputs = 5;
+  repeated Item outputs = 6;
+  repeated Skill skills = 7;
 }
 
 message CreateInstancesRequest {

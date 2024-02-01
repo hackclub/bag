@@ -1,27 +1,37 @@
 import config from '../../config'
-import { app } from '../api/init'
+import routes from '../../routes'
 import { prisma } from '../db'
 import { err } from '../logger'
 import { mappedPermissionValues } from '../permissions'
 import { kickoff } from '../scripts/old-man'
 import { maintainers } from '../utils'
+import CustomReceiver from './receiver'
 import views from './views'
+import { connectNodeAdapter } from '@connectrpc/connect-node'
 import { PermissionLevels } from '@prisma/client'
 import {
   App,
-  ExpressReceiver,
   SlackCommandMiddlewareArgs,
   SlackViewMiddlewareArgs,
   SlackViewAction,
   AllMiddlewareArgs,
   SlackEventMiddlewareArgs,
-  SlackActionMiddlewareArgs
+  SlackActionMiddlewareArgs,
+  HTTPReceiver
 } from '@slack/bolt'
 import { StringIndexed } from '@slack/bolt/dist/types/helpers'
 
-export const receiver = new ExpressReceiver({
+export const receiver = new HTTPReceiver({
   signingSecret: config.SLACK_SIGNING_SECRET,
-  app
+  dispatchErrorHandler: async props => {
+    try {
+      console.log(props.request)
+      return await connectNodeAdapter({ routes })(props.request, props.response)
+    } catch {
+      // Log error if it isn't a gRPC route
+      props.logger.error(props.error)
+    }
+  }
 })
 
 const slack = new App({

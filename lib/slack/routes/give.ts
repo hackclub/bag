@@ -7,12 +7,9 @@ import { View, Block, KnownBlock } from '@slack/bolt'
 
 slack.command('/give', async props => {
   await execute(props, async props => {
-    const receiverId = props.command.text.slice(
-      2,
-      props.command.text.indexOf('|')
-    )
-    if (!userRegex.test(props.command.text)) {
-      console.log(props.command.text)
+    const message = props.command.text.trim()
+    const receiverId = message.slice(2, message.indexOf('|'))
+    if (!userRegex.test(message)) {
       return await props.client.chat.postEphemeral({
         channel: props.body.channel_id,
         user: props.context.userId,

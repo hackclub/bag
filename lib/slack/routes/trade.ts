@@ -28,24 +28,19 @@ slack.command('/trade', async props => {
       })
     }
 
-    if (!userRegex.test(props.command.text))
+    const message = props.command.text.trim()
+    if (!userRegex.test(message))
       return await props.respond({
         response_type: 'ephemeral',
         text: 'To start a trade, run `/trade @<person>`!'
       })
-    else if (
-      props.context.userId ==
-      props.command.text.slice(2, props.command.text.indexOf('|'))
-    )
+    else if (props.context.userId == message.slice(2, message.indexOf('|')))
       return await props.respond({
         response_type: 'ephemeral',
         text: "Erm, you can't really trade with yourself..."
       })
 
-    const receiverId = props.command.text.slice(
-      2,
-      props.command.text.indexOf('|')
-    )
+    const receiverId = message.slice(2, message.indexOf('|'))
 
     const user = await prisma.identity.findUnique({
       where: { slack: props.context.userId },

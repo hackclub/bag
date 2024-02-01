@@ -34,12 +34,15 @@ export async function kickoff(slack: string) {
       }
     }
 
-    await app.createInstances({
-      instances,
-      identityId: slack,
-      show: false,
-      note: 'An mysterious old man comes by your home with a jaunty stroll, whistling as he goes. He throws a bag at your door, which bounces off and lands on your doorstep. You pick the bag up, feeling three objects inside. Some instructions are printed on the outside: *This is your bag. Use `/bag` to see what it holds.*'
-    })
+    console.log(
+      'Kickoff: ',
+      await app.createInstances({
+        instances,
+        identityId: slack,
+        show: false,
+        note: 'An mysterious old man comes by your home with a jaunty stroll, whistling as he goes. He throws a bag at your door, which bounces off and lands on your doorstep. You pick the bag up, feeling three objects inside. Some instructions are printed on the outside: *This is your bag. Use `/bag` to see what it holds.*'
+      })
+    )
 
     // Every day
     let day = 1

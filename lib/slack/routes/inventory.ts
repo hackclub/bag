@@ -19,7 +19,7 @@ slack.command('/bag', async props => {
         })
     } catch {}
 
-    const message = props.command.text
+    const message = props.command.text.trim()
     if (message.startsWith('me')) {
       const userId = props.context.userId
       const user = await prisma.identity.findUnique({

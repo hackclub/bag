@@ -13,3 +13,4 @@ apps
 
 client/gen
 client/dist
+*.pem

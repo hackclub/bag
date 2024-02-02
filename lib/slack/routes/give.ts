@@ -64,8 +64,8 @@ slack.view('give', async props => {
     }
     for (let field of Object.values(props.view.state.values))
       fields[Object.keys(field)[0]] =
-        field[Object.keys(field)[0]].value ||
-        Object.values(field)[0].selected_option.value ||
+        field[Object.keys(field)[0]]?.value ||
+        Object.values(field)[0].selected_option?.value ||
         ''
     fields.instance = JSON.parse(fields.instance)
     fields.quantity = Number(fields.quantity)

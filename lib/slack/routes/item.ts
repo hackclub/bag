@@ -99,7 +99,7 @@ slack.view('create-item', async props => {
     }
 
     const user = await prisma.identity.findUnique({
-      where: { slack: props.context.uesrId }
+      where: { slack: props.context.userId }
     })
     if (user.permissions !== PermissionLevels.ADMIN) {
       // Request to create item

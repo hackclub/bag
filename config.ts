@@ -2,6 +2,7 @@ import 'dotenv/config'
 
 export interface Env {
   PORT: number
+  SLACK_PORT: number
   NODE_ENV: string
   SLACK_BOT_TOKEN: string
   SLACK_APP_TOKEN: string
@@ -13,6 +14,7 @@ export interface Env {
 
 let env: Env = {
   PORT: Number(process.env.PORT) || 3000,
+  SLACK_PORT: Number(process.env.SLACK_PORT) || 3001,
   NODE_ENV: process.env.NODE_ENV || 'development',
   SLACK_BOT_TOKEN: process.env.SLACK_BOT_TOKEN,
   SLACK_APP_TOKEN: process.env.SLACK_APP_TOKEN,

@@ -25,6 +25,6 @@ import { httpsLocal } from './lib/utils'
     await prisma.$disconnect()
   })
 
-  await slack.start(config.PORT)
-  console.log(`⚡️ Bolt app is running on port ${config.PORT}!`)
+  await slack.start(config.SLACK_PORT)
+  console.log(`⚡️ Bolt app is running on port ${config.SLACK_PORT}!`)
 })()

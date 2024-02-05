@@ -28,8 +28,14 @@ import { fastify } from 'fastify'
   })
 
   if (config.NODE_ENV === 'development' || config.SLACK_BOT) {
-    await slack.start(config.SLACK_PORT)
-    console.log(`⚡️ Bolt app is running on port ${config.SLACK_PORT}!`)
+    await slack.start(
+      config.NODE_ENV === 'development' ? config.SLACK_PORT : config.PORT
+    )
+    console.log(
+      `⚡️ Bolt app is running on port ${
+        config.NODE_ENV === 'development' ? config.SLACK_PORT : config.PORT
+      }!`
+    )
   }
 
   if (config.NODE_ENV === 'development' || !config.SLACK_BOT) {

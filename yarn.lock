@@ -376,10 +376,10 @@
   dependencies:
     fast-json-stringify "^5.7.0"
 
-"@hackclub/bag@^1.0.6":
-  version "1.0.6"
-  resolved "https://registry.yarnpkg.com/@hackclub/bag/-/bag-1.0.6.tgz#6bd8df1c6daf4c6f51bf3901daddd510066b1819"
-  integrity sha512-Fk0LGz3Jvw0yZEf5uhA1n34b0SpJq5Gf6G7my6ChZcZw64KvDyv5GYGnmwqnWGrSE4YFT0yax+tngwEsVT6U0w==
+"@hackclub/bag@^1.0.7":
+  version "1.0.8"
+  resolved "https://registry.yarnpkg.com/@hackclub/bag/-/bag-1.0.8.tgz#35d03544ced7c77bd14e058cde1e2e84a9d8135d"
+  integrity sha512-dS1mP9O442AzcnKpbcJ4LjyCCeDCZ3A21bKXimCwdYnoKGiXQwqVqA6gBK6cAuNPkeYbE9sfGg8wwBZW1TSK3A==
   dependencies:
     "@bufbuild/protobuf" "^1.6.0"
     "@connectrpc/connect" "^1.3.0"

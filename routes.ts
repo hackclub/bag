@@ -298,6 +298,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
+  // TODO: Fix to include skills and tools
   router.rpc(ElizaService, ElizaService.methods.createRecipe, async req => {
     return await execute(
       req,
@@ -539,6 +540,7 @@ export default (router: ConnectRouter) => {
     })
   })
 
+  // TODO: Fix in proto file
   router.rpc(ElizaService, ElizaService.methods.readRecipe, async req => {
     return await execute(req, async (req, app) => {
       try {
@@ -548,7 +550,9 @@ export default (router: ConnectRouter) => {
           },
           include: {
             inputs: true,
-            outputs: true
+            outputs: true,
+            skills: true,
+            tools: true
           }
         })
 
@@ -769,6 +773,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
+  // TODO: Update to include skills and tools
   router.rpc(ElizaService, ElizaService.methods.updateRecipe, async req => {
     return await execute(
       req,

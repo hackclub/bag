@@ -9,7 +9,9 @@ import './lib/slack/routes/item'
 import './lib/slack/routes/perms'
 import './lib/slack/routes/trade'
 import slack from './lib/slack/slack'
-import { httpsLocal } from './lib/utils'
+import routes from './routes'
+import { fastifyConnectPlugin } from '@connectrpc/connect-fastify'
+import { fastify } from 'fastify'
 
 ;(async () => {
   // Shutdown signal - shutdown Prisma client
@@ -25,6 +27,15 @@ import { httpsLocal } from './lib/utils'
     await prisma.$disconnect()
   })
 
-  await slack.start(config.PORT)
-  console.log(`⚡️ Bolt app is running on port ${config.PORT}!`)
+  await slack.start(config.SLACK_PORT)
+  console.log(`⚡️ Bolt app is running on port ${config.SLACK_PORT}!`)
+
+  const server = fastify({ http2: true })
+  await server.register(fastifyConnectPlugin, { routes })
+  server.get('/', (_, reply) => {
+    reply.type('text/plain')
+    reply.send('You found something...')
+  })
+  await server.listen({ host: 'localhost', port: config.PORT })
+  console.log(`GRPC server running on port ${config.PORT}!`)
 })()

@@ -1,7 +1,7 @@
 import { ElizaService } from '../gen/eliza_connect'
 import * as methods from '../gen/eliza_pb'
 import { PromiseClient, createPromiseClient } from '@connectrpc/connect'
-import { createConnectTransport } from '@connectrpc/connect-node'
+import { createGrpcTransport } from '@connectrpc/connect-node'
 import 'dotenv/config'
 
 type RecursivePartial<T> = {
@@ -38,12 +38,22 @@ export class App {
     key: string
     baseUrl?: string
   }) {
-    const transport = createConnectTransport({
-      baseUrl: options.baseUrl
-        ? options.baseUrl
-        : 'https://bag-client.hackclub.com',
-      httpVersion: '1.1'
-    })
+    let transport
+    try {
+      transport = createGrpcTransport({
+        baseUrl: options.baseUrl
+          ? options.baseUrl
+          : 'https://bag-client.hackclub.com',
+        httpVersion: '2'
+      })
+    } catch {
+      transport = createGrpcTransport({
+        baseUrl: options.baseUrl
+          ? options.baseUrl
+          : 'https://bag-client.hackclub.com',
+        httpVersion: '1.1'
+      })
+    }
 
     const client = createPromiseClient(ElizaService, transport)
     if (!(await client.verifyKey(options)))

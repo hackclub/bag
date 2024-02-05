@@ -153,6 +153,67 @@ export class Item extends Message<Item> {
 }
 
 /**
+ * @generated from message connectrpc.eliza.v1.Skill
+ */
+export class Skill extends Message<Skill> {
+  /**
+   * @generated from field: optional string name = 1;
+   */
+  name?: string;
+
+  /**
+   * @generated from field: optional int32 maxLevel = 2;
+   */
+  maxLevel?: number;
+
+  /**
+   * @generated from field: optional string description = 3;
+   */
+  description?: string;
+
+  /**
+   * @generated from field: optional string reaction = 4;
+   */
+  reaction?: string;
+
+  /**
+   * @generated from field: optional string metadata = 5;
+   */
+  metadata?: string;
+
+  constructor(data?: PartialMessage<Skill>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "connectrpc.eliza.v1.Skill";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "maxLevel", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 4, name: "reaction", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "metadata", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Skill {
+    return new Skill().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Skill {
+    return new Skill().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Skill {
+    return new Skill().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Skill | PlainMessage<Skill> | undefined, b: Skill | PlainMessage<Skill> | undefined): boolean {
+    return proto3.util.equals(Skill, a, b);
+  }
+}
+
+/**
  * @generated from message connectrpc.eliza.v1.Identity
  */
 export class Identity extends Message<Identity> {
@@ -226,7 +287,12 @@ export class Instance extends Message<Instance> {
   quantity?: number;
 
   /**
-   * @generated from field: optional connectrpc.eliza.v1.Item item = 5;
+   * @generated from field: optional string metadata = 5;
+   */
+  metadata?: string;
+
+  /**
+   * @generated from field: optional connectrpc.eliza.v1.Item item = 6;
    */
   item?: Item;
 
@@ -242,7 +308,8 @@ export class Instance extends Message<Instance> {
     { no: 2, name: "itemId", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 3, name: "identityId", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "quantity", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
-    { no: 5, name: "item", kind: "message", T: Item, opt: true },
+    { no: 5, name: "metadata", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 6, name: "item", kind: "message", T: Item, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Instance {
@@ -259,6 +326,73 @@ export class Instance extends Message<Instance> {
 
   static equals(a: Instance | PlainMessage<Instance> | undefined, b: Instance | PlainMessage<Instance> | undefined): boolean {
     return proto3.util.equals(Instance, a, b);
+  }
+}
+
+/**
+ * @generated from message connectrpc.eliza.v1.SkillInstance
+ */
+export class SkillInstance extends Message<SkillInstance> {
+  /**
+   * @generated from field: optional int32 id = 1;
+   */
+  id?: number;
+
+  /**
+   * @generated from field: optional string skillId = 2;
+   */
+  skillId?: string;
+
+  /**
+   * @generated from field: optional string identityId = 3;
+   */
+  identityId?: string;
+
+  /**
+   * @generated from field: optional int32 level = 4;
+   */
+  level?: number;
+
+  /**
+   * @generated from field: optional string metadata = 5;
+   */
+  metadata?: string;
+
+  /**
+   * @generated from field: optional connectrpc.eliza.v1.Skill skill = 6;
+   */
+  skill?: Skill;
+
+  constructor(data?: PartialMessage<SkillInstance>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "connectrpc.eliza.v1.SkillInstance";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 2, name: "skillId", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "identityId", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 4, name: "level", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 5, name: "metadata", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 6, name: "skill", kind: "message", T: Skill, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SkillInstance {
+    return new SkillInstance().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SkillInstance {
+    return new SkillInstance().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SkillInstance {
+    return new SkillInstance().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SkillInstance | PlainMessage<SkillInstance> | undefined, b: SkillInstance | PlainMessage<SkillInstance> | undefined): boolean {
+    return proto3.util.equals(SkillInstance, a, b);
   }
 }
 
@@ -355,14 +489,24 @@ export class Recipe extends Message<Recipe> {
   outputIds: string[] = [];
 
   /**
-   * @generated from field: repeated connectrpc.eliza.v1.Item inputs = 4;
+   * @generated from field: repeated string skillIds = 4;
+   */
+  skillIds: string[] = [];
+
+  /**
+   * @generated from field: repeated connectrpc.eliza.v1.Item inputs = 5;
    */
   inputs: Item[] = [];
 
   /**
-   * @generated from field: repeated connectrpc.eliza.v1.Item outputs = 5;
+   * @generated from field: repeated connectrpc.eliza.v1.Item outputs = 6;
    */
   outputs: Item[] = [];
+
+  /**
+   * @generated from field: repeated connectrpc.eliza.v1.Skill skills = 7;
+   */
+  skills: Skill[] = [];
 
   constructor(data?: PartialMessage<Recipe>) {
     super();
@@ -375,8 +519,10 @@ export class Recipe extends Message<Recipe> {
     { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "inputIds", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 3, name: "outputIds", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 4, name: "inputs", kind: "message", T: Item, repeated: true },
-    { no: 5, name: "outputs", kind: "message", T: Item, repeated: true },
+    { no: 4, name: "skillIds", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 5, name: "inputs", kind: "message", T: Item, repeated: true },
+    { no: 6, name: "outputs", kind: "message", T: Item, repeated: true },
+    { no: 7, name: "skills", kind: "message", T: Skill, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Recipe {

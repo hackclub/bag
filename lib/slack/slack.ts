@@ -7,7 +7,6 @@ import { kickoff } from '../scripts/old-man'
 import { maintainers } from '../utils'
 import CustomReceiver from './receiver'
 import views from './views'
-import { connectNodeAdapter } from '@connectrpc/connect-node'
 import { PermissionLevels } from '@prisma/client'
 import {
   App,
@@ -22,16 +21,7 @@ import {
 import { StringIndexed } from '@slack/bolt/dist/types/helpers'
 
 export const receiver = new HTTPReceiver({
-  signingSecret: config.SLACK_SIGNING_SECRET,
-  dispatchErrorHandler: async props => {
-    try {
-      console.log(props.request)
-      return await connectNodeAdapter({ routes })(props.request, props.response)
-    } catch {
-      // Log error if it isn't a gRPC route
-      props.logger.error(props.error)
-    }
-  }
+  signingSecret: config.SLACK_SIGNING_SECRET
 })
 
 const slack = new App({

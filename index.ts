@@ -6,6 +6,7 @@ import './lib/slack/routes/craft'
 import './lib/slack/routes/give'
 import './lib/slack/routes/inventory'
 import './lib/slack/routes/item'
+import './lib/slack/routes/notif'
 import './lib/slack/routes/perms'
 import './lib/slack/routes/trade'
 import slack from './lib/slack/slack'
@@ -39,7 +40,7 @@ import { fastify } from 'fastify'
   }
 
   if (config.NODE_ENV === 'development' || !config.SLACK_BOT) {
-    const server = fastify({ http2: true })
+    const server = fastify({ http2: true, logger: true })
     await server.register(fastifyConnectPlugin, { routes })
     server.get('/', (_, reply) => {
       reply.type('text/plain')

@@ -90,14 +90,19 @@ message Trade {
   optional bool closed = 7;
 }
 
+message RecipeItem {
+}
+
 message Recipe {
   int32 id = 1;
   repeated string inputIds = 2;
   repeated string outputIds = 3;
   repeated string skillIds = 4;
-  repeated Item inputs = 5;
-  repeated Item outputs = 6;
-  repeated Skill skills = 7;
+  repeated string toolIds = 5;
+  repeated Item inputs = 6;
+  repeated Item outputs = 7;
+  repeated Skill skills = 8;
+  repeated Item tools = 9;
 }
 
 message CreateInstancesRequest {
@@ -161,8 +166,7 @@ message CreateItemResponse {
 message CreateRecipeRequest {
   int32 appId = 1;
   string key = 2;
-  repeated string inputs = 3;
-  repeated string outputs = 4;
+  Recipe recipe = 3;
 }
 
 message CreateRecipeResponse {

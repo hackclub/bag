@@ -1,6 +1,6 @@
 import { findOrCreateIdentity } from '../../db'
 import { prisma } from '../../db'
-import { channelBlacklist, userRegex } from '../../utils'
+import { channelBlacklist, userRegex, channels } from '../../utils'
 import slack, { execute } from '../slack'
 import views from '../views'
 import { Block, Button, KnownBlock, View } from '@slack/bolt'
@@ -14,17 +14,17 @@ slack.command('/trade', async props => {
       if (channelBlacklist.includes(conversation.channel.name))
         return await props.respond({
           response_type: 'ephemeral',
-          text: "Trading in this channel isn't allowed. Try running `/trade` in a public channel, like <#C0266FRGV>!"
+          text: `Trading in this channel isn't allowed. Try running \`/trade\` in a public channel, like <#${channels.lounge}>!`
         })
       else if (conversation.channel.is_im || conversation.channel.is_mpim)
         return await props.respond({
           response_type: 'ephemeral',
-          text: "Trading in DMs isn't allowed yet. Try running `/trade` in a public channel, like <#C0266FRGV>!"
+          text: `Trading in DMs isn't allowed yet. Try running \`/trade\` in a public channel, like <#${channels.lounge}>!`
         })
     } catch {
       return await props.respond({
         response_type: 'ephemeral',
-        text: "Trading in DMs isn't allowed yet. Try running `/trade` in a public channel, like <#C0266FRGV>!"
+        text: `Trading in DMs isn't allowed yet. Try running \`/trade\` in a public channel, like <#${channels.lounge}>!`
       })
     }
 
@@ -111,8 +111,8 @@ slack.view('start-trade', async props => {
     }
     for (let field of Object.values(props.view.state.values))
       fields[Object.keys(field)[0]] =
-        field[Object.keys(field)[0]].value ||
-        Object.values(field)[0].selected_option.value ||
+        field[Object.keys(field)[0]]?.value ||
+        Object.values(field)[0].selected_option?.value ||
         ''
     fields.instance = JSON.parse(fields.instance)
     fields.quantity = Number(fields.quantity)
@@ -183,11 +183,11 @@ slack.action('edit-offer', async props => {
         replace_original: false,
         text: "Woah woah woah! You're not a party to that trade."
       })
-    else if (trade.closed)
+    else if (trade.closed || trade.initiatorAgreed || trade.receiverAgreed)
       return await props.respond({
         response_type: 'ephemeral',
         replace_original: false,
-        text: 'Woah woah woah! Trade already confirmed and items transferred.'
+        text: "Woah woah woah! Trade already confirmed, you can't make any more edits."
       })
 
     // @ts-expect-error
@@ -583,8 +583,8 @@ slack.view('add-trade', async props => {
     }
     for (let field of Object.values(props.view.state.values))
       fields[Object.keys(field)[0]] =
-        field[Object.keys(field)[0]].value ||
-        Object.values(field)[0].selected_option.value ||
+        field[Object.keys(field)[0]]?.value ||
+        Object.values(field)[0].selected_option?.value ||
         ''
     fields.instance = JSON.parse(fields.instance)
     fields.quantity = Number(fields.quantity)

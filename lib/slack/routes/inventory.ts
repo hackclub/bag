@@ -66,6 +66,7 @@ slack.command('/bag', async props => {
       })
     }
     await props.respond({
+      response_type: 'ephemeral',
       blocks: [
         {
           type: 'section',

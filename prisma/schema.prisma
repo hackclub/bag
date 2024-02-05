@@ -37,26 +37,26 @@ model Identity {
   permissions     PermissionLevels @default(value: READ)
   initiatorTrades Trade[]          @relation("initiator")
   receiverTrades  Trade[]          @relation("receiver")
+  crafting        Crafting[]
   metadata        Json             @default("{}")
   specificApps    Int[]
   specificItems   String[]
   specificTrades  Int[]
   specificRecipes Int[]
+  notifs          Boolean          @default(false)
 }
 
 model Item {
-  name          String     @id @unique
-  image         String?
-  description   String?
-  reaction      String?
-  commodity     Boolean    @default(false)
-  tradable      Boolean    @default(true)
-  instances     Instance[]
-  public        Boolean    @default(false)
-  metadata      Json       @default("{}")
-  recipeInputs  Recipe[]   @relation("recipeInputs")
-  recipeOutputs Recipe[]   @relation("recipeOutputs")
-  recipeTools   Recipe[]   @relation("recipeTools")
+  name        String        @id @unique
+  image       String?
+  description String?
+  reaction    String?
+  commodity   Boolean       @default(false)
+  tradable    Boolean       @default(true)
+  instances   Instance[]
+  public      Boolean       @default(false)
+  metadata    Json          @default("{}")
+  recipeItem  RecipeItems[] @relation("recipeItem")
 }
 
 model Instance {
@@ -114,13 +114,35 @@ model TradeInstance {
   quantity        Int      @default(1)
 }
 
+model Crafting {
+  id         Int           @id @default(autoincrement())
+  identityId String
+  identity   Identity      @relation(fields: [identityId], references: [slack])
+  inputs     RecipeItems[] @relation("craftingInputs")
+  tools      RecipeItems[] @relation("craftingTools")
+  recipeId   Int?
+  recipe     Recipe?       @relation(fields: [recipeId], references: [id])
+}
+
+model RecipeItems {
+  id             Int        @id @default(autoincrement())
+  recipeItem     Item[]     @relation("recipeItem")
+  quantity       Int        @default(1)
+  inputs         Recipe[]   @relation("recipeInputs")
+  outputs        Recipe[]   @relation("recipeOutputs")
+  tools          Recipe[]   @relation("recipeTools")
+  craftingInputs Crafting[] @relation("craftingInputs")
+  craftingTools  Crafting[] @relation("craftingTools")
+}
+
 model Recipe {
-  id      Int     @id @default(autoincrement())
-  inputs  Item[]  @relation("recipeInputs")
-  skills  Skill[] @relation("recipeInputs")
-  outputs Item[]  @relation("recipeOutputs")
-  tools   Item[]  @relation("recipeTools")
-  public  Boolean @default(true)
+  id      Int           @id @default(autoincrement())
+  inputs  RecipeItems[] @relation("recipeInputs")
+  skills  Skill[]       @relation("recipeInputs")
+  outputs RecipeItems[] @relation("recipeOutputs")
+  tools   RecipeItems[] @relation("recipeTools")
+  public  Boolean       @default(true)
+  crafted Crafting[]
 }
 
 enum LoggerLevels {

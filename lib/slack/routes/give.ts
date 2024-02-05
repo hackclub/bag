@@ -1,15 +1,17 @@
 import { findOrCreateIdentity } from '../../db'
 import { prisma } from '../../db'
+import { log } from '../../logger'
 import { userRegex } from '../../utils'
 import slack, { execute } from '../slack'
 import views from '../views'
-import { View, Block, KnownBlock } from '@slack/bolt'
+import type { View } from '@slack/bolt'
 
 slack.command('/give', async props => {
   await execute(props, async props => {
     const message = props.command.text.trim()
     const receiverId = message.slice(2, message.indexOf('|'))
     if (!userRegex.test(message)) {
+      log("Here's the whitespace error: ", message)
       return await props.client.chat.postEphemeral({
         channel: props.body.channel_id,
         user: props.context.userId,

@@ -7,180 +7,52 @@ import { App, PermissionLevels } from '@prisma/client'
 import { Block, KnownBlock, View, PlainTextOption } from '@slack/bolt'
 import { v4 as uuid } from 'uuid'
 
-slack.command('/bag-app', async props => {
+slack.command('/app', async props => {
   await execute(props, async (props, permission) => {
-    const message = props.command.text
-    const command = message.split(' ')[0]
+    const message = props.command.text.trim()
 
     const user = await prisma.identity.findUnique({
-      where: {
-        slack: props.context.userId
-      }
+      where: { slack: props.context.userId }
     })
 
-    switch (command) {
-      // case 'list':
-      //   let apps = await prisma.app.findMany()
-      //   if (permission < mappedPermissionValues.READ_PRIVATE)
-      //     apps = apps.filter(app => app.public)
-      //   if (permission < mappedPermissionValues.WRITE)
-      //     apps = apps.filter(
-      //       app =>
-      //         app.public || user.specificApps.find(appId => appId === app.id)
-      //     )
-      //   let formatted: (Block | KnownBlock)[] | (Block | KnownBlock)[][] =
-      //     apps.map(app => getApp(app))
-      //   formatted = formatted.map(appBlock => appBlock[0])
-      //   if (!formatted.length)
-      //     formatted = [
-      //       {
-      //         type: 'section',
-      //         text: {
-      //           type: 'mrkdwn',
-      //           text: 'No apps yet.'
-      //         }
-      //       }
-      //     ]
-      //   return await props.client.chat.postMessage({
-      //     channel: props.body.channel_id,
-      //     user: props.context.userId,
-      //     blocks: [
-      //       {
-      //         type: 'section',
-      //         text: {
-      //           type: 'mrkdwn',
-      //           text: `Here's a list of all the ${
-      //             permission < mappedPermissionValues.READ_PRIVATE
-      //               ? 'public '
-      //               : ''
-      //           }apps currently in the bag:`
-      //         }
-      //       },
-      //       ...formatted,
-      //       {
-      //         type: 'section',
-      //         text: {
-      //           type: 'mrkdwn',
-      //           text: 'You can write your own! Start by running `/bag-app create`.'
-      //         }
-      //       }
-      //     ]
-      //   })
-      case 'get':
-        try {
-          const app = await prisma.app.findUnique({
-            where: {
-              name: props.body.text.split(' ').slice(1).join(' ')
-            }
-          })
-
-          if (!app) throw new Error()
-          if (user.permissions === PermissionLevels.READ && !app.public)
-            throw new Error()
-          if (
-            mappedPermissionValues[user.permissions] <
-              mappedPermissionValues.ADMIN &&
-            !app.public &&
-            !user.specificApps.find(appId => appId === app.id)
-          )
-            throw new Error()
-
-          return await slack.client.chat.postMessage({
-            channel: props.body.channel_id,
-            user: props.context.userId,
-            blocks: getApp(app)
-          })
-        } catch {
-          return await slack.client.chat.postEphemeral({
-            channel: props.body.channel_id,
-            user: props.context.userId,
-            text: `Oops, couldn't find an app named *${props.body.text
-              .split(' ')
-              .slice(1)
-              .join(' ')}*.`
-          })
-        }
-      case 'search':
-        try {
-          const query = message.split(' ').slice(1).join('')
-          if (query[0] !== '`' || query[query.length - 1] !== '`')
-            throw new Error()
-          const where = JSON.parse(query.slice(1, query.length - 1))
-          delete where.key
-          delete where.specificApps
-          delete where.specificItems
-          delete where.specificRecipes
-          let apps = await prisma.app.findMany({
-            where
-          })
-          if (!apps.length) throw new Error()
-
-          if (permission < mappedPermissionValues.READ_PRIVATE)
-            apps = apps.filter(app => app.public)
-          if (permission < mappedPermissionValues.WRITE)
-            apps = apps.filter(
-              app =>
-                app.public || user.specificApps.find(appId => appId === app.id)
-            )
-
-          const formatted = apps.map(app => getApp(app))
-          return await props.client.chat.postMessage({
-            channel: props.body.channel_id,
-            blocks: [
-              {
-                type: 'section',
-                text: {
-                  type: 'mrkdwn',
-                  text: `Here's a list of all the apps in the bag that match ${query}:`
-                }
-              },
-              ...formatted.map(appBlock => appBlock[0])
-            ]
-          })
-        } catch {
-          return await props.client.chat.postEphemeral({
-            channel: props.body.channel_id,
-            user: props.context.userId,
-            text: "Oh no! Couldn't find any apps matching your query. Make sure your query is properly formatted - that is, a valid JSON query encased in a `code snippet`."
-          })
-        }
-      case 'create':
-        return await props.client.views.open({
-          trigger_id: props.body.trigger_id,
-          view: createApp(user.permissions)
-        })
-      case 'edit':
-        const [_, id, key] = props.body.text.split(' ')
-        if (Number.isNaN(Number(id)))
-          return await props.client.chat.postEphemeral({
-            channel: props.body.channel_id,
-            user: props.context.userId,
-            text: 'Oh no! Looks like you provided an invalid ID for the app.'
-          })
-
-        const app = await prisma.app.findUnique({
-          where: {
-            id: Number(id),
-            AND: [{ key }]
+    try {
+      const apps = await prisma.app.findMany({
+        where: {
+          name: {
+            equals: message.split(' ').join(' ').toLowerCase(),
+            mode: 'insensitive'
           }
-        })
-        if (!app)
-          return await props.client.chat.postEphemeral({
-            channel: props.body.channel_id,
-            user: props.context.userId,
-            text: 'Oh no! App not found, or an incorrect key was used.'
-          })
+        }
+      })
 
-        return await props.client.views.open({
-          trigger_id: props.body.trigger_id,
-          view: editApp(app)
+      if (!apps.length) throw new Error()
+      const app = apps[0]
+      if (user.permissions === PermissionLevels.READ && !app.public)
+        throw new Error()
+      if (
+        mappedPermissionValues[user.permissions] <
+          mappedPermissionValues.ADMIN &&
+        !app.public &&
+        !user.specificApps.find(appId => appId === app.id)
+      )
+        throw new Error()
+
+      return await props.respond({
+        response_type: 'ephemeral',
+        blocks: getApp(app)
+      })
+    } catch {
+      if (!message.length)
+        return await props.respond({
+          response_type: 'ephemeral',
+          text: 'Try running `/app <name>`!'
         })
-      default:
-        return await props.client.chat.postEphemeral({
-          channel: props.body.channel_id,
-          user: props.context.userId,
-          blocks: appDialog
-        })
+      return await props.respond({
+        response_type: 'ephemeral',
+        text: `Oops, couldn't find an app named *${message
+          .split(' ')
+          .join(' ')}*.`
+      })
     }
   })
 })
@@ -203,8 +75,8 @@ slack.view('create-app', async props => {
     for (let field of Object.values(props.view.state.values)) {
       if (field[Object.keys(field)[0]].value === null) continue
       fields[Object.keys(field)[0]] =
-        field[Object.keys(field)[0]].value ||
-        Object.values(field)[0].selected_option.value ||
+        field[Object.keys(field)[0]]?.value ||
+        Object.values(field)[0].selected_option?.value ||
         ''
       if (fields[Object.keys(field)[0]] === 'true')
         fields[Object.keys(field)[0]] = true
@@ -252,8 +124,8 @@ slack.view('edit-app', async props => {
     for (let field of Object.values(props.view.state.values)) {
       if (field[Object.keys(field)[0]].value === null) continue
       fields[Object.keys(field)[0]] =
-        field[Object.keys(field)[0]].value ||
-        Object.values(field)[0].selected_option.value ||
+        field[Object.keys(field)[0]]?.value ||
+        Object.values(field)[0].selected_option?.value ||
         ''
       if (fields[Object.keys(field)[0]] === 'true')
         fields[Object.keys(field)[0]] = true
@@ -272,9 +144,8 @@ slack.view('edit-app', async props => {
         }
       })
       if (!app)
-        return await props.client.chat.postEphemeral({
-          channel: props.context.userId,
-          user: props.context.userId,
+        return await props.respond({
+          response_type: 'ephemeral',
           text: `Unable to delete *${app.name}* - you provided the wrong key.`
         })
       await prisma.app.delete({
@@ -291,16 +162,14 @@ slack.view('edit-app', async props => {
     }
 
     let app = await prisma.app.findUnique({
-      where: {
-        name: prevName
-      }
+      where: { name: prevName }
     })
 
     // Request permissions if changed
     if (
       mappedPermissionValues[app.permissions] >
       mappedPermissionValues[fields.permissions]
-    ) {
+    )
       // Give downgrade without permissions
       await prisma.app.update({
         where: {
@@ -310,7 +179,7 @@ slack.view('edit-app', async props => {
           permissions: fields.permissions
         }
       })
-    } else if (app.permissions !== fields.permissions) {
+    else if (app.permissions !== fields.permissions) {
       await props.client.chat.postMessage({
         channel: channels.approvals,
         blocks: approveOrDenyAppPerms(
@@ -328,9 +197,8 @@ slack.view('edit-app', async props => {
       },
       data: fields
     })
-    await props.client.chat.postMessage({
-      channel: props.context.userId,
-      user: props.context.userId,
+    await props.respond({
+      response_type: 'ephemeral',
       text: `Updated *${app.name}* successfully.`
     })
   })
@@ -347,9 +215,7 @@ slack.action('app-approve-perms', async props => {
     permissions = getKeyByValue(mappedPermissionValues, permissions)
 
     await prisma.app.update({
-      where: {
-        id: appId
-      },
+      where: { id: appId },
       data: {
         permissions: permissions as PermissionLevels
       }
@@ -386,14 +252,7 @@ const getApp = (app: App): (Block | KnownBlock)[] => {
         type: 'mrkdwn',
         text: `Here's *${app.name}*:
 
->_${app.description}_
-
-ID: ${app.id}
-Metadata: \`${
-          app.metadata === null || !Object.keys(app.metadata).length
-            ? '{}'
-            : app.metadata
-        }\``
+>_${app.description}_`
       }
     }
   ]
@@ -706,17 +565,3 @@ const approveOrDenyAppPerms = (
     }
   ]
 }
-
-const appDialog: (Block | KnownBlock)[] = [
-  {
-    type: 'section',
-    text: {
-      type: 'mrkdwn',
-      text: `Options for \`bag-app\`:
-\`/bag-app search <query>\`: Query all the public apps by passing in a JSON query. Keys: \`name\`, \`description\`, \`permissions\`, \`public\`, and \`metadata\`.
-\`/bag-app create\`: Create an app.
-\`/bag-app edit <id> <key>\`: Edit an app.
-\`/bag-app get <name>\`: View more info about an app.`
-    }
-  }
-]

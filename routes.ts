@@ -6,7 +6,7 @@ import { log } from './lib/logger'
 import { mappedPermissionValues } from './lib/permissions'
 import { getKeyByValue } from './lib/utils'
 import { ConnectRouter } from '@connectrpc/connect'
-import { App, PermissionLevels } from '@prisma/client'
+import { App, Item, PermissionLevels, Skill } from '@prisma/client'
 import { WebClient } from '@slack/web-api'
 import { v4 as uuid } from 'uuid'
 
@@ -50,9 +50,11 @@ export async function execute(
 }
 
 export default (router: ConnectRouter) => {
-  router.rpc(ElizaService, ElizaService.methods.verifyKey, async (_, app) => {
-    if (!app) return { valid: false }
-    return { valid: true }
+  router.rpc(ElizaService, ElizaService.methods.verifyKey, async req => {
+    return await execute(req, async (req, app) => {
+      if (!app) return { valid: false }
+      return { valid: true }
+    })
   })
 
   router.rpc(ElizaService, ElizaService.methods.createApp, async req => {
@@ -298,13 +300,22 @@ export default (router: ConnectRouter) => {
     )
   })
 
-  // TODO: Fix to include skills and tools
   router.rpc(ElizaService, ElizaService.methods.createRecipe, async req => {
     return await execute(
       req,
       async (req, app) => {
-        if (!req.inputs.length || !req.outputs.length)
+        if (
+          (!req.recipe.inputs.length && !req.recipe.inputIds.length) ||
+          (!req.recipe.outputs.length && !req.recipe.outputIds.lenth)
+        )
           throw new Error('Recipe should have inputs and outputs')
+
+        const inputs = req.recipe.inputs
+          ? req.recipe.inputs.map((input: Item) => ({ name: input.name }))
+          : req.recipe.inputIds.map((name: string) => ({ name }))
+        const outputs = req.recipe.outputs
+          ? req.recipe.outputs.map((output: Item) => ({ name: output.name }))
+          : req.recipe.outputIds.map((name: string) => ({ name }))
         if (app.permissions === PermissionLevels.WRITE_SPECIFIC) {
           if (
             req.inputs
@@ -320,19 +331,25 @@ export default (router: ConnectRouter) => {
             throw new Error('Invalid outputs')
         }
 
-        const inputs = req.inputs.map(input => ({ name: input }))
-        const outputs = req.outputs.map(output => ({ name: output }))
+        const skills = req.recipe.skills
+          ? req.recipe.skills.map((skill: Skill) => ({ name: skill.name }))
+          : req.recipe.skillIds.map((name: string) => ({ name }))
+        const tools = req.recipe.tools
+          ? req.recipe.tools.map((tool: Item) => ({ name: tool.name }))
+          : req.recipe.tools.map((name: string) => ({ name }))
         let recipe
         try {
           recipe = await prisma.recipe.create({
             data: {
               inputs: { connect: inputs },
-              outputs: { connect: outputs }
+              outputs: { connect: outputs },
+              skills: { connect: skills },
+              tools: { connect: tools }
             },
             include: { inputs: true, outputs: true }
           })
         } catch {
-          throw new Error('Invalid inputs and/or outputs')
+          throw new Error('Invalid inputs, outputs, skills, and/or tools')
         }
         if (app.permissions === PermissionLevels.WRITE_SPECIFIC)
           await prisma.app.update({
@@ -346,8 +363,10 @@ export default (router: ConnectRouter) => {
         return {
           recipe: {
             ...recipe,
-            inputIds: req.inputs,
-            outputIds: req.outputs
+            inputIds: inputs.map(input => input.name),
+            outputIds: outputs.map(output => output.name),
+            skillIds: skills.map(skill => skill.name),
+            toolIds: tools.map(tool => tool.name)
           }
         }
       },
@@ -540,7 +559,6 @@ export default (router: ConnectRouter) => {
     })
   })
 
-  // TODO: Fix in proto file
   router.rpc(ElizaService, ElizaService.methods.readRecipe, async req => {
     return await execute(req, async (req, app) => {
       try {
@@ -570,7 +588,9 @@ export default (router: ConnectRouter) => {
           recipe: {
             ...recipe,
             inputIds: recipe.inputs.map(input => input.name),
-            outputIds: recipe.outputs.map(output => output.name)
+            outputIds: recipe.outputs.map(output => output.name),
+            skillIds: recipe.skills.map(skill => skill.name),
+            toolIds: recipe.tools.map(tool => tool.name)
           }
         }
       } catch {
@@ -731,6 +751,16 @@ export default (router: ConnectRouter) => {
     })
   })
 
+  //       await prisma.trade.update({
+  //         where: {
+  //           id: req.tradeId
+  //         },
+  //         data: {
+  //           [updateKey]: {
+  //             push: { connect: req.add.map(instance => ({ id: instance.id })) }
+  //           }
+  //         }
+  //       })
   router.rpc(ElizaService, ElizaService.methods.updateTrade, async req => {
     return await execute(
       req,
@@ -742,8 +772,10 @@ export default (router: ConnectRouter) => {
           throw new Error('Invalid permissions')
 
         const trade = await prisma.trade.findUnique({
-          where: {
-            id: req.tradeId
+          where: { id: req.tradeId },
+          include: {
+            initiatorTrades: true,
+            receiverTrades: true
           }
         })
         if (!trade) throw new Error('Trade not found')
@@ -758,22 +790,22 @@ export default (router: ConnectRouter) => {
           trade.initiatorIdentityId === req.identityId
             ? 'initiatorTrades'
             : 'receiverTrades'
-        await prisma.trade.update({
-          where: {
-            id: req.tradeId
-          },
-          data: {
-            [updateKey]: {
-              push: { connect: req.add.map(instance => ({ id: instance.id })) }
-            }
-          }
-        })
+
+        // Add to trades, merging with ones that have already been added
+        for (let instance of req.add) {
+          // TODO
+        }
+
+        return {
+          trade: await prisma.trade.findUnique({
+            where: { id: req.tradeId }
+          })
+        }
       },
       mappedPermissionValues.WRITE_SPECIFIC
     )
   })
 
-  // TODO: Update to include skills and tools
   router.rpc(ElizaService, ElizaService.methods.updateRecipe, async req => {
     return await execute(
       req,
@@ -786,28 +818,35 @@ export default (router: ConnectRouter) => {
 
         if (req.new.id !== undefined) delete req.new.id
 
-        const inputs = req.new.inputIds
-          ? req.new.inputIds.map(id => ({ id }))
-          : req.new.inputs.map(input => ({ id: input.id }))
-        const outputs = req.new.outputIds
-          ? req.new.outputIds.map(id => ({ id }))
-          : req.new.outputs.map(output => ({ id: output.id }))
+        const inputs = req.new.inputs
+          ? req.new.inputs.map((input: Item) => ({ name: input.name }))
+          : req.new.inputIds.map((name: string) => ({ name }))
+        const outputs = req.new.outputs
+          ? req.new.outputs.map((output: Item) => ({ name: output.name }))
+          : req.new.outputIds.map((name: string) => ({ name }))
+        const skills = req.new.skills
+          ? req.new.skills.map((skill: Skill) => ({ name: skill.name }))
+          : req.new.skillIds.map((name: string) => ({ name }))
+        const tools = req.recipe.tools
+          ? req.new.tools.map((tool: Item) => ({ name: tool.name }))
+          : req.new.tools.map((name: string) => ({ name }))
 
-        if (!inputs.length || !outputs.length)
-          throw new Error('Recipe should have inputs and outputs')
+        let recipe: { [key: string]: any } = {}
+        if (inputs.length) recipe.inputs = { connect: inputs }
+        if (outputs.length) recipe.outputs = { connect: outputs }
+        if (skills.length) recipe.skills = { connect: skills }
+        if (tools.length) recipe.tools = { connect: tools }
 
-        let recipe = await prisma.recipe.update({
+        let updated = await prisma.recipe.update({
           where: {
             id: req.recipeId
           },
-          data: req.new
+          data: recipe
         })
 
         return {
           recipe: {
-            ...recipe,
-            inputIds: req.new.inputIds,
-            outputIds: req.new.outputIds
+            ...updated
           }
         }
       },

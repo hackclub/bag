@@ -6,7 +6,7 @@ import { cascadingPermissions } from '../views'
 import { PermissionLevels } from '@prisma/client'
 import type { View, Block, KnownBlock, PlainTextOption } from '@slack/bolt'
 
-slack.command('/bag-request-perms', async props => {
+slack.command('/perms', async props => {
   await execute(props, async props => {
     // Let user request permissions
     return await props.client.views.open({

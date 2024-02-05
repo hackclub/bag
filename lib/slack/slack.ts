@@ -1,11 +1,9 @@
 import config from '../../config'
-import routes from '../../routes'
 import { prisma } from '../db'
 import { err } from '../logger'
 import { mappedPermissionValues } from '../permissions'
 import { kickoff } from '../scripts/old-man'
 import { maintainers } from '../utils'
-import CustomReceiver from './receiver'
 import views from './views'
 import { PermissionLevels } from '@prisma/client'
 import {
@@ -98,20 +96,20 @@ export async function execute(
     }
 
     // For now, temporarily block if it's not in whitelist
-    // if (
-    //   ![
-    //     'U03MNFDRSGJ',
-    //     'UDK5M9Y13',
-    //     'U032A2PMSE9',
-    //     'U05TXCSCK7E',
-    //     'U0C7B14Q3'
-    //   ].includes(user.slack)
-    // )
-    //   return await props.client.chat.postMessage({
-    //     channel: user.slack,
-    //     user: user.slack,
-    //     text: "You found something... but it's not quite ready yet."
-    //   })
+    if (
+      ![
+        'U03MNFDRSGJ',
+        'UDK5M9Y13',
+        'U032A2PMSE9',
+        'U05TXCSCK7E',
+        'U0C7B14Q3'
+      ].includes(user.slack)
+    )
+      return await props.client.chat.postMessage({
+        channel: user.slack,
+        user: user.slack,
+        text: "You found something... but it's not quite ready yet."
+      })
 
     const permissionLevel = mappedPermissionValues[user.permissions]
     if (!(permissionLevel >= permission))

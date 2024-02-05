@@ -45,7 +45,7 @@ import { fastify } from 'fastify'
       reply.type('text/plain')
       reply.send('You found something...')
     })
-    await server.listen({ host: 'localhost', port: config.PORT })
+    await server.listen({ host: '0.0.0.0', port: config.PORT })
     console.log(`GRPC server running on port ${config.PORT}!`)
   }
 })()

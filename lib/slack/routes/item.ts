@@ -15,6 +15,11 @@ slack.command('/item', async props => {
     })
 
     try {
+      if (message === 'create' && user.permissions === PermissionLevels.ADMIN)
+        return await props.client.views.open({
+          trigger_id: props.body.trigger_id,
+          view: createItem
+        })
       const items = await prisma.item.findMany({
         where: {
           OR: [

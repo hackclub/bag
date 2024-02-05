@@ -91,18 +91,22 @@ message Trade {
 }
 
 message RecipeItem {
+  optional int32 id = 1;
+  optional string recipeItemId = 2;
+  optional Item recipeItem = 3;
+  optional int32 quantity = 4;
 }
 
 message Recipe {
   int32 id = 1;
-  repeated string inputIds = 2;
-  repeated string outputIds = 3;
+  repeated int32 inputIds = 2;
+  repeated int32 outputIds = 3;
   repeated string skillIds = 4;
-  repeated string toolIds = 5;
-  repeated Item inputs = 6;
-  repeated Item outputs = 7;
+  repeated int32 toolIds = 5;
+  repeated RecipeItem inputs = 6;
+  repeated RecipeItem outputs = 7;
   repeated Skill skills = 8;
-  repeated Item tools = 9;
+  repeated RecipeItem tools = 9;
 }
 
 message CreateInstancesRequest {
@@ -256,7 +260,7 @@ message ReadTradeResponse {
 message ReadRecipeRequest {
   int32 appId = 1;
   string key = 2;
-  int32 recipeId = 3;
+  Recipe query = 3;
 }
 
 message ReadRecipeResponse {

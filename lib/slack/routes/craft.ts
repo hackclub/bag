@@ -2,7 +2,7 @@ import { prisma } from '../../db'
 import { channelBlacklist, channels } from '../../utils'
 import slack, { execute } from '../slack'
 import views from '../views'
-import type { View } from '@slack/bolt'
+import type { Block, KnownBlock, View } from '@slack/bolt'
 
 slack.command('/huh', async props => {
   return await execute(props, async props => {
@@ -54,7 +54,7 @@ const startCrafting = async (
     include: { inventory: true }
   })
 
-  let offering = []
+  let possible = []
   let inTrades = []
   let inCrafting = []
 
@@ -70,8 +70,10 @@ const startCrafting = async (
           closed: false, // Not closed
           OR: [
             { initiatorTrades: { some: { instanceId: instance.id } } },
-            { receiverTrades: { some: { instanceId: instance.id } } }
-          ] // Either in initiatorTrades or receiverTrades
+            {
+              receiverTrades: { some: { instanceId: instance.id } }
+            }
+          ] // Either in initiatorTrades or receiverTrads
         },
         include: {
           initiatorTrades: true,
@@ -100,6 +102,23 @@ const startCrafting = async (
         )
 
       // Next, search in crafting
+      const crafting = await prisma.crafting.findMany({
+        where: {
+          recipeId: null,
+          identityId: user.slack
+        }
+      })
+
+      possible.push({
+        text: {
+          type: 'plain_text',
+          text: `x${instance.quantity} ${ref.reaction} ${ref.name}`
+        },
+        value: JSON.stringify({
+          id: instance.id,
+          quantity: instance.quantity
+        })
+      })
     })
   )
 
@@ -115,7 +134,68 @@ const startCrafting = async (
     },
     type: 'modal',
     private_metadata: JSON.stringify({ channel }),
-    blocks: []
+    blocks: [
+      {
+        type: 'input',
+        element: {
+          action_id: 'input',
+          type: 'static_select',
+          placeholder: {
+            type: 'plain_text',
+            text: 'Initial input'
+          },
+          options: possible
+        },
+        label: {
+          type: 'plain_text',
+          text: 'Initial input item'
+        }
+      },
+      {
+        type: 'input',
+        element: {
+          type: 'number_input',
+          is_decimal_allowed: false,
+          action_id: 'quantity',
+          min_value: '1',
+          initial_value: '1'
+        },
+        label: {
+          type: 'plain_text',
+          text: 'Quantity'
+        }
+      },
+      {
+        type: 'input',
+        element: {
+          action_id: 'input2',
+          type: 'static_select',
+          placeholder: {
+            type: 'plain_text',
+            text: 'Second input item'
+          },
+          options: possible
+        },
+        label: {
+          type: 'plain_text',
+          text: 'Second input'
+        }
+      },
+      {
+        type: 'input',
+        element: {
+          type: 'number_input',
+          is_decimal_allowed: false,
+          action_id: 'quantity2',
+          min_value: '1',
+          initial_value: '1'
+        },
+        label: {
+          type: 'plain_text',
+          text: 'Quantity'
+        }
+      }
+    ]
   }
 
   if (inTrades.length)

@@ -9,7 +9,7 @@ import { serialize } from 'next-mdx-remote/serialize'
 import path from 'path'
 import { Container, Grid, Box, Flex } from 'theme-ui'
 
-export default function Doc({ source, toc, menu, menuHeaders }) {
+export default function Doc({ source, toc, title, menu, menuHeaders }) {
   return (
     <Grid
       sx={{ bg: 'snow', position: 'relative', alignItems: 'flex-start' }}
@@ -22,10 +22,12 @@ export default function Doc({ source, toc, menu, menuHeaders }) {
           borderRight: '1px solid',
           borderColor: 'border',
           boxShadow: '0 4px 8px 0 rgba(0, 0, 0, 0.1)',
-          paddingTop: [4, 0]
+          paddingTop: [4, 0],
+          minHeight: '100vh'
         }}
         p={[3, 4]}>
         <Content>
+          <h1>{title}</h1>
           <MDXRemote {...source} />
         </Content>
       </Box>
@@ -50,6 +52,7 @@ export async function getStaticProps({ params }) {
       return dirent.name
     })
   let gen = {}
+  let pageTitle
   for (let title of menu) {
     let push = []
     let files = fs.readdirSync(path.join(process.cwd(), 'content', title))
@@ -57,7 +60,9 @@ export async function getStaticProps({ params }) {
       const content = fs.readFileSync(
         path.join(process.cwd(), 'content', title, file)
       )
-      push.push([`${title}/${file}`, matter(content).data.title])
+      let frontmatter = matter(content).data
+      push.push([`${title}/${file}`, frontmatter.title])
+      if (file === params.slug) pageTitle = frontmatter.title
     }
     push = push.sort((a, b) => {
       if (a[2] < b[2]) return -1
@@ -68,6 +73,7 @@ export async function getStaticProps({ params }) {
   return {
     props: {
       source: await convertMDX(res),
+      title: pageTitle,
       toc: await serialize(await generateToc(res.toString())),
       menu: gen,
       menuHeaders: ['Quickstart', 'Bot', 'Client']

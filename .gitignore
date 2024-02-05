@@ -5,6 +5,7 @@ node_modules
 
 setup.ts
 test.ts
+*test*
 TODO.md
 
 yarn-error.log

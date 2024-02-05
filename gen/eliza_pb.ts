@@ -470,6 +470,61 @@ export class Trade extends Message<Trade> {
 }
 
 /**
+ * @generated from message connectrpc.eliza.v1.RecipeItem
+ */
+export class RecipeItem extends Message<RecipeItem> {
+  /**
+   * @generated from field: optional int32 id = 1;
+   */
+  id?: number;
+
+  /**
+   * @generated from field: optional string recipeItemId = 2;
+   */
+  recipeItemId?: string;
+
+  /**
+   * @generated from field: optional connectrpc.eliza.v1.Item recipeItem = 3;
+   */
+  recipeItem?: Item;
+
+  /**
+   * @generated from field: optional int32 quantity = 4;
+   */
+  quantity?: number;
+
+  constructor(data?: PartialMessage<RecipeItem>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "connectrpc.eliza.v1.RecipeItem";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 2, name: "recipeItemId", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "recipeItem", kind: "message", T: Item, opt: true },
+    { no: 4, name: "quantity", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RecipeItem {
+    return new RecipeItem().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RecipeItem {
+    return new RecipeItem().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RecipeItem {
+    return new RecipeItem().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RecipeItem | PlainMessage<RecipeItem> | undefined, b: RecipeItem | PlainMessage<RecipeItem> | undefined): boolean {
+    return proto3.util.equals(RecipeItem, a, b);
+  }
+}
+
+/**
  * @generated from message connectrpc.eliza.v1.Recipe
  */
 export class Recipe extends Message<Recipe> {
@@ -479,14 +534,14 @@ export class Recipe extends Message<Recipe> {
   id = 0;
 
   /**
-   * @generated from field: repeated string inputIds = 2;
+   * @generated from field: repeated int32 inputIds = 2;
    */
-  inputIds: string[] = [];
+  inputIds: number[] = [];
 
   /**
-   * @generated from field: repeated string outputIds = 3;
+   * @generated from field: repeated int32 outputIds = 3;
    */
-  outputIds: string[] = [];
+  outputIds: number[] = [];
 
   /**
    * @generated from field: repeated string skillIds = 4;
@@ -494,19 +549,29 @@ export class Recipe extends Message<Recipe> {
   skillIds: string[] = [];
 
   /**
-   * @generated from field: repeated connectrpc.eliza.v1.Item inputs = 5;
+   * @generated from field: repeated int32 toolIds = 5;
    */
-  inputs: Item[] = [];
+  toolIds: number[] = [];
 
   /**
-   * @generated from field: repeated connectrpc.eliza.v1.Item outputs = 6;
+   * @generated from field: repeated connectrpc.eliza.v1.RecipeItem inputs = 6;
    */
-  outputs: Item[] = [];
+  inputs: RecipeItem[] = [];
 
   /**
-   * @generated from field: repeated connectrpc.eliza.v1.Skill skills = 7;
+   * @generated from field: repeated connectrpc.eliza.v1.RecipeItem outputs = 7;
+   */
+  outputs: RecipeItem[] = [];
+
+  /**
+   * @generated from field: repeated connectrpc.eliza.v1.Skill skills = 8;
    */
   skills: Skill[] = [];
+
+  /**
+   * @generated from field: repeated connectrpc.eliza.v1.RecipeItem tools = 9;
+   */
+  tools: RecipeItem[] = [];
 
   constructor(data?: PartialMessage<Recipe>) {
     super();
@@ -517,12 +582,14 @@ export class Recipe extends Message<Recipe> {
   static readonly typeName = "connectrpc.eliza.v1.Recipe";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 2, name: "inputIds", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 3, name: "outputIds", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 2, name: "inputIds", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
+    { no: 3, name: "outputIds", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
     { no: 4, name: "skillIds", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 5, name: "inputs", kind: "message", T: Item, repeated: true },
-    { no: 6, name: "outputs", kind: "message", T: Item, repeated: true },
-    { no: 7, name: "skills", kind: "message", T: Skill, repeated: true },
+    { no: 5, name: "toolIds", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
+    { no: 6, name: "inputs", kind: "message", T: RecipeItem, repeated: true },
+    { no: 7, name: "outputs", kind: "message", T: RecipeItem, repeated: true },
+    { no: 8, name: "skills", kind: "message", T: Skill, repeated: true },
+    { no: 9, name: "tools", kind: "message", T: RecipeItem, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Recipe {
@@ -1009,14 +1076,9 @@ export class CreateRecipeRequest extends Message<CreateRecipeRequest> {
   key = "";
 
   /**
-   * @generated from field: repeated string inputs = 3;
+   * @generated from field: connectrpc.eliza.v1.Recipe recipe = 3;
    */
-  inputs: string[] = [];
-
-  /**
-   * @generated from field: repeated string outputs = 4;
-   */
-  outputs: string[] = [];
+  recipe?: Recipe;
 
   constructor(data?: PartialMessage<CreateRecipeRequest>) {
     super();
@@ -1028,8 +1090,7 @@ export class CreateRecipeRequest extends Message<CreateRecipeRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "inputs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 4, name: "outputs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "recipe", kind: "message", T: Recipe },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateRecipeRequest {
@@ -1763,9 +1824,9 @@ export class ReadRecipeRequest extends Message<ReadRecipeRequest> {
   key = "";
 
   /**
-   * @generated from field: int32 recipeId = 3;
+   * @generated from field: connectrpc.eliza.v1.Recipe query = 3;
    */
-  recipeId = 0;
+  query?: Recipe;
 
   constructor(data?: PartialMessage<ReadRecipeRequest>) {
     super();
@@ -1777,7 +1838,7 @@ export class ReadRecipeRequest extends Message<ReadRecipeRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "recipeId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 3, name: "query", kind: "message", T: Recipe },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReadRecipeRequest {

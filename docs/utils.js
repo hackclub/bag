@@ -22,6 +22,6 @@ export default async function convertMDX(content) {
     mdxOptions: {
       rehypePlugins: [rehypeSlug, rehypeAutolinkHeadings, rehypeHighlight]
     },
-    parseFrontmatter: false
+    parseFrontmatter: true
   })
 }

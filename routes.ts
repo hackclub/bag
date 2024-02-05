@@ -562,10 +562,21 @@ export default (router: ConnectRouter) => {
   router.rpc(ElizaService, ElizaService.methods.readRecipe, async req => {
     return await execute(req, async (req, app) => {
       try {
+        let query = req.query
+        if (query.inputIds?.length) {
+          query.input = query.inputIds.map(input => ({ id: input }))
+        } else delete req.query.inputIds
+        if (query.outputIds?.length) {
+          query.output = query.outputIds.map(output => ({ id: output }))
+        } else delete req.query.outputIds
+        if (query.skillIds?.length)
+          query.skills = query.skillIds.map(skill => ({ name: skill }))
+        else delete req.query.skillIds
+        if (query.toolIds?.length)
+          query.tools = query.toolIds.map(tool => ({ id: tool }))
+        else delete req.query.toolIds
         const recipe = await prisma.recipe.findUnique({
-          where: {
-            id: req.recipeId
-          },
+          where: query,
           include: {
             inputs: true,
             outputs: true,
@@ -587,13 +598,41 @@ export default (router: ConnectRouter) => {
         return {
           recipe: {
             ...recipe,
-            inputIds: recipe.inputs.map(input => input.name),
-            outputIds: recipe.outputs.map(output => output.name),
+            inputs: await Promise.all(
+              recipe.inputs.map(
+                async input =>
+                  await prisma.recipeItems.findUnique({
+                    where: { id: input.id },
+                    include: { recipeItem: true }
+                  })
+              )
+            ),
+            outputs: await Promise.all(
+              recipe.outputs.map(
+                async output =>
+                  await prisma.recipeItems.findUnique({
+                    where: { id: output.id },
+                    include: { recipeItem: true }
+                  })
+              )
+            ),
+            tools: await Promise.all(
+              recipe.tools.map(
+                async tool =>
+                  await prisma.recipeItems.findUnique({
+                    where: { id: tool.id },
+                    include: { recipeItem: true }
+                  })
+              )
+            ),
+            inputIds: recipe.inputs,
+            outputIds: recipe.outputs,
             skillIds: recipe.skills.map(skill => skill.name),
-            toolIds: recipe.tools.map(tool => tool.name)
+            toolIds: recipe.tools
           }
         }
-      } catch {
+      } catch (error) {
+        console.log(error)
         throw new Error('Recipe not found')
       }
     })

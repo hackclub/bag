@@ -27,15 +27,19 @@ import { fastify } from 'fastify'
     await prisma.$disconnect()
   })
 
-  await slack.start(config.SLACK_PORT)
-  console.log(`⚡️ Bolt app is running on port ${config.SLACK_PORT}!`)
+  if (config.NODE_ENV === 'development' || config.SLACK_BOT) {
+    await slack.start(config.SLACK_PORT)
+    console.log(`⚡️ Bolt app is running on port ${config.SLACK_PORT}!`)
+  }
 
-  const server = fastify({ http2: true })
-  await server.register(fastifyConnectPlugin, { routes })
-  server.get('/', (_, reply) => {
-    reply.type('text/plain')
-    reply.send('You found something...')
-  })
-  await server.listen({ host: 'localhost', port: config.PORT })
-  console.log(`GRPC server running on port ${config.PORT}!`)
+  if (config.NODE_ENV === 'development' || !config.SLACK_BOT) {
+    const server = fastify({ http2: true })
+    await server.register(fastifyConnectPlugin, { routes })
+    server.get('/', (_, reply) => {
+      reply.type('text/plain')
+      reply.send('You found something...')
+    })
+    await server.listen({ host: 'localhost', port: config.PORT })
+    console.log(`GRPC server running on port ${config.PORT}!`)
+  }
 })()

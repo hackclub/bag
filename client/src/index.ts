@@ -1,8 +1,6 @@
-import { ElizaService } from '../gen/eliza_connect'
-import * as methods from '../gen/eliza_pb'
-import { PromiseClient, createPromiseClient } from '@connectrpc/connect'
-import { createConnectTransport } from '@connectrpc/connect-node'
-import 'dotenv/config'
+import * as grpc from '@grpc/grpc-js'
+import type { ServiceClient } from '@grpc/grpc-js/build/src/make-client'
+import path from 'path'
 
 type RecursivePartial<T> = {
   [P in keyof T]?: T[P] extends (infer U)[]
@@ -21,14 +19,10 @@ export const Permissions = {
 }
 
 export class App {
-  private client: PromiseClient<typeof ElizaService>
+  private client: ServiceClient
   private request: { appId: number; key: string }
 
-  constructor(
-    client: PromiseClient<typeof ElizaService>,
-    appId: number,
-    key: string
-  ) {
+  constructor(client: ServiceClient, appId: number, key: string) {
     this.client = client
     this.request = { appId, key }
   }
@@ -37,18 +31,34 @@ export class App {
     appId: number
     key: string
     baseUrl?: string
+    protoLocation?: string
   }) {
-    const transport = createConnectTransport({
-      baseUrl: options.baseUrl
-        ? options.baseUrl
-        : 'https://bag-client.hackclub.com',
-      httpVersion: '1.1'
+    const PROTO_PATH =
+      options.protoLocation || path.join(__dirname, '/proto/bag.proto')
+    const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
+      keepCase: true,
+      longs: String,
+      enums: String,
+      defaults: true,
+      oneofs: true
     })
 
-    const client = createPromiseClient(ElizaService, transport)
-    if (!(await client.verifyKey(options)))
-      throw new Error('App not found or invalid key')
-    return new App(client, options.appId, options.key)
+    const protoDescriptor = grpc.loadPackageDefinition(packageDefinition)
+    // @ts-expect-error
+    const { BagService } = protoDescriptor.bag
+    const client: ServiceClient = new BagService(
+      options.baseUrl || 'https://bag-client.hackclub.com',
+      grpc.credentials.createInsecure()
+    )
+
+    return new Promise((resolve, reject) => {
+      const callback = (error, response) => {
+        if (error) return reject(error)
+        if (!response.valid) throw new Error('App not found or invalid key')
+        return resolve(new App(client, options.appId, options.key))
+      }
+      client.verifyKey({ appId: options.appId, key: options.key }, callback)
+    })
   }
 
   static format(obj: any) {
@@ -65,211 +75,333 @@ export class App {
   }
 
   // I would do this with a cleaner for-loop, but I can't get it to be typed in TypeScript
-  async createApp(request: RecursivePartial<methods.CreateAppRequest>) {
-    return App.format(
-      await this.client.createApp({
-        ...this.request,
-        ...request
-      })
-    )
+  async createApp(request) {
+    return new Promise((resolve, reject) => {
+      this.client.createApp(
+        {
+          ...this.request,
+          ...request
+        },
+        (error, result) => {
+          if (error) return reject(error)
+          else return resolve(App.format(result))
+        }
+      )
+    })
   }
 
-  async createInstances(
-    request: RecursivePartial<methods.CreateInstancesRequest>
-  ) {
-    return App.format(
-      await this.client.createInstances({
-        ...this.request,
-        ...request
-      })
-    )
+  async createInstances(request) {
+    return new Promise((resolve, reject) => {
+      this.client.createInstances(
+        {
+          ...this.request,
+          ...request
+        },
+        (error, result) => {
+          if (error) return reject(error)
+          else return resolve(App.format(result))
+        }
+      )
+    })
   }
 
-  async createInstance(
-    request: RecursivePartial<methods.CreateInstanceRequest>
-  ) {
-    return App.format(
-      await this.client.createInstance({
-        ...this.request,
-        ...request
-      })
-    )
+  async createInstance(request) {
+    return new Promise((resolve, reject) => {
+      this.client.createInstance(
+        {
+          ...this.request,
+          ...request
+        },
+        (error, result) => {
+          if (error) return reject(error)
+          else return resolve(App.format(result))
+        }
+      )
+    })
   }
 
-  async createItem(request: RecursivePartial<methods.CreateItemRequest>) {
-    return App.format(
-      await this.client.createItem({
-        ...this.request,
-        ...request
-      })
-    )
+  async createItem(request) {
+    return new Promise((resolve, reject) => {
+      this.client.createItem(
+        {
+          ...this.request,
+          ...request
+        },
+        (error, result) => {
+          if (error) return reject(error)
+          else return resolve(App.format(result))
+        }
+      )
+    })
   }
 
-  async createRecipe(request: RecursivePartial<methods.CreateRecipeRequest>) {
-    return App.format(
-      await this.client.createRecipe({
-        ...this.request,
-        ...request
-      })
-    )
+  async createRecipe(request) {
+    return new Promise((resolve, reject) => {
+      this.client.createRecipe(
+        {
+          ...this.request,
+          ...request
+        },
+        (error, result) => {
+          if (error) return reject(error)
+          else return resolve(App.format(result))
+        }
+      )
+    })
   }
 
-  async createTrade(request: RecursivePartial<methods.CreateTradeRequest>) {
-    return App.format(
-      await this.client.createTrade({
-        ...this.request,
-        ...request
-      })
-    )
+  async createTrade(request) {
+    return new Promise((resolve, reject) => {
+      this.client.createTrade(
+        {
+          ...this.request,
+          ...request
+        },
+        (error, result) => {
+          if (error) return reject(error)
+          else return resolve(App.format(result))
+        }
+      )
+    })
   }
 
-  async readIdentity(request: RecursivePartial<methods.ReadIdentityRequest>) {
-    return App.format(
-      await this.client.readIdentity({
-        ...this.request,
-        ...request
-      })
-    )
+  async readIdentity(request) {
+    return new Promise((resolve, reject) => {
+      this.client.readIdentity(
+        {
+          ...this.request,
+          ...request
+        },
+        (error, result) => {
+          if (error) return reject(error)
+          else return resolve(App.format(result))
+        }
+      )
+    })
   }
 
-  async readInventory(request: RecursivePartial<methods.ReadInventoryRequest>) {
-    return App.format(
-      await this.client.readInventory({
-        ...this.request,
-        ...request
-      })
-    )
+  async readInventory(request) {
+    return new Promise((resolve, reject) => {
+      this.client.readInventory(
+        {
+          ...this.request,
+          ...request
+        },
+        (error, result) => {
+          if (error) return reject(error)
+          else return resolve(App.format(result))
+        }
+      )
+    })
   }
 
-  async readItem(request: RecursivePartial<methods.ReadItemRequest>) {
-    return App.format(
-      await this.client.readItem({
-        ...this.request,
-        ...request
-      })
-    )
+  async readItem(request) {
+    return new Promise((resolve, reject) => {
+      this.client.readItem(
+        {
+          ...this.request,
+          ...request
+        },
+        (error, result) => {
+          if (error) return reject(error)
+          else return resolve(App.format(result))
+        }
+      )
+    })
   }
 
-  async readInstance(request: RecursivePartial<methods.ReadInstanceRequest>) {
-    return App.format(
-      await this.client.readInstance({
-        ...this.request,
-        ...request
-      })
-    )
+  async readInstance(request) {
+    return new Promise((resolve, reject) => {
+      this.client.readInstance(
+        {
+          ...this.request,
+          ...request
+        },
+        (error, result) => {
+          if (error) return reject(error)
+          else return resolve(App.format(result))
+        }
+      )
+    })
   }
 
-  async readApp(request: RecursivePartial<methods.ReadAppRequest> = {}) {
-    return App.format(
-      await this.client.readApp({
-        ...this.request,
-        ...request
-      })
-    )
+  async readApp(request) {
+    return new Promise((resolve, reject) => {
+      this.client.readApp(
+        {
+          ...this.request,
+          ...request
+        },
+        (error, result) => {
+          if (error) return reject(error)
+          else return resolve(App.format(result))
+        }
+      )
+    })
   }
 
-  async readTrade(request: RecursivePartial<methods.ReadTradeRequest>) {
-    return App.format(
-      await this.client.readTrade({
-        ...this.request,
-        ...request
-      })
-    )
+  async readTrade(request) {
+    return new Promise((resolve, reject) => {
+      this.client.readTrade(
+        {
+          ...this.request,
+          ...request
+        },
+        (error, result) => {
+          if (error) return reject(error)
+          else return resolve(App.format(result))
+        }
+      )
+    })
   }
 
-  async readRecipe(request: RecursivePartial<methods.ReadRecipeRequest>) {
-    return App.format(
-      await this.client.readRecipe({
-        ...this.request,
-        ...request
-      })
-    )
+  async readRecipe(request) {
+    return new Promise((resolve, reject) => {
+      this.client.readRecipe(
+        {
+          ...this.request,
+          ...request
+        },
+        (error, result) => {
+          if (error) return reject(error)
+          else return resolve(App.format(result))
+        }
+      )
+    })
   }
 
-  async updateIdentityMetadata(
-    request: RecursivePartial<methods.UpdateIdentityMetadataRequest>
-  ) {
-    return App.format(
-      await this.client.updateIdentityMetadata({
-        ...this.request,
-        ...request
-      })
-    )
+  async updateIdentityMetadata(request) {
+    return new Promise((resolve, reject) => {
+      this.client.updateIdentityMetadata(
+        {
+          ...this.request,
+          ...request
+        },
+        (error, result) => {
+          if (error) return reject(error)
+          else return resolve(App.format(result))
+        }
+      )
+    })
   }
 
-  async updateInstance(
-    request: RecursivePartial<methods.UpdateInstanceRequest>
-  ) {
-    return App.format(
-      await this.client.updateInstance({
-        ...this.request,
-        ...request
-      })
-    )
+  async updateInstance(request) {
+    return new Promise((resolve, reject) => {
+      this.client.updateInstance(
+        {
+          ...this.request,
+          ...request
+        },
+        (error, result) => {
+          if (error) return reject(error)
+          else return resolve(App.format(result))
+        }
+      )
+    })
   }
 
-  async updateItem(request: RecursivePartial<methods.UpdateItemRequest>) {
-    return App.format(
-      await this.client.updateItem({
-        ...this.request,
-        ...request
-      })
-    )
+  async updateItem(request) {
+    return new Promise((resolve, reject) => {
+      this.client.updateItem(
+        {
+          ...this.request,
+          ...request
+        },
+        (error, result) => {
+          if (error) return reject(error)
+          else return resolve(App.format(result))
+        }
+      )
+    })
   }
 
-  async updateApp(request: RecursivePartial<methods.UpdateAppRequest>) {
-    return App.format(
-      await this.client.updateApp({
-        ...this.request,
-        ...request
-      })
-    )
+  async updateApp(request) {
+    return new Promise((resolve, reject) => {
+      this.client.updateApp(
+        {
+          ...this.request,
+          ...request
+        },
+        (error, result) => {
+          if (error) return reject(error)
+          else return resolve(App.format(result))
+        }
+      )
+    })
   }
 
-  async updateTrade(request: RecursivePartial<methods.UpdateTradeRequest>) {
-    return App.format(
-      await this.client.updateTrade({
-        ...this.request,
-        ...request
-      })
-    )
+  async updateTrade(request) {
+    return new Promise((resolve, reject) => {
+      this.client.updateTrade(
+        {
+          ...this.request,
+          ...request
+        },
+        (error, result) => {
+          if (error) return reject(error)
+          else return resolve(App.format(result))
+        }
+      )
+    })
   }
 
-  async updateRecipe(request: RecursivePartial<methods.UpdateRecipeRequest>) {
-    return App.format(
-      await this.client.updateRecipe({
-        ...this.request,
-        ...request
-      })
-    )
+  async updateRecipe(request) {
+    return new Promise((resolve, reject) => {
+      this.client.updateRecipe(
+        {
+          ...this.request,
+          ...request
+        },
+        (error, result) => {
+          if (error) return reject(error)
+          else return resolve(App.format(result))
+        }
+      )
+    })
   }
 
-  async deleteApp(request: RecursivePartial<methods.DeleteAppRequest>) {
-    return App.format(
-      await this.client.deleteApp({
-        ...this.request,
-        ...request
-      })
-    )
+  async deleteApp(request) {
+    return new Promise((resolve, reject) => {
+      this.client.deleteApp(
+        {
+          ...this.request,
+          ...request
+        },
+        (error, result) => {
+          if (error) return reject(error)
+          else return resolve(App.format(result))
+        }
+      )
+    })
   }
 
-  async deleteInstance(
-    request: RecursivePartial<methods.DeleteInstanceRequest>
-  ) {
-    return App.format(
-      await this.client.deleteInstance({
-        ...this.request,
-        ...request
-      })
-    )
+  async deleteInstance(request) {
+    return new Promise((resolve, reject) => {
+      this.client.deleteInstance(
+        {
+          ...this.request,
+          ...request
+        },
+        (error, result) => {
+          if (error) return reject(error)
+          else return resolve(App.format(result))
+        }
+      )
+    })
   }
 
-  async closeTrade(request: RecursivePartial<methods.CloseTradeRequest>) {
-    return App.format(
-      await this.client.closeTrade({
-        ...this.request,
-        ...request
-      })
-    )
+  async closeTrade(request) {
+    return new Promise((resolve, reject) => {
+      this.client.closeTrade(
+        {
+          ...this.request,
+          ...request
+        },
+        (error, result) => {
+          if (error) return reject(error)
+          else return resolve(App.format(result))
+        }
+      )
+    })
   }
 }

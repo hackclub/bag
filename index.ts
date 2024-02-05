@@ -9,7 +9,6 @@ import './lib/slack/routes/item'
 import './lib/slack/routes/perms'
 import './lib/slack/routes/trade'
 import slack from './lib/slack/slack'
-import { httpsLocal } from './lib/utils'
 
 ;(async () => {
   // Shutdown signal - shutdown Prisma client

@@ -9,8 +9,8 @@
   },
   "main": "index.js",
   "scripts": {
-    "start": "tsx index.ts",
-    "dev": "tsx watch index.ts",
+    "start": "tsx index.ts & tsx routes.ts",
+    "dev": "tsx watch index.ts & tsx watch routes.ts",
     "format": "prettier --ignore-path ./.prettierignore --write .",
     "rpc:gen": "npx buf generate proto && cp -r ./gen ./client",
     "db:migrate-dev": "npx prisma migrate dev",

@@ -3,7 +3,7 @@ import { log } from '../../logger'
 import { mappedPermissionValues } from '../../permissions'
 import { channels } from '../../utils'
 import slack, { execute } from '../slack'
-import { PermissionLevels, Item } from '@prisma/client'
+import { PermissionLevels, Item, Identity } from '@prisma/client'
 import type { Block, KnownBlock, View } from '@slack/bolt'
 
 slack.command('/item', async props => {
@@ -50,7 +50,7 @@ slack.command('/item', async props => {
 
       return await props.respond({
         response_type: 'ephemeral',
-        blocks: getItem(item)
+        blocks: getItem(item, user)
       })
     } catch {
       if (!message.length)
@@ -165,6 +165,27 @@ slack.action('deny-item', async props => {
   })
 })
 
+slack.action('edit-item', async props => {
+  await execute(props, async props => {
+    // @ts-expect-error
+    const { name } = JSON.parse(props.action.value)
+
+    const item = await prisma.item.findUnique({
+      where: { name }
+    })
+
+    // @ts-expect-error
+    await props.client.views.open({
+      // @ts-expect-error
+      trigger_id: props.client.views.open({
+        // @ts-expect-error
+        trigger_id: props.body.trigger_id,
+        views: editItem(item)
+      })
+    })
+  })
+})
+
 slack.view('edit-item', async props => {
   await execute(props, async props => {
     let fields: {
@@ -208,9 +229,9 @@ slack.view('edit-item', async props => {
   })
 })
 
-const getItem = (item: Item): (Block | KnownBlock)[] => {
+const getItem = (item: Item, user: Identity): (Block | KnownBlock)[] => {
   console.log(item)
-  return [
+  let blocks: (Block | KnownBlock)[] = [
     {
       type: 'section',
       text: {
@@ -223,6 +244,27 @@ const getItem = (item: Item): (Block | KnownBlock)[] => {
       }
     }
   ]
+  if (
+    user.permissions === PermissionLevels.ADMIN ||
+    (mappedPermissionValues[user.permissions] >=
+      mappedPermissionValues.READ_PRIVATE &&
+      user.specificItems.find(name => item.name))
+  )
+    blocks.push({
+      type: 'actions',
+      elements: [
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: 'Edit'
+          },
+          action_id: 'edit-item',
+          value: JSON.stringify({ name: item.name })
+        }
+      ]
+    })
+  return blocks
 }
 
 const createItem: View = {

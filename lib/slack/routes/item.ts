@@ -180,7 +180,7 @@ slack.action('edit-item', async props => {
       trigger_id: props.client.views.open({
         // @ts-expect-error
         trigger_id: props.body.trigger_id,
-        views: editItem(item)
+        view: editItem(item)
       })
     })
   })

@@ -6,6 +6,21 @@ import type { Block, KnownBlock, View } from '@slack/bolt'
 
 slack.command('/huh', async props => {
   return await execute(props, async props => {
+    if (
+      ![
+        'U03MNFDRSGJ',
+        'UDK5M9Y13',
+        'U032A2PMSE9',
+        'U05TXCSCK7E',
+        'U0C7B14Q3'
+      ].includes(props.context.userId)
+    )
+      return await props.client.chat.postMessage({
+        channel: props.context.userId,
+        user: props.context.userId,
+        text: "You found something... but it's not quite ready yet."
+      })
+
     try {
       const conversation = await props.client.conversations.info({
         channel: props.body.channel_id

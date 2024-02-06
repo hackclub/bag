@@ -529,29 +529,37 @@ export class RecipeItem extends Message<RecipeItem> {
  */
 export class Recipe extends Message<Recipe> {
   /**
-   * @generated from field: int32 id = 1;
+   * @generated from field: optional int32 id = 1;
    */
-  id = 0;
+  id?: number;
 
   /**
-   * @generated from field: repeated int32 inputIds = 2;
+   * References Item table
+   *
+   * @generated from field: repeated string inputIds = 2;
    */
-  inputIds: number[] = [];
+  inputIds: string[] = [];
 
   /**
-   * @generated from field: repeated int32 outputIds = 3;
+   * References Item table
+   *
+   * @generated from field: repeated string outputIds = 3;
    */
-  outputIds: number[] = [];
+  outputIds: string[] = [];
 
   /**
+   * References Skill table
+   *
    * @generated from field: repeated string skillIds = 4;
    */
   skillIds: string[] = [];
 
   /**
-   * @generated from field: repeated int32 toolIds = 5;
+   * References Tool table
+   *
+   * @generated from field: repeated string toolIds = 5;
    */
-  toolIds: number[] = [];
+  toolIds: string[] = [];
 
   /**
    * @generated from field: repeated connectrpc.eliza.v1.RecipeItem inputs = 6;
@@ -573,6 +581,11 @@ export class Recipe extends Message<Recipe> {
    */
   tools: RecipeItem[] = [];
 
+  /**
+   * @generated from field: optional string description = 10;
+   */
+  description?: string;
+
   constructor(data?: PartialMessage<Recipe>) {
     super();
     proto3.util.initPartial(data, this);
@@ -581,15 +594,16 @@ export class Recipe extends Message<Recipe> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "connectrpc.eliza.v1.Recipe";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 2, name: "inputIds", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
-    { no: 3, name: "outputIds", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
+    { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 2, name: "inputIds", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "outputIds", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "skillIds", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 5, name: "toolIds", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
+    { no: 5, name: "toolIds", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "inputs", kind: "message", T: RecipeItem, repeated: true },
     { no: 7, name: "outputs", kind: "message", T: RecipeItem, repeated: true },
     { no: 8, name: "skills", kind: "message", T: Skill, repeated: true },
     { no: 9, name: "tools", kind: "message", T: RecipeItem, repeated: true },
+    { no: 10, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Recipe {

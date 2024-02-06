@@ -98,15 +98,16 @@ message RecipeItem {
 }
 
 message Recipe {
-  int32 id = 1;
-  repeated int32 inputIds = 2;
-  repeated int32 outputIds = 3;
-  repeated string skillIds = 4;
-  repeated int32 toolIds = 5;
-  repeated RecipeItem inputs = 6;
+  optional int32 id = 1;
+  repeated string inputIds = 2; // References Item table
+  repeated string outputIds = 3;  // References Item table
+  repeated string skillIds = 4;  // References Skill table
+  repeated string toolIds = 5;  // References Tool table
+  repeated RecipeItem inputs = 6; 
   repeated RecipeItem outputs = 7;
   repeated Skill skills = 8;
   repeated RecipeItem tools = 9;
+  optional string description = 10;
 }
 
 message CreateInstancesRequest {

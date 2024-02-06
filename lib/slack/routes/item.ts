@@ -103,8 +103,9 @@ slack.view('create-item', async props => {
     })
     if (user.permissions !== PermissionLevels.ADMIN) {
       // Request to create item
-      await props.respond({
-        response_type: 'ephemeral',
+      await props.client.chat.postEphemeral({
+        channel: user.slack,
+        user: user.slack,
         text: 'Item creation request made! You should get a response sometime in the next 24 hours if today is a weekday, and 72 hours otherwise!'
       })
       await props.client.chat.postMessage({
@@ -113,8 +114,9 @@ slack.view('create-item', async props => {
       })
     } else {
       const item = await prisma.item.create({ data: fields })
-      await props.respond({
-        response_type: 'ephemeral',
+      await props.client.chat.postEphemeral({
+        channel: user.slack,
+        user: user.slack,
         text: `Item ${item.reaction} ${item.name} created!`
       })
     }
@@ -213,9 +215,11 @@ const getItem = (item: Item): (Block | KnownBlock)[] => {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `Here's ${item.reaction} *${item.name}*:
-
->_${item.description}_`
+        text: `Here's ${item.reaction} *${item.name}*: ${
+          item.description
+            ? '\n\n>_' + item.description + '_'
+            : '_No description provided._'
+        }`
       }
     }
   ]

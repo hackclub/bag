@@ -6,7 +6,7 @@ import { log } from './lib/logger'
 import { mappedPermissionValues } from './lib/permissions'
 import { getKeyByValue } from './lib/utils'
 import { ConnectRouter } from '@connectrpc/connect'
-import { App, Item, PermissionLevels, Skill } from '@prisma/client'
+import { App, Item, PermissionLevels, RecipeItems, Skill } from '@prisma/client'
 import { WebClient } from '@slack/web-api'
 import { v4 as uuid } from 'uuid'
 
@@ -301,77 +301,59 @@ export default (router: ConnectRouter) => {
   })
 
   router.rpc(ElizaService, ElizaService.methods.createRecipe, async req => {
-    return await execute(
-      req,
-      async (req, app) => {
+    return await execute(req, async (req, app) => {
+      if (
+        (!req.recipe.inputs.length && !req.recipe.inputIds.length) ||
+        (!req.recipe.outputs.length && !req.recipe.outputIds.length)
+      )
+        throw new Error('Recipe should have inputs and outputs')
+
+      const inputs = req.recipe.inputs.length
+        ? req.recipe.inputs.map(input => ({ name: input.recipeItemId }))
+        : req.recipe.inputIds.map((name: string) => ({ name }))
+      const outputs = req.recipe.outputs.length
+        ? req.recipe.outputs.map(output => ({ name: output.recipeItemId }))
+        : req.recipe.outputIds.map((name: string) => ({ name }))
+      if (app.permissions === PermissionLevels.WRITE_SPECIFIC) {
         if (
-          (!req.recipe.inputs.length && !req.recipe.inputIds.length) ||
-          (!req.recipe.outputs.length && !req.recipe.outputIds.lenth)
+          inputs
+            .map(input => app.specificItems.includes(input.name))
+            .includes(false)
         )
-          throw new Error('Recipe should have inputs and outputs')
+          throw new Error('Invalid inputs')
+        if (
+          outputs
+            .map(output => app.specificItems.includes(output.name))
+            .includes(false)
+        )
+          throw new Error('Invalid outputs')
+      }
 
-        const inputs = req.recipe.inputs
-          ? req.recipe.inputs.map((input: Item) => ({ name: input.name }))
-          : req.recipe.inputIds.map((name: string) => ({ name }))
-        const outputs = req.recipe.outputs
-          ? req.recipe.outputs.map((output: Item) => ({ name: output.name }))
-          : req.recipe.outputIds.map((name: string) => ({ name }))
-        if (app.permissions === PermissionLevels.WRITE_SPECIFIC) {
-          if (
-            req.inputs
-              .map(input => app.specificItems.includes(input))
-              .includes(false)
-          )
-            throw new Error('Invalid inptus')
-          if (
-            req.outputs
-              .map(output => app.specificItems.includes(output))
-              .includes(false)
-          )
-            throw new Error('Invalid outputs')
-        }
-
-        const skills = req.recipe.skills
-          ? req.recipe.skills.map((skill: Skill) => ({ name: skill.name }))
-          : req.recipe.skillIds.map((name: string) => ({ name }))
-        const tools = req.recipe.tools
-          ? req.recipe.tools.map((tool: Item) => ({ name: tool.name }))
-          : req.recipe.tools.map((name: string) => ({ name }))
-        let recipe
-        try {
-          recipe = await prisma.recipe.create({
-            data: {
-              inputs: { connect: inputs },
-              outputs: { connect: outputs },
-              skills: { connect: skills },
-              tools: { connect: tools }
-            },
-            include: { inputs: true, outputs: true }
-          })
-        } catch {
-          throw new Error('Invalid inputs, outputs, skills, and/or tools')
-        }
-        if (app.permissions === PermissionLevels.WRITE_SPECIFIC)
-          await prisma.app.update({
-            where: { id: app.id },
-            data: {
-              specificRecipes: {
-                push: recipe.id
-              }
+      const skills = req.recipe.skills.length
+        ? req.recipe.skills.map(skill => ({ name: skill.name }))
+        : req.recipe.skillIds.length
+          ? req.recipe.skillIds.map(name => ({ name }))
+          : []
+      const tools = req.recipe.tools.length
+        ? req.recipe.tools.map(tool => ({ name: tool.recipeItemId }))
+        : req.recipe.toolIds.length
+          ? req.recipe.toolIds.map(name => ({ name }))
+          : []
+      let recipe
+      try {
+      } catch {
+        throw new Error('Invalid inputs, outputs, skills, and/or tools')
+      }
+      if (app.permissions === PermissionLevels.WRITE_SPECIFIC)
+        await prisma.app.update({
+          where: { id: app.id },
+          data: {
+            specificRecipes: {
+              push: recipe.id
             }
-          })
-        return {
-          recipe: {
-            ...recipe,
-            inputIds: inputs.map(input => input.name),
-            outputIds: outputs.map(output => output.name),
-            skillIds: skills.map(skill => skill.name),
-            toolIds: tools.map(tool => tool.name)
           }
-        }
-      },
-      mappedPermissionValues.WRITE_SPECIFIC
-    )
+        })
+    })
   })
 
   router.rpc(ElizaService, ElizaService.methods.createTrade, async req => {
@@ -458,6 +440,7 @@ export default (router: ConnectRouter) => {
   router.rpc(ElizaService, ElizaService.methods.readItem, async req => {
     return await execute(req, async (req, app) => {
       const query = JSON.parse(req.query)
+      console.log(query)
       let items = await prisma.item.findMany({
         where: query
       })

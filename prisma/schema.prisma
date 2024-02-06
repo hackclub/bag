@@ -56,7 +56,7 @@ model Item {
   instances   Instance[]
   public      Boolean       @default(false)
   metadata    Json          @default("{}")
-  recipeItem  RecipeItems[] @relation("recipeItem")
+  recipeItem  RecipeItems[]
 }
 
 model Instance {
@@ -126,7 +126,8 @@ model Crafting {
 
 model RecipeItems {
   id             Int        @id @default(autoincrement())
-  recipeItem     Item[]     @relation("recipeItem")
+  recipeItemId   String
+  recipeItem     Item       @relation(fields: [recipeItemId], references: [name])
   quantity       Int        @default(1)
   inputs         Recipe[]   @relation("recipeInputs")
   outputs        Recipe[]   @relation("recipeOutputs")
@@ -136,13 +137,14 @@ model RecipeItems {
 }
 
 model Recipe {
-  id      Int           @id @default(autoincrement())
-  inputs  RecipeItems[] @relation("recipeInputs")
-  skills  Skill[]       @relation("recipeInputs")
-  outputs RecipeItems[] @relation("recipeOutputs")
-  tools   RecipeItems[] @relation("recipeTools")
-  public  Boolean       @default(true)
-  crafted Crafting[]
+  id          Int           @id @default(autoincrement())
+  inputs      RecipeItems[] @relation("recipeInputs")
+  skills      Skill[]       @relation("recipeInputs")
+  outputs     RecipeItems[] @relation("recipeOutputs")
+  tools       RecipeItems[] @relation("recipeTools")
+  public      Boolean       @default(true)
+  crafted     Crafting[]
+  description String?
 }
 
 enum LoggerLevels {

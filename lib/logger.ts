@@ -1,5 +1,6 @@
 import { prisma } from './db'
 import { LoggerLevels } from '@prisma/client'
+import { inspect } from 'util'
 
 export const err = (...text: any[]) => {
   text = text.map(arg => arg.toString())
@@ -20,4 +21,8 @@ export const log = (...text: any[]) => {
       contents: `[INVENTORY] (log) ${text.join('')}`
     }
   })
+}
+
+export const debug = (...text: any[]) => {
+  console.log(`[INVENTORY] (debug) ${inspect(text, { depth: Infinity })}`)
 }

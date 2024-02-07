@@ -6,8 +6,16 @@ import { log } from './lib/logger'
 import { mappedPermissionValues } from './lib/permissions'
 import { getKeyByValue } from './lib/utils'
 import { ConnectRouter } from '@connectrpc/connect'
-import { App, Item, PermissionLevels, RecipeItems, Skill } from '@prisma/client'
+import {
+  App,
+  Item,
+  PermissionLevels,
+  Recipe,
+  RecipeItem,
+  Skill
+} from '@prisma/client'
 import { WebClient } from '@slack/web-api'
+import util from 'util'
 import { v4 as uuid } from 'uuid'
 
 const web = new WebClient(config.SLACK_BOT_TOKEN)
@@ -153,7 +161,7 @@ export default (router: ConnectRouter) => {
             })
           created.push(create)
           formatted.push(
-            `x${instance.quantity} ${item.reaction} *${item.name}*`
+            `x${instance.quantity || 1} ${item.reaction} *${item.name}*`
           )
         }
 
@@ -301,59 +309,107 @@ export default (router: ConnectRouter) => {
   })
 
   router.rpc(ElizaService, ElizaService.methods.createRecipe, async req => {
-    return await execute(req, async (req, app) => {
-      if (
-        (!req.recipe.inputs.length && !req.recipe.inputIds.length) ||
-        (!req.recipe.outputs.length && !req.recipe.outputIds.length)
-      )
-        throw new Error('Recipe should have inputs and outputs')
+    return await execute(
+      req,
+      async (req, app) => {
+        let inputs: RecipeItem[] = []
+        let outputs: RecipeItem[] = []
+        let tools: RecipeItem[] = []
+        let skills: Skill[] = []
 
-      const inputs = req.recipe.inputs.length
-        ? req.recipe.inputs.map(input => ({ name: input.recipeItemId }))
-        : req.recipe.inputIds.map((name: string) => ({ name }))
-      const outputs = req.recipe.outputs.length
-        ? req.recipe.outputs.map(output => ({ name: output.recipeItemId }))
-        : req.recipe.outputIds.map((name: string) => ({ name }))
-      if (app.permissions === PermissionLevels.WRITE_SPECIFIC) {
-        if (
-          inputs
-            .map(input => app.specificItems.includes(input.name))
-            .includes(false)
-        )
-          throw new Error('Invalid inputs')
-        if (
-          outputs
-            .map(output => app.specificItems.includes(output.name))
-            .includes(false)
-        )
-          throw new Error('Invalid outputs')
-      }
+        const sum = (inputs: RecipeItem[], tools: RecipeItem[]): number => {
+          const inputTotal = inputs.reduce(
+            (curr: number, acc) => curr + acc.quantity,
+            0
+          )
+          const toolTotal = tools.reduce(
+            (curr: number, acc) => curr + acc.quantity,
+            0
+          )
+          return inputTotal + toolTotal
+        }
 
-      const skills = req.recipe.skills.length
-        ? req.recipe.skills.map(skill => ({ name: skill.name }))
-        : req.recipe.skillIds.length
-          ? req.recipe.skillIds.map(name => ({ name }))
-          : []
-      const tools = req.recipe.tools.length
-        ? req.recipe.tools.map(tool => ({ name: tool.recipeItemId }))
-        : req.recipe.toolIds.length
-          ? req.recipe.toolIds.map(name => ({ name }))
-          : []
-      let recipe
-      try {
-      } catch {
-        throw new Error('Invalid inputs, outputs, skills, and/or tools')
-      }
-      if (app.permissions === PermissionLevels.WRITE_SPECIFIC)
-        await prisma.app.update({
-          where: { id: app.id },
-          data: {
-            specificRecipes: {
-              push: recipe.id
+        const { recipe } = req
+        if (sum(recipe.inputs, recipe.tools) < 2 || !recipe.outputs.length)
+          throw new Error(
+            'Recipe requires at least two inputs and/or at least one output'
+          )
+
+        for (let input of recipe.inputs) {
+          // Check if there's an existing RecipeItem, and use that if possible with upsert
+          let create = await prisma.recipeItem.findFirst({ where: input })
+          if (!create) create = await prisma.recipeItem.create({ data: input })
+          inputs.push(create)
+        }
+        delete recipe.inputs
+        for (let output of recipe.outputs) {
+          let create = await prisma.recipeItem.findFirst({ where: output })
+          if (!create) create = await prisma.recipeItem.create({ data: output })
+          outputs.push(create)
+        }
+        delete recipe.outputs
+        for (let tool of recipe.tools) {
+          let create = await prisma.recipeItem.findFirst({ where: tool })
+          if (!create) create = await prisma.recipeItem.create({ data: tool })
+          tools.push(create)
+        }
+        delete recipe.tools
+        for (let skill of recipe.skills) {
+          let create = await prisma.skill.findFirst({ where: skill })
+          if (!skill) create = await prisma.skill.create({ data: create })
+          skills.push(create)
+        }
+        delete recipe.skills
+
+        // Create recipe
+        const create = await prisma.recipe.create(
+          recipe.description
+            ? { data: { description: recipe.description } }
+            : { data: { description: 'No description provided.' } }
+        )
+        // Add to permission list depending on app permissions
+        if (app.permissions === PermissionLevels.WRITE_SPECIFIC)
+          await prisma.app.update({
+            where: { id: app.id },
+            data: { specificRecipes: { push: create.id } }
+          })
+
+        // Connect inputs, outputs, tools, skills
+        for (let input of inputs)
+          await prisma.recipeItem.update({
+            where: { id: input.id },
+            data: { inputs: { connect: { id: create.id } } }
+          })
+        for (let output of outputs)
+          await prisma.recipeItem.update({
+            where: { id: output.id },
+            data: { outputs: { connect: { id: create.id } } }
+          })
+        for (let tool of tools)
+          await prisma.recipeItem.update({
+            where: { id: tool.id },
+            data: { tools: { connect: { id: create.id } } }
+          })
+        for (let skill of skills)
+          await prisma.skill.update({
+            where: { name: skill.name },
+            data: { recipe: { connect: { id: create.id } } }
+          })
+
+        return {
+          recipe: await prisma.recipe.findUnique({
+            where: { id: create.id },
+            include: {
+              inputs: true,
+              outputs: true,
+              tools: true,
+              skills: true
             }
-          }
-        })
-    })
+          })
+        }
+      },
+      mappedPermissionValues.WRITE_SPECIFIC
+    )
   })
 
   router.rpc(ElizaService, ElizaService.methods.createTrade, async req => {
@@ -544,80 +600,30 @@ export default (router: ConnectRouter) => {
 
   router.rpc(ElizaService, ElizaService.methods.readRecipe, async req => {
     return await execute(req, async (req, app) => {
-      try {
-        let query = req.query
-        if (query.inputIds?.length) {
-          query.input = query.inputIds.map(input => ({ id: input }))
-        } else delete req.query.inputIds
-        if (query.outputIds?.length) {
-          query.output = query.outputIds.map(output => ({ id: output }))
-        } else delete req.query.outputIds
-        if (query.skillIds?.length)
-          query.skills = query.skillIds.map(skill => ({ name: skill }))
-        else delete req.query.skillIds
-        if (query.toolIds?.length)
-          query.tools = query.toolIds.map(tool => ({ id: tool }))
-        else delete req.query.toolIds
-        const recipe = await prisma.recipe.findUnique({
-          where: query,
-          include: {
-            inputs: true,
-            outputs: true,
-            skills: true,
-            tools: true
-          }
-        })
-
-        if (app.permissions === PermissionLevels.READ && !recipe.public)
-          throw new Error()
-        if (
-          mappedPermissionValues[app.permissions] <
-            mappedPermissionValues.WRITE &&
-          !req.public &&
-          !app.specificRecipes.find(recipeId => recipeId === recipe.id)
-        )
-          throw new Error()
-
-        return {
-          recipe: {
-            ...recipe,
-            inputs: await Promise.all(
-              recipe.inputs.map(
-                async input =>
-                  await prisma.recipeItems.findUnique({
-                    where: { id: input.id },
-                    include: { recipeItem: true }
-                  })
-              )
-            ),
-            outputs: await Promise.all(
-              recipe.outputs.map(
-                async output =>
-                  await prisma.recipeItems.findUnique({
-                    where: { id: output.id },
-                    include: { recipeItem: true }
-                  })
-              )
-            ),
-            tools: await Promise.all(
-              recipe.tools.map(
-                async tool =>
-                  await prisma.recipeItems.findUnique({
-                    where: { id: tool.id },
-                    include: { recipeItem: true }
-                  })
-              )
-            ),
-            inputIds: recipe.inputs,
-            outputIds: recipe.outputs,
-            skillIds: recipe.skills.map(skill => skill.name),
-            toolIds: recipe.tools
-          }
+      // Search for recipe
+      if (!req.query.inputs.length) delete req.query.inputs
+      if (!req.query.outputs.length) delete req.query.outputs
+      if (!req.query.skills.length) delete req.query.skills
+      if (!req.query.tools.length) delete req.query.tools
+      let recipes = await prisma.recipe.findMany({
+        where: {},
+        include: {
+          inputs: true,
+          outputs: true,
+          tools: true,
+          skills: true
         }
-      } catch (error) {
-        console.log(error)
-        throw new Error('Recipe not found')
-      }
+      })
+
+      if (app.permissions === PermissionLevels.READ)
+        recipes = recipes.filter(recipe => recipe.public)
+      else if (
+        mappedPermissionValues[app.permissions] < mappedPermissionValues.WRITE
+      )
+        recipes = recipes.filter(recipe =>
+          app.specificRecipes.find(id => recipe.id === id)
+        )
+      return { recipes }
     })
   })
 
@@ -834,43 +840,20 @@ export default (router: ConnectRouter) => {
       async (req, app) => {
         if (
           app.permissions === PermissionLevels.WRITE_SPECIFIC &&
-          !app.specificRecipes.find(recipeId => recipeId === req.recipeId)
+          !app.specificRecipes.find(id => id === req.recipeId)
         )
           throw new Error('Invalid permissions')
 
-        if (req.new.id !== undefined) delete req.new.id
-
-        const inputs = req.new.inputs
-          ? req.new.inputs.map((input: Item) => ({ name: input.name }))
-          : req.new.inputIds.map((name: string) => ({ name }))
-        const outputs = req.new.outputs
-          ? req.new.outputs.map((output: Item) => ({ name: output.name }))
-          : req.new.outputIds.map((name: string) => ({ name }))
-        const skills = req.new.skills
-          ? req.new.skills.map((skill: Skill) => ({ name: skill.name }))
-          : req.new.skillIds.map((name: string) => ({ name }))
-        const tools = req.recipe.tools
-          ? req.new.tools.map((tool: Item) => ({ name: tool.name }))
-          : req.new.tools.map((name: string) => ({ name }))
-
-        let recipe: { [key: string]: any } = {}
-        if (inputs.length) recipe.inputs = { connect: inputs }
-        if (outputs.length) recipe.outputs = { connect: outputs }
-        if (skills.length) recipe.skills = { connect: skills }
-        if (tools.length) recipe.tools = { connect: tools }
-
-        let updated = await prisma.recipe.update({
-          where: {
-            id: req.recipeId
-          },
-          data: recipe
+        const old = await prisma.trade.findUnique({
+          where: { id: req.recipeId }
         })
+        if (!old) throw new Error('Recipe not found')
 
-        return {
-          recipe: {
-            ...updated
-          }
-        }
+        const { new: recipe } = req
+        let inputs: RecipeItem[] = []
+        let outputs: RecipeItem[] = []
+        let tools: RecipeItem[] = []
+        let skills: Skill[] = []
       },
       mappedPermissionValues.WRITE_SPECIFIC
     )

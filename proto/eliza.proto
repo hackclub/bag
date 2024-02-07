@@ -99,15 +99,12 @@ message RecipeItem {
 
 message Recipe {
   optional int32 id = 1;
-  repeated string inputIds = 2; // References Item table
-  repeated string outputIds = 3;  // References Item table
-  repeated string skillIds = 4;  // References Skill table
-  repeated string toolIds = 5;  // References Tool table
-  repeated RecipeItem inputs = 6; 
-  repeated RecipeItem outputs = 7;
-  repeated Skill skills = 8;
-  repeated RecipeItem tools = 9;
-  optional string description = 10;
+  repeated RecipeItem inputs = 2; 
+  repeated RecipeItem outputs = 3;
+  repeated RecipeItem tools = 4;
+  repeated Skill skills = 5;
+  optional bool public = 6;
+  optional string description = 7;
 }
 
 message CreateInstancesRequest {
@@ -266,7 +263,7 @@ message ReadRecipeRequest {
 
 message ReadRecipeResponse {
   optional string response = 1;
-  optional Recipe recipe = 2;
+  repeated Recipe recipes = 2;
 }
 
 message UpdateIdentityMetadataRequest {

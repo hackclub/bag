@@ -10,8 +10,7 @@ slack.command('/give', async props => {
   await execute(props, async props => {
     const message = props.command.text.trim()
     const receiverId = message.slice(2, message.indexOf('|'))
-    if (!userRegex.test(message)) {
-      log("Here's the whitespace error: ", message)
+    if (userRegex.test(message) === false) {
       return await props.client.chat.postEphemeral({
         channel: props.body.channel_id,
         user: props.context.userId,

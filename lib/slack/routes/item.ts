@@ -543,6 +543,7 @@ const editItem = (item: Item): View => {
           initial_value: item.description,
           multiline: true
         },
+        optional: true,
         label: {
           type: 'plain_text',
           text: 'What is this?',

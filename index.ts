@@ -40,7 +40,7 @@ import { fastify } from 'fastify'
   }
 
   if (config.NODE_ENV === 'development' || !config.SLACK_BOT) {
-    const server = fastify({ http2: true, logger: true })
+    const server = fastify({ http2: true })
     await server.register(fastifyConnectPlugin, { routes })
     server.get('/', (_, reply) => {
       reply.type('text/plain')

@@ -29,7 +29,7 @@ slack.command('/trade', async props => {
     }
 
     const message = props.command.text.trim()
-    if (!userRegex.test(message))
+    if (userRegex.test(message) === false)
       return await props.respond({
         response_type: 'ephemeral',
         text: 'To start a trade, run `/trade @<person>`!'
@@ -197,10 +197,6 @@ slack.action('edit-offer', async props => {
       view: views.loadingDialog('Edit trade')
     })
 
-    const updated = await tradeDialog(props.body.user.id, tradeId, {
-      channel,
-      ts
-    })
     // @ts-expect-error
     await props.client.views.update({
       view_id: view.id,

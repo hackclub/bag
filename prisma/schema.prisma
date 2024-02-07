@@ -47,16 +47,16 @@ model Identity {
 }
 
 model Item {
-  name        String        @id @unique
+  name        String       @id @unique
   image       String?
   description String?
   reaction    String?
-  commodity   Boolean       @default(false)
-  tradable    Boolean       @default(true)
+  commodity   Boolean      @default(false)
+  tradable    Boolean      @default(true)
   instances   Instance[]
-  public      Boolean       @default(false)
-  metadata    Json          @default("{}")
-  recipeItem  RecipeItems[]
+  public      Boolean      @default(false)
+  metadata    Json         @default("{}")
+  recipeItem  RecipeItem[]
 }
 
 model Instance {
@@ -69,16 +69,17 @@ model Instance {
   metadata   Json            @default("{}")
   public     Boolean         @default(true)
   trades     TradeInstance[]
+  crafting   RecipeItem[]
 }
 
 model Skill {
-  name         String          @id @unique
-  maxLevel     Int?
-  description  String?
-  reaction     String?
-  metadata     Json            @default("{}")
-  recipeInputs Recipe[]        @relation("recipeInputs")
-  havers       SkillInstance[]
+  name        String          @id @unique
+  maxLevel    Int?
+  description String?
+  reaction    String?
+  metadata    Json            @default("{}")
+  recipe      Recipe[]        @relation("recipeSkills")
+  havers      SkillInstance[]
 }
 
 model SkillInstance {
@@ -115,34 +116,34 @@ model TradeInstance {
 }
 
 model Crafting {
-  id         Int           @id @default(autoincrement())
+  id         Int          @id @default(autoincrement())
   identityId String
-  identity   Identity      @relation(fields: [identityId], references: [slack])
-  inputs     RecipeItems[] @relation("craftingInputs")
-  tools      RecipeItems[] @relation("craftingTools")
+  identity   Identity     @relation(fields: [identityId], references: [slack])
+  inputs     RecipeItem[] @relation("craftingInputs")
   recipeId   Int?
-  recipe     Recipe?       @relation(fields: [recipeId], references: [id])
+  recipe     Recipe?      @relation(fields: [recipeId], references: [id])
 }
 
-model RecipeItems {
+model RecipeItem {
   id             Int        @id @default(autoincrement())
   recipeItemId   String
   recipeItem     Item       @relation(fields: [recipeItemId], references: [name])
+  instanceId     Int?
+  instance       Instance?  @relation(fields: [instanceId], references: [id])
   quantity       Int        @default(1)
   inputs         Recipe[]   @relation("recipeInputs")
   outputs        Recipe[]   @relation("recipeOutputs")
   tools          Recipe[]   @relation("recipeTools")
   craftingInputs Crafting[] @relation("craftingInputs")
-  craftingTools  Crafting[] @relation("craftingTools")
 }
 
 model Recipe {
-  id          Int           @id @default(autoincrement())
-  inputs      RecipeItems[] @relation("recipeInputs")
-  skills      Skill[]       @relation("recipeInputs")
-  outputs     RecipeItems[] @relation("recipeOutputs")
-  tools       RecipeItems[] @relation("recipeTools")
-  public      Boolean       @default(true)
+  id          Int          @id @default(autoincrement())
+  inputs      RecipeItem[] @relation("recipeInputs")
+  skills      Skill[]      @relation("recipeSkills")
+  outputs     RecipeItem[] @relation("recipeOutputs")
+  tools       RecipeItem[] @relation("recipeTools")
+  public      Boolean      @default(true)
   crafted     Crafting[]
   description String?
 }

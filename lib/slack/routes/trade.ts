@@ -29,6 +29,7 @@ slack.command('/trade', async props => {
     }
 
     const message = props.command.text.trim()
+    console.log(message, userRegex.test(message))
     if (userRegex.test(message) === false)
       return await props.respond({
         response_type: 'ephemeral',

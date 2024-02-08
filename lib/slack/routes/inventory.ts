@@ -1,5 +1,6 @@
 import { findOrCreateIdentity, type IdentityWithInventory } from '../../db'
 import { prisma } from '../../db'
+import { mappedPermissionValues } from '../../permissions'
 import { channelBlacklist } from '../../utils'
 import slack, { execute } from '../slack'
 import views from '../views'
@@ -50,6 +51,23 @@ slack.command('/bag', async props => {
       // Mentioning user
       const mentionId = message.slice(2, message.indexOf('|'))
       const mention = await findOrCreateIdentity(mentionId)
+
+      const user = await prisma.identity.findUnique({
+        where: { slack: props.context.userId }
+      })
+      if (
+        mappedPermissionValues[user.permissions] <
+        mappedPermissionValues.READ_PRIVATE
+      )
+        mention.inventory = mention.inventory.filter(
+          instance => instance.public
+        )
+      else if (
+        mappedPermissionValues[user.permissions] < mappedPermissionValues.WRITE
+      )
+        mention.inventory = mention.inventory.filter(instance =>
+          user.specificItems.find(item => item === instance.itemId)
+        )
 
       return await props.respond({
         response_type: 'in_channel',
@@ -133,6 +151,24 @@ slack.event('app_mention', async props => {
         } else if (message.startsWith('<@')) {
           const mentionId = message.slice(2, message.length - 1) // Remove the formatted ID
           const mention = await findOrCreateIdentity(mentionId)
+
+          const user = await prisma.identity.findUnique({
+            where: { slack: props.context.userId }
+          })
+          if (
+            mappedPermissionValues[user.permissions] <
+            mappedPermissionValues.READ_PRIVATE
+          )
+            mention.inventory = mention.inventory.filter(
+              instance => instance.public
+            )
+          else if (
+            mappedPermissionValues[user.permissions] <
+            mappedPermissionValues.WRITE
+          )
+            mention.inventory = mention.inventory.filter(instance =>
+              user.specificItems.find(item => item === instance.itemId)
+            )
 
           return await props.client.chat.postMessage({
             channel: props.event.channel,

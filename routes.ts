@@ -129,13 +129,15 @@ export default (router: ConnectRouter) => {
           const existing = identity.inventory.find(
             instance => instance.itemId === item.name
           )
-          if (existing !== undefined)
+          if (existing !== undefined) {
+            console.log(existing.quantity, instance.quantity)
             create = await prisma.instance.update({
               where: {
                 id: existing.id
               },
               data: {
-                quantity: existing.quantity + Math.max(instance.quantity, 1),
+                quantity:
+                  existing.quantity + Math.max(instance.quantity || 0, 1),
                 metadata: instance.metadata
                   ? {
                       ...(existing.metadata as object),
@@ -147,7 +149,7 @@ export default (router: ConnectRouter) => {
                 item: true
               }
             })
-          else
+          } else
             create = await prisma.instance.create({
               data: {
                 itemId: item.name,
@@ -239,7 +241,7 @@ export default (router: ConnectRouter) => {
               id: existing.id
             },
             data: {
-              quantity: existing.quantity + Math.max(req.quantity, 1),
+              quantity: existing.quantity + Math.max(req.quantity || 0, 1),
               metadata: req.metadata
                 ? {
                     ...(existing.metadata as object),

@@ -43,19 +43,52 @@ slack.command('/huh', async props => {
       })
     }
 
-    const { view } = await props.client.views.open({
-      trigger_id: props.body.trigger_id,
-      view: views.loadingDialog('Start crafting')
+    // Check that user isn't already crafting
+    if (
+      await prisma.crafting.findFirst({
+        where: {
+          identityId: props.body.user_id,
+          recipe: null
+        }
+      })
+    )
+      return await props.respond({
+        response_type: 'ephemeral',
+        text: "Woah woah woah! Looks like you're still working on crafting something else. One thing at a time..."
+      })
+
+    // const { view } = await props.client.views.open({
+    //   trigger_id: props.body.trigger_id,
+    //   view: views.loadingDialog('Start crafting')
+    // })
+
+    // const updated = await startCrafting(
+    //   props.context.userId,
+    //   props.body.channel_id
+    // )
+
+    // await props.client.views.update({
+    //   view_id: view.id,
+    //   view: updated
+    // })
+
+    // Create new entry in crafting table
+    const crafting = await prisma.crafting.create({
+      data: { identityId: props.context.userId }
     })
 
-    const updated = await startCrafting(
-      props.context.userId,
-      props.body.channel_id
-    )
+    const { channel, ts } = await props.client.chat.postMessage({
+      channel: props.body.channel_id,
+      blocks: await showCrafting(props.context.userId, crafting.id)
+    })
 
-    await props.client.views.update({
-      view_id: view.id,
-      view: updated
+    await props.client.chat.update({
+      channel,
+      ts,
+      blocks: await showCrafting(props.context.userId, crafting.id, {
+        channel,
+        ts
+      })
     })
   })
 })
@@ -87,11 +120,40 @@ slack.view('start-crafting', async props => {
 
     // Make sure inputs aren't the same or they don't surpass quantity of available
     const instance = await prisma.instance.findUnique({
-      where: { id: fields.input.id }
+      where: { id: fields.input.id },
+      include: { item: true }
     })
     const instance2 = await prisma.instance.findUnique({
-      where: { id: fields.input2.id }
+      where: { id: fields.input2.id },
+      include: { item: true }
     })
+    if (
+      instance.id === instance2.id &&
+      fields.quantity2 + fields.quantity > instance.quantity
+    )
+      return await props.client.chat.postEphemeral({
+        channel: openChannel,
+        user: props.body.user.id,
+        text: `Woah woah woah! It doesn't look like you have ${
+          fields.quantity + fields.quantity2
+        } ${instance.item.reaction} ${
+          instance.item.name
+        } to craft. You could possibly be using ${instance.item.reaction} ${
+          instance.item.name
+        } somewhere else.`
+      })
+    else if (fields.quantity > fields.input.quantity)
+      return await props.client.chat.postEphemeral({
+        channel: openChannel,
+        user: props.body.user.id,
+        text: `Woah woah woah! It doesn't look like you have ${fields.quantity} ${instance.item.reaction} ${instance.item.name} to craft. You could possibly be using ${instance.item.reaction} ${instance.item.name} somewhere else.`
+      })
+    else if (fields.quantity2 > fields.input2.quantity)
+      return await props.client.chat.postEphemeral({
+        channel: openChannel,
+        user: props.body.user.id,
+        text: `Woah woah woah! It doesn't look like you have ${fields.quantity2} ${instance2.item.reaction} ${instance2.item.name} to craft. You could possibly be using ${instance2.item.reaction} ${instance2.item.name} somewhere else.`
+      })
 
     // Create inputs
     const input = await prisma.recipeItem.create({
@@ -145,7 +207,7 @@ slack.action('edit-crafting', async props => {
       return await props.respond({
         response_type: 'ephemeral',
         replace_original: false,
-        text: "Woah woah woah! You can't edit someone else's crafting."
+        text: "Woah woah woah! Don't be rude, you can't mess with the stuff on someone else's worktable."
       })
     else if (crafting.recipeId)
       return await props.respond({
@@ -191,17 +253,24 @@ slack.view('add-crafting', async props => {
 
     const { craftingId, channel, ts } = JSON.parse(props.view.private_metadata)
 
-    // Check and make sure adding is valid
+    const instance = await prisma.instance.findUnique({
+      where: { id: fields.instance.id },
+      include: { item: true }
+    })
+
+    if (fields.quantity > fields.instance.quantity)
+      return await props.client.chat.postEphemeral({
+        channel,
+        user: props.body.user.id,
+        text: `Woah woah woah! It doesn't look like you have ${fields.quantity} ${instance.item.reaction} ${instance.item.name} to add. You could possibly be trading ${instance.item.reaction} ${instance.item.name} somewhere else.`
+      })
 
     // Add to crafting by creating instance
-    const instance = await prisma.instance.findUnique({
-      where: { id: fields.instance.id }
-    })
     const input = await prisma.recipeItem.create({
       data: {
         recipeItemId: instance.itemId,
         instanceId: instance.id,
-        quantity: fields.instance.quantity,
+        quantity: fields.quantity,
         craftingInputs: { connect: { id: craftingId } }
       }
     })
@@ -250,7 +319,29 @@ slack.action('remove-crafting', async props => {
 })
 
 slack.action('cancel-crafting', async props => {
-  return await execute(props, async props => {})
+  return await execute(props, async props => {
+    // @ts-expect-error
+    const { craftingId, channel, ts } = JSON.parse(props.action.value)
+    const crafting = await prisma.crafting.findUnique({
+      where: { id: craftingId }
+    })
+    if (crafting.identityId !== props.body.user.id)
+      return await props.respond({
+        response_type: 'ephemeral',
+        replace_original: false,
+        text: "Woah woah woah! Don't be rude, you can't mess with the stuff on someone else's worktable."
+      })
+
+    await prisma.crafting.delete({
+      where: { id: craftingId }
+    })
+
+    // @ts-expect-error
+    await props.client.chat.delete({
+      channel,
+      ts
+    })
+  })
 })
 
 slack.action('complete-crafting', async props => {
@@ -267,7 +358,7 @@ slack.action('complete-crafting', async props => {
       return await props.respond({
         response_type: 'ephemeral',
         replace_original: false,
-        text: "Woah woah woah! That's not yours to craft."
+        text: "Woah woah woah! Don't be rude, you can't mess with the stuff on someone else's worktable."
       })
 
     // Link recipe to "close" crafting
@@ -308,14 +399,27 @@ slack.action('complete-crafting', async props => {
 
     // Give user the output
     for (let output of updated.recipe.outputs) {
-      await prisma.instance.create({
-        data: {
-          itemId: output.recipeItemId,
-          identityId: crafting.identityId,
-          quantity: output.quantity,
-          public: output.recipeItem.public
+      // Check if user already has an instance and add to that instance
+      const existing = await prisma.instance.findFirst({
+        where: {
+          identityId: props.body.user.id,
+          itemId: output.recipeItemId
         }
       })
+      if (existing)
+        await prisma.instance.update({
+          where: { id: existing.id },
+          data: { quantity: output.quantity + existing.quantity }
+        })
+      else
+        await prisma.instance.create({
+          data: {
+            itemId: output.recipeItemId,
+            identityId: crafting.identityId,
+            quantity: output.quantity,
+            public: output.recipeItem.public
+          }
+        })
     }
 
     // @ts-expect-error
@@ -348,85 +452,89 @@ const craftingDialog = async (
   const { identity: user } = crafting
 
   let alreadyUsing: (Block | KnownBlock)[] = []
-  for (let part of crafting.inputs) {
-    alreadyUsing.push({
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: `x${part.quantity} ${part.recipeItem.reaction} ${part.recipeItem.name}`
-      },
-      accessory: {
-        type: 'button',
-        text: {
-          type: 'plain_text',
-          text: 'Remove'
-        },
-        value: JSON.stringify({
-          craftingId: crafting.id,
-          craftingInstanceId: part.id,
-          ...thread
-        }),
-        action_id: 'remove-crafting'
-      }
-    })
-  }
 
   let possible = []
   let inTrades = []
 
-  await Promise.all(
-    user.inventory.map(async instance => {
-      let ref = await prisma.item.findUnique({
-        where: { name: instance.itemId }
-      })
-
-      // First, search in trades
-      const trades = await prisma.trade.findMany({
-        where: {
-          closed: false, // Not closed
-          OR: [
-            { initiatorTrades: { some: { instanceId: instance.id } } },
-            { receiverTrades: { some: { instanceId: instance.id } } }
-          ] // Either in initiatorTrades or receiverTrades
+  for (let instance of user.inventory) {
+    // Check if already using
+    const using = crafting.inputs.find(
+      input => input.instanceId === instance.id
+    )
+    if (using) {
+      alreadyUsing.push({
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `x${using.quantity} ${using.recipeItem.reaction} ${using.recipeItem.name}`
         },
-        include: {
-          initiatorTrades: true,
-          receiverTrades: true
+        accessory: {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: 'Remove'
+          },
+          value: JSON.stringify({
+            craftingId: crafting.id,
+            craftingInstanceId: using.id,
+            ...thread
+          }),
+          action_id: 'remove-crafting'
         }
       })
-      let offers = trades
-        .map(offer => ({
-          ...offer,
-          trades: [...offer.initiatorTrades, ...offer.receiverTrades]
-        }))
-        .filter(offer =>
-          offer.trades.find(trade => trade.instanceId === instance.id)
-        )
+      continue
+    }
 
-      for (let offer of offers)
-        inTrades.push(
-          `x${
-            offer.trades.find(trade => trade.instanceId === instance.id)
-              .quantity
-          } ${ref.reaction} ${ref.name} in trade with <@${
-            offer.initiatorIdentityId === userId
-              ? offer.receiverIdentityId
-              : offer.initiatorIdentityId
-          }>`
-        )
-
+    // Check if offering in a trade
+    const otherTrades = await prisma.trade.findMany({
+      where: {
+        closed: false, // Not closed
+        OR: [
+          { initiatorTrades: { some: { instanceId: instance.id } } },
+          { receiverTrades: { some: { instanceId: instance.id } } }
+        ] // Either in initiatorTrades or receiverTrades
+      },
+      include: {
+        initiatorTrades: true,
+        receiverTrades: true
+      }
+    })
+    const ref = await prisma.item.findUnique({
+      where: { name: instance.itemId }
+    })
+    let otherOffers = otherTrades.map(offer => ({
+      ...offer,
+      trades: [...offer.initiatorTrades, ...offer.receiverTrades]
+    }))
+    let quantityLeft = otherOffers.reduce((acc, curr) => {
+      return (
+        acc -
+        curr.trades.find(trade => trade.instanceId === instance.id).quantity
+      )
+    }, instance.quantity)
+    if (quantityLeft)
       possible.push({
         text: {
           type: 'plain_text',
-          text: `x${instance.quantity} ${ref.reaction} ${ref.name}`
+          text: `x${quantityLeft} ${ref.reaction} ${ref.name}`
         },
         value: JSON.stringify({
           id: instance.id,
-          quantity: instance.quantity
+          quantity: quantityLeft
         })
       })
-    })
-  )
+    for (let offer of otherOffers) {
+      inTrades.push(
+        `x${
+          offer.trades.find(trade => trade.instanceId === instance.id).quantity
+        } ${ref.reaction} ${ref.name} in trade with <@${
+          offer.initiatorIdentityId === userId
+            ? offer.receiverIdentityId
+            : offer.initiatorIdentityId
+        }>`
+      )
+    }
+  }
 
   let view: View = {
     callback_id: 'add-crafting',
@@ -496,6 +604,23 @@ const craftingDialog = async (
       }
     ]
   }
+  if (inTrades.length)
+    view.blocks.push(
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: "Items you own that you're currently offering in other trades:"
+        }
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: inTrades.join('\n')
+        }
+      }
+    )
 
   return view
 }
@@ -558,17 +683,11 @@ const showCrafting = async (
       canMake.push(
         ...partOf.map(recipe => {
           let inputs = recipe.inputs
-            .map(
-              input =>
-                `x${input.quantity} ${input.recipeItem.reaction} ${input.recipeItem.name}`
-            )
-            .join(', ')
+            .map(input => input.recipeItem.reaction.repeat(input.quantity))
+            .join('')
           let tools = recipe.tools
-            .map(
-              tool =>
-                `x${tool.quantity} ${tool.recipeItem.reaction} ${tool.recipeItem.name}`
-            )
-            .join(', ')
+            .map(tool => tool.recipeItem.reaction.repeat(tool.quantity))
+            .join('')
           let outputs = recipe.outputs
             .map(
               output =>
@@ -576,13 +695,7 @@ const showCrafting = async (
             )
             .join(', ')
           let formatted =
-            inputs + (tools.length ? ' + ' + tools : '') + ' → ' + outputs
-          if (
-            canMake.find(
-              block => block !== false && block.text.text === formatted
-            )
-          )
-            return false
+            inputs + (tools.length ? ' ~ ' + tools : '') + ' *→* ' + outputs
           let block: Block | KnownBlock = {
             type: 'section',
             text: {
@@ -641,7 +754,7 @@ const showCrafting = async (
       )
       .join(', ')
     const recipeFormatted =
-      inputs + (tools.length ? ' + ' + tools : '') + ' → ' + outputsFormatted
+      inputs + (tools.length ? ' ~ ' + tools : '') + ' → ' + outputsFormatted
     blocks.push({
       type: 'section',
       text: {
@@ -666,7 +779,7 @@ const showCrafting = async (
               text:
                 inputs.slice(0, inputs.length - 1).join(', ') +
                 (inputs.length > 2 ? ',' : '') +
-                ' and ' +
+                (inputs.length > 1 ? ' and ' : '') +
                 inputs[inputs.length - 1]
             }
           }
@@ -685,13 +798,19 @@ const showCrafting = async (
         }
       },
       ...(canMake.length
-        ? canMake.filter(block => block !== false)
+        ? canMake.filter((block, i) => {
+            const index = canMake.findIndex(
+              i => i.text.text === block.text.text
+            )
+            if (index === i) return true
+            return false
+          })
         : [
             {
               type: 'section',
               text: {
                 type: 'mrkdwn',
-                text: 'Nothing?'
+                text: 'Nothing yet.'
               }
             } as Block
           ])
@@ -717,7 +836,7 @@ const showCrafting = async (
             type: 'plain_text',
             text: 'Cancel'
           },
-          value: JSON.stringify({ craftingId }),
+          value: JSON.stringify({ craftingId, ...thread }),
           style: 'danger',
           action_id: 'cancel-crafting'
         }

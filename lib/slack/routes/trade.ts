@@ -29,13 +29,14 @@ slack.command('/trade', async props => {
     }
 
     const message = props.command.text.trim()
-    console.log(message, userRegex.test(message))
-    if (userRegex.test(message) === false)
+    const regex = new RegExp(userRegex)
+    const passes = regex.test(message)
+    if (passes === false) {
       return await props.respond({
         response_type: 'ephemeral',
         text: 'To start a trade, run `/trade @<person>`!'
       })
-    else if (props.context.userId == message.slice(2, message.indexOf('|')))
+    } else if (props.context.userId == message.slice(2, message.indexOf('|')))
       return await props.respond({
         response_type: 'ephemeral',
         text: "Erm, you can't really trade with yourself..."
@@ -130,7 +131,7 @@ slack.view('start-trade', async props => {
       return await props.client.chat.postEphemeral({
         channel: openChannel,
         user: props.body.user.id,
-        text: `Woah woah woah! It doesn't look like you have ${fields.quantity} ${instance.item.reaction} ${instance.item.name} to trade. You could possibly be trading ${instance.item.reaction} ${instance.item.name} in another open trade.`
+        text: `Woah woah woah! It doesn't look like you have ${fields.quantity} ${instance.item.reaction} ${instance.item.name} to trade. You could possibly be using ${instance.item.reaction} ${instance.item.name} somewhere else.`
       })
     }
 
@@ -596,7 +597,7 @@ slack.view('add-trade', async props => {
       return await props.client.chat.postEphemeral({
         channel,
         user: props.body.user.id,
-        text: `Woah woah woah! It doesn't look like you have ${fields.quantity} ${instance.item.reaction} ${instance.item.name} to trade. You could possibly be trading ${instance.item.reaction} ${instance.item.name} in another open trade.`
+        text: `Woah woah woah! It doesn't look like you have ${fields.quantity} ${instance.item.reaction} ${instance.item.name} to trade. You could possibly be using ${instance.item.reaction} ${instance.item.name} somewhere else.`
       })
     }
 
@@ -651,6 +652,17 @@ const tradeDialog = async (
     },
     include: {
       inventory: true
+    }
+  })
+
+  // Check if being used in crafting
+  const crafting = await prisma.crafting.findFirst({
+    where: {
+      identityId: user.slack,
+      recipeId: null
+    },
+    include: {
+      inputs: true
     }
   })
 
@@ -731,6 +743,17 @@ const tradeDialog = async (
             curr.trades.find(trade => trade.instanceId === instance.id).quantity
           )
         }, instance.quantity)
+        // Check if already using in crafting
+        const inCrafting = crafting?.inputs.find(
+          input => input.instanceId === instance.id
+        )
+        if (inCrafting) {
+          quantityLeft -= inCrafting.quantity
+          notOffering.push(
+            `x${inCrafting.quantity} ${ref.reaction} ${ref.name} being used for crafting `
+          )
+        }
+
         if (quantityLeft)
           offering.push({
             text: {
@@ -832,7 +855,7 @@ const tradeDialog = async (
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: "Items you own that you're currently offering in other trades:"
+          text: "Items you own that you're currently using somewhere else:"
         }
       },
       {
@@ -856,6 +879,17 @@ const startTrade = async (
   const user = await prisma.identity.findUnique({
     where: { slack: giverId },
     include: { inventory: true }
+  })
+
+  // Check if being used in crafting
+  const crafting = await prisma.crafting.findFirst({
+    where: {
+      identityId: user.slack,
+      recipeId: null
+    },
+    include: {
+      inputs: true
+    }
   })
 
   let offers = []
@@ -887,12 +921,24 @@ const startTrade = async (
         .filter(offer =>
           offer.trades.find(trade => trade.instanceId === instance.id)
         )
-      const quantityLeft = otherOffers.reduce((acc, curr) => {
+
+      let quantityLeft = otherOffers.reduce((acc, curr) => {
         return (
           acc -
           curr.trades.find(trade => trade.instanceId === instance.id).quantity
         )
       }, instance.quantity)
+      // Check if already using in crafting
+      const inCrafting = crafting?.inputs.find(
+        input => input.instanceId === instance.id
+      )
+      if (inCrafting) {
+        quantityLeft -= inCrafting.quantity
+        notOffering.push(
+          `x${inCrafting.quantity} ${item.reaction} ${item.name} being used for crafting`
+        )
+      }
+
       if (quantityLeft)
         offers.push({
           text: {
@@ -971,7 +1017,7 @@ const startTrade = async (
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: "Items you own that you're currently offering in other trades:"
+          text: "Items you own that you're currently using somewhere else:"
         }
       },
       {

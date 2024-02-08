@@ -10,7 +10,9 @@ slack.command('/give', async props => {
   await execute(props, async props => {
     const message = props.command.text.trim()
     const receiverId = message.slice(2, message.indexOf('|'))
-    if (userRegex.test(message) === false) {
+    const regex = new RegExp(userRegex)
+    const passes = regex.test(message)
+    if (passes === false) {
       return await props.client.chat.postEphemeral({
         channel: props.body.channel_id,
         user: props.context.userId,

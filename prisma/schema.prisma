@@ -148,6 +148,8 @@ model Recipe {
   description String?
 }
 
+// model Use {}
+
 enum LoggerLevels {
   ERROR
   GENERAL

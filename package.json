@@ -27,6 +27,8 @@
     "@connectrpc/connect-node": "^1.1.4",
     "@connectrpc/protoc-gen-connect-es": "^1.1.4",
     "@hackclub/bag": "^1.0.7",
+    "@octokit/auth-app": "^6.0.3",
+    "@octokit/core": "^5.1.0",
     "@prisma/client": "^5.7.1",
     "@slack/bolt": "^3.15.0",
     "@slack/oauth": "^2.6.1",
@@ -34,6 +36,7 @@
     "dotenv": "^16.3.1",
     "fastify": "^4.26.0",
     "node-cron": "^3.0.3",
+    "octokit": "^3.1.2",
     "tsx": "^4.5.0",
     "uuid": "^9.0.1",
     "yaml": "^2.3.4"

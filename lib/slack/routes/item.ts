@@ -60,9 +60,7 @@ slack.command('/item', async props => {
         })
       return await props.respond({
         response_type: 'ephemeral',
-        text: `Oops, couldn't find a item named *${message
-          .split(' ')
-          .join(' ')}*.`
+        text: `Oops, couldn't find *${message.split(' ').join(' ')}*.`
       })
     }
   })

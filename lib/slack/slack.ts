@@ -30,15 +30,15 @@ const slack = new App({
 })
 
 // A bunch of function overloads, I know
-type CommandMiddleware = SlackCommandMiddlewareArgs &
+export type CommandMiddleware = SlackCommandMiddlewareArgs &
   AllMiddlewareArgs<StringIndexed>
-type EventMiddleware = SlackEventMiddlewareArgs<'app_mention'> &
+export type EventMiddleware = SlackEventMiddlewareArgs<'app_mention'> &
   AllMiddlewareArgs<StringIndexed>
-type ViewMiddleware = SlackViewMiddlewareArgs<SlackViewAction> &
+export type ViewMiddleware = SlackViewMiddlewareArgs<SlackViewAction> &
   AllMiddlewareArgs<StringIndexed>
-type ActionMiddleware = SlackActionMiddlewareArgs &
+export type ActionMiddleware = SlackActionMiddlewareArgs &
   AllMiddlewareArgs<StringIndexed>
-type Middleware = CommandMiddleware | EventMiddleware | ViewMiddleware
+export type Middleware = CommandMiddleware | EventMiddleware | ViewMiddleware
 
 // @ts-expect-error
 export async function execute(

@@ -1,32 +1,23 @@
 import { prisma } from '../../db'
-import { debug } from '../../logger'
-import { channelBlacklist, channels } from '../../utils'
+import { channelBlacklist, channels, maintainers } from '../../utils'
 import slack, { execute } from '../slack'
 import views from '../views'
 import type { Block, KnownBlock, View } from '@slack/bolt'
 
-slack.command('/huh', async props => {
+slack.command('/craft', async props => {
   return await execute(props, async props => {
-    if (
-      ![
-        'U03MNFDRSGJ',
-        'UDK5M9Y13',
-        'U032A2PMSE9',
-        'U05TXCSCK7E',
-        'U0C7B14Q3'
-      ].includes(props.context.userId)
-    )
+    if (!maintainers.includes(props.context.userId))
       return await props.client.chat.postMessage({
-        channel: props.context.userId,
+        channel: props.body.channel_id,
         user: props.context.userId,
-        text: "You found something... but it's not quite ready yet."
+        text: "You found something... but it's not ready yet."
       })
 
     try {
       const conversation = await props.client.conversations.info({
         channel: props.body.channel_id
       })
-      if (channelBlacklist.includes(conversation.channel.name))
+      if (channelBlacklist.includes(conversation.channel.id))
         return await props.respond({
           response_type: 'ephemeral',
           text: `Crafting in this channel isn't allowed. Try running \`/craft\` in a public channel, like <#${channels.lounge}>!`
@@ -43,144 +34,24 @@ slack.command('/huh', async props => {
       })
     }
 
-    // Check that user isn't already crafting
-    if (
-      await prisma.crafting.findFirst({
-        where: {
-          identityId: props.body.user_id,
-          recipe: null
-        }
-      })
-    )
+    let crafting = await prisma.crafting.findFirst({
+      where: {
+        identityId: props.context.userId,
+        recipe: null
+      }
+    })
+    if (crafting?.recipeId)
       return await props.respond({
         response_type: 'ephemeral',
-        text: "Woah woah woah! Looks like you're still working on crafting something else. One thing at a time..."
+        text: "Woah woah woah! It's all said and done."
       })
-
-    // const { view } = await props.client.views.open({
-    //   trigger_id: props.body.trigger_id,
-    //   view: views.loadingDialog('Start crafting')
-    // })
-
-    // const updated = await startCrafting(
-    //   props.context.userId,
-    //   props.body.channel_id
-    // )
-
-    // await props.client.views.update({
-    //   view_id: view.id,
-    //   view: updated
-    // })
-
-    // Create new entry in crafting table
-    const crafting = await prisma.crafting.create({
-      data: { identityId: props.context.userId }
-    })
+    if (!crafting)
+      crafting = await prisma.crafting.create({
+        data: { identityId: props.context.userId }
+      })
 
     const { channel, ts } = await props.client.chat.postMessage({
       channel: props.body.channel_id,
-      blocks: await showCrafting(props.context.userId, crafting.id)
-    })
-
-    await props.client.chat.update({
-      channel,
-      ts,
-      blocks: await showCrafting(props.context.userId, crafting.id, {
-        channel,
-        ts
-      })
-    })
-  })
-})
-
-slack.view('start-crafting', async props => {
-  return await execute(props, async props => {
-    let fields: {
-      input: any
-      quantity: number
-      input2: any
-      quantity2: number
-    } = {
-      input: undefined,
-      quantity: 1,
-      input2: undefined,
-      quantity2: undefined
-    }
-    for (let field of Object.values(props.view.state.values))
-      fields[Object.keys(field)[0]] =
-        field[Object.keys(field)[0]]?.value ||
-        Object.values(field)[0].selected_option?.value ||
-        ''
-    fields.input = JSON.parse(fields.input)
-    fields.input2 = JSON.parse(fields.input2)
-    fields.quantity = Number(fields.quantity)
-    fields.quantity2 = Number(fields.quantity2)
-
-    const { channel: openChannel } = JSON.parse(props.view.private_metadata)
-
-    // Make sure inputs aren't the same or they don't surpass quantity of available
-    const instance = await prisma.instance.findUnique({
-      where: { id: fields.input.id },
-      include: { item: true }
-    })
-    const instance2 = await prisma.instance.findUnique({
-      where: { id: fields.input2.id },
-      include: { item: true }
-    })
-    if (
-      instance.id === instance2.id &&
-      fields.quantity2 + fields.quantity > instance.quantity
-    )
-      return await props.client.chat.postEphemeral({
-        channel: openChannel,
-        user: props.body.user.id,
-        text: `Woah woah woah! It doesn't look like you have ${
-          fields.quantity + fields.quantity2
-        } ${instance.item.reaction} ${
-          instance.item.name
-        } to craft. You could possibly be using ${instance.item.reaction} ${
-          instance.item.name
-        } somewhere else.`
-      })
-    else if (fields.quantity > fields.input.quantity)
-      return await props.client.chat.postEphemeral({
-        channel: openChannel,
-        user: props.body.user.id,
-        text: `Woah woah woah! It doesn't look like you have ${fields.quantity} ${instance.item.reaction} ${instance.item.name} to craft. You could possibly be using ${instance.item.reaction} ${instance.item.name} somewhere else.`
-      })
-    else if (fields.quantity2 > fields.input2.quantity)
-      return await props.client.chat.postEphemeral({
-        channel: openChannel,
-        user: props.body.user.id,
-        text: `Woah woah woah! It doesn't look like you have ${fields.quantity2} ${instance2.item.reaction} ${instance2.item.name} to craft. You could possibly be using ${instance2.item.reaction} ${instance2.item.name} somewhere else.`
-      })
-
-    // Create inputs
-    const input = await prisma.recipeItem.create({
-      data: {
-        recipeItemId: instance.itemId,
-        instanceId: instance.id,
-        quantity: fields.input.quantity
-      }
-    })
-    const input2 = await prisma.recipeItem.create({
-      data: {
-        recipeItemId: instance2.itemId,
-        instanceId: instance2.id,
-        quantity: fields.input2.quantity
-      }
-    })
-
-    // Create new entry in Crafting table
-    const crafting = await prisma.crafting.create({
-      data: {
-        identityId: props.context.userId,
-        inputs: { connect: [{ id: input.id }, { id: input2.id }] }
-      }
-    })
-
-    const { channel, ts } = await props.client.chat.postMessage({
-      channel: openChannel,
       blocks: await showCrafting(props.context.userId, crafting.id)
     })
 
@@ -220,7 +91,7 @@ slack.action('edit-crafting', async props => {
     const { view } = await props.client.views.open({
       // @ts-expect-error
       trigger_id: props.body.trigger_id,
-      view: views.loadingDialog('Edit crafting')
+      views: views.loadingDialog('Edit crafting')
     })
 
     // @ts-expect-error
@@ -262,7 +133,7 @@ slack.view('add-crafting', async props => {
       return await props.client.chat.postEphemeral({
         channel,
         user: props.body.user.id,
-        text: `Woah woah woah! It doesn't look like you have ${fields.quantity} ${instance.item.reaction} ${instance.item.name} to add. You could possibly be trading ${instance.item.reaction} ${instance.item.name} somewhere else.`
+        text: `Woah woah woah! It doesn't look like you have ${fields.quantity} ${instance.item.reaction} ${instance.item.name} to add. You could possibly be using ${instance.item.reaction} ${instance.item.name} somewhere else.`
       })
 
     // Add to crafting by creating instance
@@ -349,7 +220,6 @@ slack.action('complete-crafting', async props => {
     // Complete crafting with given recipe
     // @ts-expect-error
     let { craftingId, recipeId, channel, ts } = JSON.parse(props.action.value)
-    console.log(craftingId, recipeId, channel, ts)
 
     const crafting = await prisma.crafting.findUnique({
       where: { id: craftingId }
@@ -377,9 +247,16 @@ slack.action('complete-crafting', async props => {
       }
     })
 
-    // Deduct inputs (not tools) from user's inventory
+    // Deduce inputs (not tools) from user's inventory
     for (let part of updated.inputs) {
       const { instance } = part
+      // Make sure instance is actually in recipe before deducting
+      if (
+        !updated.recipe.inputs.find(
+          input => input.recipeItemId === part.recipeItemId
+        )
+      )
+        continue
       if (part.quantity < instance.quantity) {
         // Subtract from quantity
         await prisma.instance.update({
@@ -581,7 +458,9 @@ const craftingDialog = async (
             type: 'plain_text',
             text: 'Item'
           },
-          options: possible
+          options: possible.sort((a, b) =>
+            a.text.text.localeCompare(b.text.text)
+          )
         },
         label: {
           type: 'plain_text',
@@ -672,13 +551,22 @@ const showCrafting = async (
               inputs: { some: { recipeItemId: item.name, instanceId: null } }
             },
             { tools: { some: { recipeItemId: item.name, instanceId: null } } }
-          ] // Either in inputs or tools and not being used in crafting
+          ], // Either in inputs or tools and not being used in crafting
+          crafted: undefined
         },
         include: {
           inputs: { include: { recipeItem: true } },
           tools: { include: { recipeItem: true } },
           outputs: { include: { recipeItem: true } }
         }
+      })
+      partOf = partOf.filter(recipe => {
+        // Exact inputs and tools
+        const inputs = [...recipe.inputs, ...recipe.tools]
+        for (let input of inputs) {
+          if (!crafting.inputs.find(i => i.id === input.id)) return false
+        }
+        return true
       })
       canMake.push(
         ...partOf.map(recipe => {
@@ -721,12 +609,9 @@ const showCrafting = async (
           return block
         })
       )
-
-      return `x${input.quantity} ${item.reaction} ${item.name}`
     })
   )
 
-  // Find all recipes that includes the inputs as either an input or a tool
   let blocks: (Block | KnownBlock)[] = []
   if (crafted) {
     const { recipe } = crafting
@@ -787,7 +672,7 @@ const showCrafting = async (
             type: 'section',
             text: {
               type: 'mrkdwn',
-              text: '_Nothing yet._'
+              text: 'TODO'
             }
           },
       {
@@ -800,7 +685,7 @@ const showCrafting = async (
       ...(canMake.length
         ? canMake.filter((block, i) => {
             const index = canMake.findIndex(
-              i => i.text.text === block.text.text
+              j => j.text.text === block.text.text
             )
             if (index === i) return true
             return false
@@ -810,212 +695,35 @@ const showCrafting = async (
               type: 'section',
               text: {
                 type: 'mrkdwn',
-                text: 'Nothing yet.'
+                text: 'TODO'
               }
             } as Block
-          ])
+          ]),
+      {
+        type: 'actions',
+        elements: [
+          {
+            type: 'button',
+            text: {
+              type: 'plain_text',
+              text: 'Edit'
+            },
+            value: JSON.stringify({ craftingId, ...thread }),
+            style: 'primary',
+            action_id: 'edit-crafting'
+          },
+          {
+            type: 'button',
+            text: {
+              type: 'plain_text',
+              text: 'Cancel'
+            },
+            value: JSON.stringify({ craftingId, ...thread }),
+            style: 'danger',
+            action_id: 'cancel-crafting'
+          }
+        ]
+      }
     )
-
-  if (!crafted)
-    blocks.push({
-      type: 'actions',
-      elements: [
-        {
-          type: 'button',
-          text: {
-            type: 'plain_text',
-            text: 'Edit'
-          },
-          value: JSON.stringify({ craftingId, ...thread }),
-          style: 'primary',
-          action_id: 'edit-crafting'
-        },
-        {
-          type: 'button',
-          text: {
-            type: 'plain_text',
-            text: 'Cancel'
-          },
-          value: JSON.stringify({ craftingId, ...thread }),
-          style: 'danger',
-          action_id: 'cancel-crafting'
-        }
-      ]
-    })
   return blocks
-}
-
-const startCrafting = async (
-  userId: string,
-  channel: string
-): Promise<View> => {
-  // Inputs, outputs, and tools
-  const user = await prisma.identity.findUnique({
-    where: { slack: userId },
-    include: { inventory: true }
-  })
-
-  let possible = []
-  let inTrades = []
-  let inCrafting = []
-
-  await Promise.all(
-    user.inventory.map(async instance => {
-      let ref = await prisma.item.findUnique({
-        where: { name: instance.itemId }
-      })
-
-      // First, search in trades
-      const trades = await prisma.trade.findMany({
-        where: {
-          closed: false, // Not closed
-          OR: [
-            { initiatorTrades: { some: { instanceId: instance.id } } },
-            {
-              receiverTrades: { some: { instanceId: instance.id } }
-            }
-          ] // Either in initiatorTrades or receiverTrads
-        },
-        include: {
-          initiatorTrades: true,
-          receiverTrades: true
-        }
-      })
-      let offers = trades
-        .map(offer => ({
-          ...offer,
-          trades: [...offer.initiatorTrades, ...offer.receiverTrades]
-        }))
-        .filter(offer =>
-          offer.trades.find(trade => trade.instanceId === instance.id)
-        )
-
-      for (let offer of offers)
-        inTrades.push(
-          `x${
-            offer.trades.find(trade => trade.instanceId === instance.id)
-              .quantity
-          } ${ref.reaction} ${ref.name} in trade with <@${
-            offer.initiatorIdentityId === userId
-              ? offer.receiverIdentityId
-              : offer.initiatorIdentityId
-          }>`
-        )
-
-      // Next, search in crafting
-      const crafting = await prisma.crafting.findMany({
-        where: {
-          recipeId: null,
-          identityId: user.slack
-        }
-      })
-
-      possible.push({
-        text: {
-          type: 'plain_text',
-          text: `x${instance.quantity} ${ref.reaction} ${ref.name}`
-        },
-        value: JSON.stringify({
-          id: instance.id,
-          quantity: instance.quantity
-        })
-      })
-    })
-  )
-
-  let view: View = {
-    callback_id: 'start-crafting',
-    title: {
-      type: 'plain_text',
-      text: 'Start crafting'
-    },
-    submit: {
-      type: 'plain_text',
-      text: 'Start crafting'
-    },
-    type: 'modal',
-    private_metadata: JSON.stringify({ channel }),
-    blocks: [
-      {
-        type: 'input',
-        element: {
-          action_id: 'input',
-          type: 'static_select',
-          placeholder: {
-            type: 'plain_text',
-            text: 'Initial input'
-          },
-          options: possible
-        },
-        label: {
-          type: 'plain_text',
-          text: 'Initial input item'
-        }
-      },
-      {
-        type: 'input',
-        element: {
-          type: 'number_input',
-          is_decimal_allowed: false,
-          action_id: 'quantity',
-          min_value: '1',
-          initial_value: '1'
-        },
-        label: {
-          type: 'plain_text',
-          text: 'Quantity'
-        }
-      },
-      {
-        type: 'input',
-        element: {
-          action_id: 'input2',
-          type: 'static_select',
-          placeholder: {
-            type: 'plain_text',
-            text: 'Second input'
-          },
-          options: possible
-        },
-        label: {
-          type: 'plain_text',
-          text: 'Second input item'
-        }
-      },
-      {
-        type: 'input',
-        element: {
-          type: 'number_input',
-          is_decimal_allowed: false,
-          action_id: 'quantity2',
-          min_value: '1',
-          initial_value: '1'
-        },
-        label: {
-          type: 'plain_text',
-          text: 'Quantity'
-        }
-      }
-    ]
-  }
-
-  if (inTrades.length)
-    view.blocks.push(
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: "Items you own that you're currently offering in other trades:"
-        }
-      },
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: inTrades.join('\n')
-        }
-      }
-    )
-
-  return view
 }

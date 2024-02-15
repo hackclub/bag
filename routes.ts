@@ -1,5 +1,5 @@
 import config from './config'
-import { ElizaService } from './gen/eliza_connect'
+import { BagService } from './gen/bag_connect'
 import { InstanceWithItem, TradeWithTrades } from './lib/db'
 import { prisma } from './lib/db'
 import { log } from './lib/logger'
@@ -58,14 +58,14 @@ export async function execute(
 }
 
 export default (router: ConnectRouter) => {
-  router.rpc(ElizaService, ElizaService.methods.verifyKey, async req => {
+  router.rpc(BagService, BagService.methods.verifyKey, async req => {
     return await execute(req, async (req, app) => {
       if (!app) return { valid: false }
       return { valid: true }
     })
   })
 
-  router.rpc(ElizaService, ElizaService.methods.createApp, async req => {
+  router.rpc(BagService, BagService.methods.createApp, async req => {
     return await execute(
       req,
       async req => {
@@ -85,7 +85,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
-  router.rpc(ElizaService, ElizaService.methods.createInstances, async req => {
+  router.rpc(BagService, BagService.methods.createInstances, async req => {
     return await execute(
       req,
       async (req, app) => {
@@ -198,7 +198,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
-  router.rpc(ElizaService, ElizaService.methods.createInstance, async req => {
+  router.rpc(BagService, BagService.methods.createInstance, async req => {
     return await execute(
       req,
       async (req, app) => {
@@ -294,7 +294,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
-  router.rpc(ElizaService, ElizaService.methods.createItem, async req => {
+  router.rpc(BagService, BagService.methods.createItem, async req => {
     return await execute(
       req,
       async req => {
@@ -310,7 +310,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
-  router.rpc(ElizaService, ElizaService.methods.createRecipe, async req => {
+  router.rpc(BagService, BagService.methods.createRecipe, async req => {
     return await execute(
       req,
       async (req, app) => {
@@ -414,7 +414,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
-  router.rpc(ElizaService, ElizaService.methods.createTrade, async req => {
+  router.rpc(BagService, BagService.methods.createTrade, async req => {
     return await execute(
       req,
       async (req, app) => {
@@ -442,7 +442,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
-  router.rpc(ElizaService, ElizaService.methods.readIdentity, async req => {
+  router.rpc(BagService, BagService.methods.readIdentity, async req => {
     return await execute(req, async (req, app) => {
       const user = await prisma.identity.findUnique({
         where: {
@@ -468,7 +468,7 @@ export default (router: ConnectRouter) => {
     })
   })
 
-  router.rpc(ElizaService, ElizaService.methods.readInventory, async req => {
+  router.rpc(BagService, BagService.methods.readInventory, async req => {
     return await execute(req, async (req, app) => {
       const user = await prisma.identity.findUnique({
         where: {
@@ -495,7 +495,7 @@ export default (router: ConnectRouter) => {
     })
   })
 
-  router.rpc(ElizaService, ElizaService.methods.readItem, async req => {
+  router.rpc(BagService, BagService.methods.readItem, async req => {
     return await execute(req, async (req, app) => {
       const query = JSON.parse(req.query)
       let item = await prisma.item.findFirst({
@@ -507,7 +507,7 @@ export default (router: ConnectRouter) => {
     })
   })
 
-  router.rpc(ElizaService, ElizaService.methods.readItems, async req => {
+  router.rpc(BagService, BagService.methods.readItems, async req => {
     return await execute(req, async (req, app) => {
       const query = JSON.parse(req.query)
       let items = await prisma.item.findMany({
@@ -528,7 +528,7 @@ export default (router: ConnectRouter) => {
     })
   })
 
-  router.rpc(ElizaService, ElizaService.methods.readInstance, async req => {
+  router.rpc(BagService, BagService.methods.readInstance, async req => {
     return await execute(req, async (req, app) => {
       try {
         const instance = await prisma.instance.findUnique({
@@ -551,7 +551,7 @@ export default (router: ConnectRouter) => {
     })
   })
 
-  router.rpc(ElizaService, ElizaService.methods.readApp, async req => {
+  router.rpc(BagService, BagService.methods.readApp, async req => {
     return await execute(req, async (req, app) => {
       try {
         const appSearch = await prisma.app.findUnique({
@@ -579,7 +579,7 @@ export default (router: ConnectRouter) => {
     })
   })
 
-  router.rpc(ElizaService, ElizaService.methods.readTrade, async req => {
+  router.rpc(BagService, BagService.methods.readTrade, async req => {
     return await execute(req, async (req, app) => {
       try {
         const trade = await prisma.trade.findUnique({
@@ -611,7 +611,7 @@ export default (router: ConnectRouter) => {
     })
   })
 
-  router.rpc(ElizaService, ElizaService.methods.readRecipe, async req => {
+  router.rpc(BagService, BagService.methods.readRecipe, async req => {
     return await execute(req, async (req, app) => {
       // Search for recipe
       if (!req.query.inputs.length) delete req.query.inputs
@@ -641,8 +641,8 @@ export default (router: ConnectRouter) => {
   })
 
   router.rpc(
-    ElizaService,
-    ElizaService.methods.updateIdentityMetadata,
+    BagService,
+    BagService.methods.updateIdentityMetadata,
     async req => {
       return await execute(
         req,
@@ -673,7 +673,7 @@ export default (router: ConnectRouter) => {
     }
   )
 
-  router.rpc(ElizaService, ElizaService.methods.updateInstance, async req => {
+  router.rpc(BagService, BagService.methods.updateInstance, async req => {
     return await execute(
       req,
       async (req, app) => {
@@ -737,7 +737,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
-  router.rpc(ElizaService, ElizaService.methods.updateItem, async req => {
+  router.rpc(BagService, BagService.methods.updateItem, async req => {
     return await execute(
       req,
       async (req, app) => {
@@ -759,7 +759,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
-  router.rpc(ElizaService, ElizaService.methods.updateApp, async req => {
+  router.rpc(BagService, BagService.methods.updateApp, async req => {
     return await execute(req, async (req, app) => {
       if (
         req.optAppId &&
@@ -802,7 +802,7 @@ export default (router: ConnectRouter) => {
   //           }
   //         }
   //       })
-  router.rpc(ElizaService, ElizaService.methods.updateTrade, async req => {
+  router.rpc(BagService, BagService.methods.updateTrade, async req => {
     return await execute(
       req,
       async (req, app) => {
@@ -847,7 +847,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
-  router.rpc(ElizaService, ElizaService.methods.updateRecipe, async req => {
+  router.rpc(BagService, BagService.methods.updateRecipe, async req => {
     return await execute(
       req,
       async (req, app) => {
@@ -872,7 +872,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
-  router.rpc(ElizaService, ElizaService.methods.deleteInstance, async req => {
+  router.rpc(BagService, BagService.methods.deleteInstance, async req => {
     return await execute(
       req,
       async (req, app) => {
@@ -901,7 +901,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
-  router.rpc(ElizaService, ElizaService.methods.closeTrade, async req => {
+  router.rpc(BagService, BagService.methods.closeTrade, async req => {
     return await execute(
       req,
       async (req, app) => {

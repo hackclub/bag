@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package connectrpc.eliza.v1;
+package bag;
 
-service ElizaService {
+service BagService {
   rpc CreateApp(CreateAppRequest) returns (CreateAppResponse) {}  // Should be able to create apps as an admin
   rpc CreateInstances(CreateInstancesRequest) returns (CreateInstancesResponse) {}  // Should be able to create and assign multiple instances, depending on permissions
   rpc CreateInstance(CreateInstanceRequest) returns (CreateInstanceResponse) {}  // Should be able to create and assign instances, depending on permissions

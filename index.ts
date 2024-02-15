@@ -43,11 +43,7 @@ import fs from 'fs'
 
   if (config.NODE_ENV === 'development' || !config.SLACK_BOT) {
     const server = fastify({
-      http2: true,
-      https: {
-        key: fs.readFileSync('localhost+2-key.pem', 'utf8'),
-        cert: fs.readFileSync('localhost+2.pem', 'utf8')
-      }
+      http2: true
     })
     await server.register(fastifyConnectPlugin, { routes })
     server.get('/', (_, reply) => {

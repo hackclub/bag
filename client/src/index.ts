@@ -1,5 +1,5 @@
-import { ElizaService } from '../gen/eliza_connect'
-import * as methods from '../gen/eliza_pb'
+import { BagService } from '../gen/bag_connect'
+import * as methods from '../gen/bag_pb'
 import { PromiseClient, createPromiseClient } from '@connectrpc/connect'
 import { createGrpcTransport } from '@connectrpc/connect-node'
 import 'dotenv/config'
@@ -21,11 +21,11 @@ export const Permissions = {
 }
 
 export class App {
-  private client: PromiseClient<typeof ElizaService>
+  private client: PromiseClient<typeof BagService>
   private request: { appId: number; key: string }
 
   constructor(
-    client: PromiseClient<typeof ElizaService>,
+    client: PromiseClient<typeof BagService>,
     appId: number,
     key: string
   ) {
@@ -46,7 +46,7 @@ export class App {
       httpVersion: '2'
     })
 
-    const client = createPromiseClient(ElizaService, transport)
+    const client = createPromiseClient(BagService, transport)
     if (!(await client.verifyKey(options)))
       throw new Error('App not found or invalid key')
     return new App(client, options.appId, options.key)

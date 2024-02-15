@@ -12,6 +12,7 @@ service ElizaService {
   rpc ReadIdentity(ReadIdentityRequest) returns (ReadIdentityResponse) {}  // Should be able to read info about a Slack user
   rpc ReadInventory(ReadInventoryRequest) returns (ReadInventoryResponse) {}  // Should be able to read inventory of a user, including access to private items the app has access to
   rpc ReadItem(ReadItemRequest) returns (ReadItemResponse) {}  // Should be able to read item info, including access to private items the app has access to
+  rpc ReadItems(ReadItemsRequest) returns (ReadItemsResponse) {}
   rpc ReadInstance(ReadInstanceRequest) returns (ReadInstanceResponse) {}  // Should be able to read instances
   rpc ReadApp(ReadAppRequest) returns (ReadAppResponse) {}  // Should be able to read other public apps, as well as itself
   rpc ReadTrade(ReadTradeRequest) returns (ReadTradeResponse) {} // Should be able to read public trades as well as trades the app has initiated
@@ -218,6 +219,17 @@ message ReadItemRequest {
 }
 
 message ReadItemResponse {
+  optional string response = 1;
+  Item item = 2;
+}
+
+message ReadItemsRequest {
+  int32 appId = 1;
+  string key = 2;
+  string query = 3;
+}
+
+message ReadItemsResponse {
   optional string response = 1;
   repeated Item items = 2;
 }

@@ -99,12 +99,11 @@ slack.command('/huh', async props => {
 
     // Check if inputs can be used in location
     const uses = await actions()
-    let possible
+    let possible = []
     try {
       const conversation = await props.client.conversations.info({
         channel: props.body.channel_id
       })
-      let possible = []
       for (let use of uses) {
         if (use.locations.includes(conversation.channel.name)) {
           let canUse = true

@@ -1488,9 +1488,9 @@ export class ReadItemResponse extends Message<ReadItemResponse> {
   response?: string;
 
   /**
-   * @generated from field: repeated connectrpc.eliza.v1.Item items = 2;
+   * @generated from field: connectrpc.eliza.v1.Item item = 2;
    */
-  items: Item[] = [];
+  item?: Item;
 
   constructor(data?: PartialMessage<ReadItemResponse>) {
     super();
@@ -1501,7 +1501,7 @@ export class ReadItemResponse extends Message<ReadItemResponse> {
   static readonly typeName = "connectrpc.eliza.v1.ReadItemResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 2, name: "items", kind: "message", T: Item, repeated: true },
+    { no: 2, name: "item", kind: "message", T: Item },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReadItemResponse {
@@ -1518,6 +1518,98 @@ export class ReadItemResponse extends Message<ReadItemResponse> {
 
   static equals(a: ReadItemResponse | PlainMessage<ReadItemResponse> | undefined, b: ReadItemResponse | PlainMessage<ReadItemResponse> | undefined): boolean {
     return proto3.util.equals(ReadItemResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message connectrpc.eliza.v1.ReadItemsRequest
+ */
+export class ReadItemsRequest extends Message<ReadItemsRequest> {
+  /**
+   * @generated from field: int32 appId = 1;
+   */
+  appId = 0;
+
+  /**
+   * @generated from field: string key = 2;
+   */
+  key = "";
+
+  /**
+   * @generated from field: string query = 3;
+   */
+  query = "";
+
+  constructor(data?: PartialMessage<ReadItemsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "connectrpc.eliza.v1.ReadItemsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "query", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReadItemsRequest {
+    return new ReadItemsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ReadItemsRequest {
+    return new ReadItemsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ReadItemsRequest {
+    return new ReadItemsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ReadItemsRequest | PlainMessage<ReadItemsRequest> | undefined, b: ReadItemsRequest | PlainMessage<ReadItemsRequest> | undefined): boolean {
+    return proto3.util.equals(ReadItemsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message connectrpc.eliza.v1.ReadItemsResponse
+ */
+export class ReadItemsResponse extends Message<ReadItemsResponse> {
+  /**
+   * @generated from field: optional string response = 1;
+   */
+  response?: string;
+
+  /**
+   * @generated from field: repeated connectrpc.eliza.v1.Item items = 2;
+   */
+  items: Item[] = [];
+
+  constructor(data?: PartialMessage<ReadItemsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "connectrpc.eliza.v1.ReadItemsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "items", kind: "message", T: Item, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReadItemsResponse {
+    return new ReadItemsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ReadItemsResponse {
+    return new ReadItemsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ReadItemsResponse {
+    return new ReadItemsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ReadItemsResponse | PlainMessage<ReadItemsResponse> | undefined, b: ReadItemsResponse | PlainMessage<ReadItemsResponse> | undefined): boolean {
+    return proto3.util.equals(ReadItemsResponse, a, b);
   }
 }
 
@@ -1856,9 +1948,9 @@ export class ReadRecipeResponse extends Message<ReadRecipeResponse> {
   response?: string;
 
   /**
-   * @generated from field: repeated connectrpc.eliza.v1.Recipe recipe = 2;
+   * @generated from field: repeated connectrpc.eliza.v1.Recipe recipes = 2;
    */
-  recipe: Recipe[] = [];
+  recipes: Recipe[] = [];
 
   constructor(data?: PartialMessage<ReadRecipeResponse>) {
     super();
@@ -1869,7 +1961,7 @@ export class ReadRecipeResponse extends Message<ReadRecipeResponse> {
   static readonly typeName = "connectrpc.eliza.v1.ReadRecipeResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 2, name: "recipe", kind: "message", T: Recipe, repeated: true },
+    { no: 2, name: "recipes", kind: "message", T: Recipe, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReadRecipeResponse {

@@ -39,21 +39,12 @@ export class App {
     baseUrl?: string
   }) {
     let transport
-    try {
-      transport = createGrpcTransport({
-        baseUrl: options.baseUrl
-          ? options.baseUrl
-          : 'https://bag-client.hackclub.com',
-        httpVersion: '2'
-      })
-    } catch {
-      transport = createGrpcTransport({
-        baseUrl: options.baseUrl
-          ? options.baseUrl
-          : 'https://bag-client.hackclub.com',
-        httpVersion: '1.1'
-      })
-    }
+    transport = createGrpcTransport({
+      baseUrl: options.baseUrl
+        ? options.baseUrl
+        : 'https://bag-client.hackclub.com',
+      httpVersion: '2'
+    })
 
     const client = createPromiseClient(ElizaService, transport)
     if (!(await client.verifyKey(options)))
@@ -154,6 +145,15 @@ export class App {
   async readItem(request: RecursivePartial<methods.ReadItemRequest>) {
     return App.format(
       await this.client.readItem({
+        ...this.request,
+        ...request
+      })
+    )
+  }
+
+  async readItems(request: RecursivePartial<methods.ReadItemsRequest>) {
+    return App.format(
+      await this.client.readItems({
         ...this.request,
         ...request
       })

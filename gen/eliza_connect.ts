@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CloseTradeRequest, CloseTradeResponse, CreateAppRequest, CreateAppResponse, CreateInstanceRequest, CreateInstanceResponse, CreateInstancesRequest, CreateInstancesResponse, CreateItemRequest, CreateItemResponse, CreateRecipeRequest, CreateRecipeResponse, CreateTradeRequest, CreateTradeResponse, DeleteAppRequest, DeleteAppResponse, DeleteInstanceRequest, DeleteInstanceResponse, ReadAppRequest, ReadAppResponse, ReadIdentityRequest, ReadIdentityResponse, ReadInstanceRequest, ReadInstanceResponse, ReadInventoryRequest, ReadInventoryResponse, ReadItemRequest, ReadItemResponse, ReadRecipeRequest, ReadRecipeResponse, ReadTradeRequest, ReadTradeResponse, UpdateAppRequest, UpdateAppResponse, UpdateIdentityMetadataRequest, UpdateIdentityMetadataResponse, UpdateInstanceRequest, UpdateInstanceResponse, UpdateItemRequest, UpdateItemResponse, UpdateRecipeRequest, UpdateRecipeResponse, UpdateTradeRequest, UpdateTradeResponse, VerifyKeyRequest, VerifyKeyResponse } from "./eliza_pb.js";
+import { CloseTradeRequest, CloseTradeResponse, CreateAppRequest, CreateAppResponse, CreateInstanceRequest, CreateInstanceResponse, CreateInstancesRequest, CreateInstancesResponse, CreateItemRequest, CreateItemResponse, CreateRecipeRequest, CreateRecipeResponse, CreateTradeRequest, CreateTradeResponse, DeleteAppRequest, DeleteAppResponse, DeleteInstanceRequest, DeleteInstanceResponse, ReadAppRequest, ReadAppResponse, ReadIdentityRequest, ReadIdentityResponse, ReadInstanceRequest, ReadInstanceResponse, ReadInventoryRequest, ReadInventoryResponse, ReadItemRequest, ReadItemResponse, ReadItemsRequest, ReadItemsResponse, ReadRecipeRequest, ReadRecipeResponse, ReadTradeRequest, ReadTradeResponse, UpdateAppRequest, UpdateAppResponse, UpdateIdentityMetadataRequest, UpdateIdentityMetadataResponse, UpdateInstanceRequest, UpdateInstanceResponse, UpdateItemRequest, UpdateItemResponse, UpdateRecipeRequest, UpdateRecipeResponse, UpdateTradeRequest, UpdateTradeResponse, VerifyKeyRequest, VerifyKeyResponse } from "./eliza_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -91,6 +91,15 @@ export const ElizaService = {
       name: "ReadItem",
       I: ReadItemRequest,
       O: ReadItemResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc connectrpc.eliza.v1.ElizaService.ReadItems
+     */
+    readItems: {
+      name: "ReadItems",
+      I: ReadItemsRequest,
+      O: ReadItemsResponse,
       kind: MethodKind.Unary,
     },
     /**

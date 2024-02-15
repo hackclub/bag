@@ -498,7 +498,18 @@ export default (router: ConnectRouter) => {
   router.rpc(ElizaService, ElizaService.methods.readItem, async req => {
     return await execute(req, async (req, app) => {
       const query = JSON.parse(req.query)
-      console.log(query)
+      let item = await prisma.item.findFirst({
+        where: {
+          ...query,
+          public: app.permissions === PermissionLevels.READ ? true : undefined
+        }
+      })
+    })
+  })
+
+  router.rpc(ElizaService, ElizaService.methods.readItems, async req => {
+    return await execute(req, async (req, app) => {
+      const query = JSON.parse(req.query)
       let items = await prisma.item.findMany({
         where: query
       })

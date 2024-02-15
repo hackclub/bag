@@ -14,6 +14,7 @@ import slack from './lib/slack/slack'
 import routes from './routes'
 import { fastifyConnectPlugin } from '@connectrpc/connect-fastify'
 import { fastify } from 'fastify'
+import fs from 'fs'
 
 ;(async () => {
   // Shutdown signal - shutdown Prisma client
@@ -41,13 +42,19 @@ import { fastify } from 'fastify'
   }
 
   if (config.NODE_ENV === 'development' || !config.SLACK_BOT) {
-    const server = fastify({ http2: true })
+    const server = fastify({
+      http2: true,
+      https: {
+        key: fs.readFileSync('localhost+2-key.pem', 'utf8'),
+        cert: fs.readFileSync('localhost+2.pem', 'utf8')
+      }
+    })
     await server.register(fastifyConnectPlugin, { routes })
     server.get('/', (_, reply) => {
       reply.type('text/plain')
       reply.send('You found something...')
     })
-    await server.listen({ host: '0.0.0.0', port: config.PORT })
+    await server.listen({ host: 'localhost', port: config.PORT })
     console.log(`GRPC server running on port ${config.PORT}!`)
   }
 })()

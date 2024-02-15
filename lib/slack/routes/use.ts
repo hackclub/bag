@@ -1,8 +1,11 @@
 import { type IdentityWithInventory, prisma } from '../../db'
+import { inMaintainers, maintainers } from '../../utils'
 import slack, { execute, CommandMiddleware } from '../slack'
 import fs from 'fs'
 import path from 'path'
 import { parse } from 'yaml'
+
+const ACTION_TEST = ['action-test', 'test888']
 
 const canBeUsed = async (
   user: IdentityWithInventory,
@@ -60,13 +63,37 @@ slack.command('/huh', async props => {
       include: { inventory: true }
     })
 
+    if (
+      !Object.values(maintainers)
+        .map((maintainer: any) => maintainer.slack)
+        .includes(user.slack)
+    )
+      return await props.respond({
+        response_type: 'ephemeral',
+        text: 'no.'
+      })
+
     // Get inputs
     const message = props.command.text.trim()
-    let inputs: Array<string>
+    if (!message.length)
+      return await props.respond({
+        response_type: 'ephemeral',
+        text: 'Try running `/use <item>, <item>` or `/use :-item-tag, :item-tag`!'
+      })
+
+    const trim = (str: string, chars: string) =>
+      str.split(chars).filter(Boolean).join(chars)
+    let inputs: Array<string> = message.split(',')
+    let tag = message.split(' ')[message.split(' ').length - 1]
+    if (inMaintainers(user.slack)) {
+      // Check if a tag is attached
+      if (tag.startsWith('-'))
+        inputs[inputs.length - 1] = trim(inputs[inputs.length - 1], tag)
+    } else tag = ''
+
     try {
       inputs = await Promise.all(
-        message
-          .split(',')
+        inputs
           .filter(s => s.length)
           .map(async s => {
             let item = s.trim().toLowerCase()
@@ -105,7 +132,10 @@ slack.command('/huh', async props => {
         channel: props.body.channel_id
       })
       for (let use of uses) {
-        if (use.locations.includes(conversation.channel.name)) {
+        if (
+          use.locations.includes(conversation.channel.name) ||
+          ACTION_TEST.includes(conversation.channel.name)
+        ) {
           let canUse = true
           const useInputs = [...(use.tools || []), ...(use.inputs || [])]
           for (let input of useInputs) {
@@ -149,78 +179,114 @@ slack.command('/huh', async props => {
     })
 
     // If so, create a Results tree from the results value
-    let tree = new Results({ ...possible[0], thread: { channel, ts } })
+    let trees = [
+      new Results({
+        ...possible[0],
+        thread: { channel, ts }
+      })
+    ]
+    let description = [`<@${user.slack}> ran \`/use ${message}\`:`]
 
-    while (tree.results.length) {
-      // And run that tree until we reach a terminating action
-      let result = tree.pickResult()
-      await result.run(props, tree.thread)
-      if (!result.loop) tree = result
+    while (trees[trees.length - 1].branches.length) {
+      const tree = trees[trees.length - 1]
+
+      let result = tree.pickBranch()
+
+      result.thread = tree.thread
+
+      await result.run(props, trees, description)
+      if (result.terminate) break
+      if (!result.loop) trees.push(result)
     }
   })
 })
 
 class Results {
+  tag?: string
+  goto?: string
+  gotoChildren?: string
   description?: string
   frequency: number
   loop: boolean
-  delay?: [number, number]
-  await?: [number, number]
-  results: Array<Results>
+  delay?: number | [number, number]
+  await?: number | [number, number]
+  branches: Array<Results>
+  sequence: Array<Results>
   inputs: Array<string>
   outputs: Array<string>
   losses: Array<string>
   thread: { channel: string; ts: string }
+  terminate?: boolean
+  break?: boolean
 
   constructor(obj: { [key: string]: any }) {
+    this.tag = obj.tag
+    this.goto = obj.goto
+    this.gotoChildren = obj.gotoChildren
     this.description = obj.description || ''
     this.frequency = obj.frequency || 0
     this.loop = obj.loop || 0
-    this.delay = obj.delay || [5, 10]
+    this.delay = obj.delay || obj.defaultDelay
     this.await = obj.await || [0, 0]
-    this.results = obj.results?.map(result => new Results(result)) || []
+    this.branches = obj.branch?.map(branch => {
+      // Apply default delays and other properties
+      return (
+        new Results({
+          ...branch,
+          delay: branch.delay || obj.defaultDelay
+        }) || []
+      )
+    })
+    this.sequence = obj.sequence?.map(sequence => new Results(sequence))
     this.inputs = obj.inputs || []
     this.outputs = obj.outputs || []
     this.losses = obj.losses || []
-    this.thread = obj.thread || undefined
+    this.thread = obj.thread
+    this.terminate = obj.terminate || false
+    this.break = obj.break || false
   }
 
-  pickResult(): Results {
+  pickBranch(): Results {
     // We pick based on a fraction of the sum of all frequencies for the results at this layer of the tree
-    const frequencies = this.results.map(result => result.frequency)
+    const frequencies = this.branches.map(result => result.frequency)
     let total = frequencies.reduce((acc, curr) => acc + curr, 0)
     const random = Math.floor(Math.random() * total)
     for (let [i, frequency] of frequencies.entries()) {
       total -= frequency
-      if (random >= total) return this.results[i]
+      if (random >= total) return this.branches[i]
+    }
+  }
+
+  search(tag: string, curr: number = 1, depth: number = 1) {
+    // Search for branch that has tag up to depth
+    for (let branch of this.branches) {
+      if (branch.tag === tag) return branch
+      if (curr < depth && branch.branches) {
+        // Search up to depth
+        let traverse = branch.search(tag, curr + 1)
+        if (traverse) return traverse
+      }
     }
   }
 
   async run(
     props: CommandMiddleware,
-    thread?: { channel: string; ts: string }
+    prev: Array<Results>,
+    description: Array<string>
   ) {
     // Run tree
-    if (this.await) await sleep(random(...this.await))
+    if (this.await) {
+      if (Array.isArray(this.await))
+        await sleep(random(...(this.await as [number, number])))
+      else await sleep(this.await)
+    }
 
     if (this.description) {
-      if (thread) {
-        const conversation = await props.client.conversations.history({
-          ...thread,
-          inclusive: true,
-          limit: 1
-        })
-        await props.client.chat.update({
-          ...thread,
-          text: conversation.messages[0].text + '\n' + this.description
-        })
-        this.thread = thread
-      } else {
-        const { channel, ts } = await props.say({
-          text: this.description
-        })
-        this.thread = { channel, ts }
-      }
+      description.push(this.description)
+      await props.client.chat.update({
+        ...this.thread,
+        text: description.join('\n\n')
+      })
     }
 
     if (this.outputs) {
@@ -270,7 +336,24 @@ class Results {
       }
     }
 
-    if (this.delay) await sleep(random(...this.delay))
+    if (this.delay) {
+      if (Array.isArray(this.delay))
+        await sleep(random(...(this.delay as [number, number])))
+      else await sleep(this.delay)
+    }
+
+    // The `sequence` branch is like an alternative to `branch`. `branch` selects a random node from an array, whereas `sequence` will play the nodes in the array in order.
+    // Keep in mind that sequences and branches can be nested, so you can have a sequence playing out within a branch within a sequence etc.
+    if (this.sequence) {
+      for (let node of this.sequence) {
+        let result = await node.run(props, prev, description)
+        if (node.branches) {
+          // Has branches? Start recursively running
+          prev.push(node)
+        }
+        if (node.break) break
+      }
+    }
   }
 }
 

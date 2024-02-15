@@ -8,6 +8,10 @@ const maintainersYaml = fs.readFileSync(
   'utf-8'
 )
 export const maintainers = parse(maintainersYaml)
+export const inMaintainers = (id: string) =>
+  Object.values(maintainers)
+    .map((maintainer: any) => maintainer.slack)
+    .includes(id)
 
 const channelsYaml = fs.readFileSync(
   path.join(process.cwd(), './blacklist.yaml'),

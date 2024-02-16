@@ -89,8 +89,8 @@ slack.command('/huh', async props => {
       // Check if a tag is attached
       if (tag.startsWith('-'))
         inputs[inputs.length - 1] = trim(inputs[inputs.length - 1], tag)
-      else tag = undefined
-    } else tag = undefined
+      else tag = ''
+    } else tag = ''
 
     try {
       inputs = await Promise.all(
@@ -175,6 +175,7 @@ slack.command('/huh', async props => {
     }
 
     let description = [`<@${user.slack}> ran \`/use ${message}\`:`]
+    let summary = { outputs: [], losses: [] }
 
     const { channel, ts } = await props.client.chat.postMessage({
       channel: props.body.channel_id,
@@ -188,35 +189,51 @@ slack.command('/huh', async props => {
       })
     ]
 
-    if (tag) {
+    if (tag.length) {
       // When the tag field is used for testing with a single-hyphen prefix the test should play out normally from the start
       // This means we search for a direct route to the result
-      const path = trees[0].search(trim(tag, '-'), Infinity)
-      if (!path.length)
+      trees = trees[0].search(trim(tag, '-'), Infinity)
+      if (!trees.length)
         return await props.respond({
           response_type: 'ephemeral',
           text: `${tag} is not applicable.`
         })
-      for (let [i, node] of path.entries()) {
+      for (let [i, node] of trees.entries()) {
         node.thread = { channel, ts }
-        if (tag.startsWith('---')) {
+        if (tag.startsWith('--')) {
           // No delay/await
           node.delay = 0
           node.await = 0
         }
-        await node.run(props, path.slice(0, i), description)
+        await node.run(props, trees.slice(0, i), description, summary)
       }
-    } else {
-      while (trees[trees.length - 1].branches.length) {
+    }
+
+    try {
+      while (
+        trees[trees.length - 1].branches.length ||
+        trees[trees.length - 1].sequence.length
+      ) {
+        // Even if there was a tag attached, run normally from there on out
         const tree = trees[trees.length - 1]
 
-        let result = tree.pickBranch()
+        let result
+        if (!tree.sequence.length) result = tree.pickBranch()
+        else result = tree
         result.thread = tree.thread
+
+        if (tag.startsWith('---')) {
+          // No delay/await
+          result.delay = 0
+          result.await = 0
+        }
 
         await result.run(props, trees, description)
         if (result.terminate) break
         if (!result.loop) trees.push(result)
       }
+    } catch (error) {
+      console.log(error)
     }
   })
 })
@@ -259,7 +276,7 @@ class Results {
     this.frequency = obj.frequency || 0
 
     this.loop = obj.loop || false
-    this.delay = obj.delay || obj.defaultDelay
+    this.delay = obj.delay || obj.defaultDelay || [5, 10]
     this.await = obj.await || 0
 
     this.branches =
@@ -311,29 +328,42 @@ class Results {
   async run(
     props: CommandMiddleware,
     prev: Array<Results>,
-    description: Array<string>
+    description: Array<string>,
+    summary: { outputs: Array<string>; losses: Array<string> }
   ) {
-    if (this.sequence.length) await this.runSequence(props, prev, description)
-    else await this.runBranch(props, prev, description)
+    if (this.sequence.length)
+      await this.runSequence(props, prev, description, summary)
+    else await this.runBranch(props, prev, description, summary)
   }
 
   async runSequence(
     props: CommandMiddleware,
     prev: Array<Results>,
-    description: Array<string>
+    description: Array<string>,
+    summary: { outputs: Array<string>; losses: Array<string> }
   ) {
     // Run sequence in order
     for (let node of this.sequence) {
-      let result = await node.run(props, prev, description)
-      if (node.branches) prev.push(node) // ! Check
-      if (node.break) break // ! Check
+      let result = await node.run(props, prev, description, summary)
+      if (node.branches) {
+        // Run through the branches
+        let trees = [node]
+        while (
+          trees[trees.length - 1].branches.length ||
+          trees[trees.length - 1].sequence.length
+        ) {
+          // const
+        }
+      }
+      if (node.break) break
     }
   }
 
   async runBranch(
     props: CommandMiddleware,
     prev: Array<Results>,
-    description: Array<string>
+    description: Array<string>,
+    summary: { outputs: Array<string>; losses: Array<string> }
   ) {
     // Run tree
     if (this.await) {
@@ -358,14 +388,15 @@ class Results {
           where: {
             identityId: props.body.user_id,
             itemId: output
-          }
+          },
+          include: { item: true }
         })
-        if (existing)
+        if (existing) {
           await prisma.instance.update({
             where: { id: existing.id },
             data: { quantity: existing.quantity + 1 }
           })
-        else {
+        } else {
           const item = await prisma.item.findUnique({ where: { name: output } })
           await prisma.instance.create({
             data: {
@@ -401,6 +432,24 @@ class Results {
       if (Array.isArray(this.delay))
         await sleep(random(...(this.delay as [number, number])))
       else await sleep(this.delay)
+    }
+
+    if (this.goto) {
+      // When a node with a goto completes, the action will move to the node with a matching tag. This lets us have multiple divergent branches that come back to an earlier node in the tree
+      prev = prev[0].search(this.goto, Infinity)
+      prev[prev.length - 1].thread = this.thread
+    } else if (this.gotoChildren) {
+      // The gotoChildren field acts like goto, except it skips the contents of the tagged node and instead goes to its children. This is useful mostly when we want to return not to a specific node, but to some rnadomly-selected branch directly beneath it.
+      prev = prev[0].search(this.gotoChildren, Infinity)
+      const tree = prev[prev.length - 1]
+      tree.thread = this.thread
+      if (tree.branches.length) {
+        // Add a random child
+        const branch = tree.pickBranch()
+        branch.thread = this.thread
+        prev.push(branch)
+        console.log(prev)
+      }
     }
   }
 }

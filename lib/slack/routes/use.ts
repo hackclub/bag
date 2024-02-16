@@ -89,7 +89,8 @@ slack.command('/huh', async props => {
       // Check if a tag is attached
       if (tag.startsWith('-'))
         inputs[inputs.length - 1] = trim(inputs[inputs.length - 1], tag)
-    } else tag = ''
+      else tag = undefined
+    } else tag = undefined
 
     try {
       inputs = await Promise.all(
@@ -173,77 +174,107 @@ slack.command('/huh', async props => {
       })
     }
 
+    let description = [`<@${user.slack}> ran \`/use ${message}\`:`]
+
     const { channel, ts } = await props.client.chat.postMessage({
       channel: props.body.channel_id,
-      text: `<@${props.context.userId}> ran \`/use\`:\n`
+      text: description[0]
     })
 
-    // If so, create a Results tree from the results value
     let trees = [
       new Results({
         ...possible[0],
         thread: { channel, ts }
       })
     ]
-    let description = [`<@${user.slack}> ran \`/use ${message}\`:`]
 
-    while (trees[trees.length - 1].branches.length) {
-      const tree = trees[trees.length - 1]
+    if (tag) {
+      // When the tag field is used for testing with a single-hyphen prefix the test should play out normally from the start
+      // This means we search for a direct route to the result
+      const path = trees[0].search(trim(tag, '-'), Infinity)
+      if (!path.length)
+        return await props.respond({
+          response_type: 'ephemeral',
+          text: `${tag} is not applicable.`
+        })
+      for (let [i, node] of path.entries()) {
+        node.thread = { channel, ts }
+        if (tag.startsWith('---')) {
+          // No delay/await
+          node.delay = 0
+          node.await = 0
+        }
+        await node.run(props, path.slice(0, i), description)
+      }
+    } else {
+      while (trees[trees.length - 1].branches.length) {
+        const tree = trees[trees.length - 1]
 
-      let result = tree.pickBranch()
+        let result = tree.pickBranch()
+        result.thread = tree.thread
 
-      result.thread = tree.thread
-
-      await result.run(props, trees, description)
-      if (result.terminate) break
-      if (!result.loop) trees.push(result)
+        await result.run(props, trees, description)
+        if (result.terminate) break
+        if (!result.loop) trees.push(result)
+      }
     }
   })
 })
 
 class Results {
   tag?: string
+  description?: string
+  thread: { channel: string; ts: string }
+
   goto?: string
   gotoChildren?: string
-  description?: string
-  frequency: number
-  loop: boolean
-  delay?: number | [number, number]
-  await?: number | [number, number]
-  branches: Array<Results>
-  sequence: Array<Results>
-  inputs: Array<string>
-  outputs: Array<string>
-  losses: Array<string>
-  thread: { channel: string; ts: string }
+
   terminate?: boolean
   break?: boolean
 
+  frequency: number
+
+  loop: boolean
+  delay?: number | [number, number]
+  await?: number | [number, number]
+
+  branches: Array<Results>
+  sequence: Array<Results>
+
+  inputs: Array<string>
+  outputs: Array<string>
+  losses: Array<string>
+
   constructor(obj: { [key: string]: any }) {
     this.tag = obj.tag
+    this.description = obj.description
+    this.thread = obj.thread
+
     this.goto = obj.goto
     this.gotoChildren = obj.gotoChildren
-    this.description = obj.description || ''
+
+    this.terminate = obj.terminate || false
+    this.break = obj.break || false
+
     this.frequency = obj.frequency || 0
-    this.loop = obj.loop || 0
+
+    this.loop = obj.loop || false
     this.delay = obj.delay || obj.defaultDelay
-    this.await = obj.await || [0, 0]
-    this.branches = obj.branch?.map(branch => {
-      // Apply default delays and other properties
-      return (
-        new Results({
+    this.await = obj.await || 0
+
+    this.branches =
+      obj.branch?.map(branch => {
+        // Apply default delays and other properties
+        return new Results({
           ...branch,
           delay: branch.delay || obj.defaultDelay
-        }) || []
-      )
-    })
-    this.sequence = obj.sequence?.map(sequence => new Results(sequence))
+        })
+      }) || []
+    this.sequence = obj.sequence?.map(sequence => new Results(sequence)) || []
+
     this.inputs = obj.inputs || []
     this.outputs = obj.outputs || []
     this.losses = obj.losses || []
-    this.thread = obj.thread
-    this.terminate = obj.terminate || false
-    this.break = obj.break || false
   }
 
   pickBranch(): Results {
@@ -257,19 +288,49 @@ class Results {
     }
   }
 
-  search(tag: string, curr: number = 1, depth: number = 1) {
+  search(tag: string, depth: number = 1, curr: number = 1): Array<Results> {
     // Search for branch that has tag up to depth
+    let branches = []
     for (let branch of this.branches) {
-      if (branch.tag === tag) return branch
-      if (curr < depth && branch.branches) {
+      if (branch.tag === tag) {
+        branches.push(branch)
+        return branches
+      } else if (curr < depth && branch.branches) {
         // Search up to depth
-        let traverse = branch.search(tag, curr + 1)
-        if (traverse) return traverse
+        let traverse = branch.search(tag, depth, curr + 1)
+        if (traverse.length) {
+          branches.push(branch, ...traverse)
+          return branches
+        }
       }
     }
+
+    return branches
   }
 
   async run(
+    props: CommandMiddleware,
+    prev: Array<Results>,
+    description: Array<string>
+  ) {
+    if (this.sequence.length) await this.runSequence(props, prev, description)
+    else await this.runBranch(props, prev, description)
+  }
+
+  async runSequence(
+    props: CommandMiddleware,
+    prev: Array<Results>,
+    description: Array<string>
+  ) {
+    // Run sequence in order
+    for (let node of this.sequence) {
+      let result = await node.run(props, prev, description)
+      if (node.branches) prev.push(node) // ! Check
+      if (node.break) break // ! Check
+    }
+  }
+
+  async runBranch(
     props: CommandMiddleware,
     prev: Array<Results>,
     description: Array<string>
@@ -292,7 +353,7 @@ class Results {
     if (this.outputs) {
       // Give user the outputs
       for (let output of this.outputs) {
-        // Check if use already has an instance and add to that instance
+        // Check if user already has an instance and add to that instance
         const existing = await prisma.instance.findFirst({
           where: {
             identityId: props.body.user_id,
@@ -340,19 +401,6 @@ class Results {
       if (Array.isArray(this.delay))
         await sleep(random(...(this.delay as [number, number])))
       else await sleep(this.delay)
-    }
-
-    // The `sequence` branch is like an alternative to `branch`. `branch` selects a random node from an array, whereas `sequence` will play the nodes in the array in order.
-    // Keep in mind that sequences and branches can be nested, so you can have a sequence playing out within a branch within a sequence etc.
-    if (this.sequence) {
-      for (let node of this.sequence) {
-        let result = await node.run(props, prev, description)
-        if (node.branches) {
-          // Has branches? Start recursively running
-          prev.push(node)
-        }
-        if (node.break) break
-      }
     }
   }
 }

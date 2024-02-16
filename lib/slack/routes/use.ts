@@ -189,7 +189,7 @@ slack.command('/huh', async props => {
       })
     ]
 
-    if (tag.length) {
+    if (tag.length && trim(tag, '-').length) {
       // When the tag field is used for testing with a single-hyphen prefix the test should play out normally from the start
       // This means we search for a direct route to the result
       trees = trees[0].search(trim(tag, '-'), Infinity)
@@ -200,12 +200,13 @@ slack.command('/huh', async props => {
         })
       for (let [i, node] of trees.entries()) {
         node.thread = { channel, ts }
-        if (tag.startsWith('--')) {
-          // No delay/await
-          node.delay = 0
-          node.await = 0
-        }
-        await node.run(props, trees.slice(0, i), description, summary)
+        await node.run(
+          props,
+          trees.slice(0, i),
+          description,
+          summary,
+          tag.startsWith('--')
+        )
       }
     }
 
@@ -222,13 +223,13 @@ slack.command('/huh', async props => {
         else result = tree
         result.thread = tree.thread
 
-        if (tag.startsWith('---')) {
-          // No delay/await
-          result.delay = 0
-          result.await = 0
-        }
-
-        let results = await result.run(props, trees, description, summary)
+        let results = await result.run(
+          props,
+          trees,
+          description,
+          summary,
+          tag.startsWith('---')
+        )
         trees = results
         if (result.terminate) break
       }
@@ -300,13 +301,24 @@ class Results {
 
     this.branches =
       obj.branch?.map(branch => {
-        // Apply default delays and other properties
+        if (Array.isArray(branch)) {
+          // If an entry in a branch array is an array, treat that sub-array as a sequence, using any additional properties on the first node in the array as if they were on the sequence node
+          console.log(branch)
+        }
         return new Results({
           ...branch,
-          delay: branch.delay || obj.defaultDelay
+          delay: branch.delay || obj.defaultDelay,
+          thread: this.thread
         })
       }) || []
-    this.sequence = obj.sequence?.map(sequence => new Results(sequence)) || []
+    this.sequence =
+      obj.sequence?.map(
+        sequence =>
+          new Results({
+            ...sequence,
+            thread: this.thread
+          })
+      ) || []
 
     this.inputs = obj.inputs || []
     this.outputs = obj.outputs || []
@@ -352,11 +364,19 @@ class Results {
     summary: {
       outputs: Array<[number, string]>
       losses: Array<[number, string]>
-    }
+    },
+    instant?: boolean
   ): Promise<Array<Results>> {
+    let result = await this.runBranch(
+      props,
+      prev,
+      description,
+      summary,
+      instant
+    )
     if (this.sequence.length)
-      return await this.runSequence(props, prev, description, summary)
-    else return await this.runBranch(props, prev, description, summary)
+      return await this.runSequence(props, prev, description, summary, instant)
+    return result
   }
 
   async runSequence(
@@ -366,20 +386,16 @@ class Results {
     summary: {
       outputs: Array<[number, string]>
       losses: Array<[number, string]>
-    }
+    },
+    instant?: boolean
   ): Promise<Array<Results>> {
     // Run sequence in order
     for (let node of this.sequence) {
-      let result = await node.run(props, prev, description, summary)
+      node.thread = this.thread
+      let result = await node.run(props, prev, description, summary, instant)
       if (node.branches) {
         // Run through the branches
         let trees = [node]
-        while (
-          trees[trees.length - 1].branches.length ||
-          trees[trees.length - 1].sequence.length
-        ) {
-          // const
-        }
       }
       if (node.break) break
     }
@@ -394,10 +410,11 @@ class Results {
     summary: {
       outputs: Array<[number, string]>
       losses: Array<[number, string]>
-    }
+    },
+    instant?: boolean
   ): Promise<Array<Results>> {
     // Run tree
-    if (this.await) {
+    if (this.await && !instant) {
       if (Array.isArray(this.await))
         await sleep(random(...(this.await as [number, number])))
       else await sleep(this.await)
@@ -494,7 +511,7 @@ class Results {
       }
     }
 
-    if (this.delay) {
+    if (this.delay && !instant) {
       if (Array.isArray(this.delay))
         await sleep(random(...(this.delay as [number, number])))
       else await sleep(this.delay)
@@ -515,7 +532,7 @@ class Results {
         // Add a random child
         const branch = tree.pickBranch()
         branch.thread = this.thread
-        await branch.run(props, newTree, description, summary)
+        await branch.run(props, newTree, description, summary, instant)
       }
       return newTree
     }

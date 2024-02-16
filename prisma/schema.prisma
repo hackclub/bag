@@ -148,7 +148,13 @@ model Recipe {
   description String?
 }
 
-// model Use {}
+model Use {
+  id        Int      @id @default(autoincrement())
+  // locations and tools are used for identifying if the user can use said tools in said locations; also useful for the workflow at hackclub/bag-manifest
+  locations String[]
+  tools     String[]
+  tree      Json
+}
 
 enum LoggerLevels {
   ERROR

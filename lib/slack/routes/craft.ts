@@ -25,12 +25,12 @@ slack.command('/craft', async props => {
       else if (conversation.channel.is_im || conversation.channel.is_mpim)
         return await props.respond({
           response_type: 'ephemeral',
-          text: `Trading in DMs isn't allowed yet. Try running \`/trade\` in a public channel, like <#${channels.lounge}>!`
+          text: `Crafting in DMs isn't allowed yet. Try running \`/craft\` in a public channel, like <#${channels.lounge}>!`
         })
     } catch {
       return await props.respond({
         response_type: 'ephemeral',
-        text: `Trading in DMs isn't allowed yet. Try running \`/trade\` in a public channel, like <#${channels.lounge}>!`
+        text: `Crafting in DMs isn't allowed yet. Try running \`/craft\` in a public channel, like <#${channels.lounge}>!`
       })
     }
 

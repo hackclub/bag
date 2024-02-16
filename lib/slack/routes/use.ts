@@ -228,13 +228,32 @@ slack.command('/huh', async props => {
           result.await = 0
         }
 
-        await result.run(props, trees, description)
+        let results = await result.run(props, trees, description, summary)
+        trees = results
         if (result.terminate) break
-        if (!result.loop) trees.push(result)
       }
     } catch (error) {
       console.log(error)
     }
+
+    if (summary.outputs.length)
+      description.push(
+        `\n*What you got*: ${summary.outputs
+          .map(output => `x${output[0]} ${output[1]}`)
+          .join(', ')}`
+      )
+    if (summary.losses.length)
+      description.push(
+        `\n*What you lost*: ${summary.losses
+          .map(loss => `x${loss[0]} ${loss[1]}`)
+          .join(', ')}`
+      )
+
+    await props.client.chat.update({
+      channel,
+      ts,
+      text: description.join('\n\n')
+    })
   })
 })
 
@@ -307,6 +326,7 @@ class Results {
 
   search(tag: string, depth: number = 1, curr: number = 1): Array<Results> {
     // Search for branch that has tag up to depth
+    if (this.tag === tag) return [this]
     let branches = []
     for (let branch of this.branches) {
       if (branch.tag === tag) {
@@ -329,19 +349,25 @@ class Results {
     props: CommandMiddleware,
     prev: Array<Results>,
     description: Array<string>,
-    summary: { outputs: Array<string>; losses: Array<string> }
-  ) {
+    summary: {
+      outputs: Array<[number, string]>
+      losses: Array<[number, string]>
+    }
+  ): Promise<Array<Results>> {
     if (this.sequence.length)
-      await this.runSequence(props, prev, description, summary)
-    else await this.runBranch(props, prev, description, summary)
+      return await this.runSequence(props, prev, description, summary)
+    else return await this.runBranch(props, prev, description, summary)
   }
 
   async runSequence(
     props: CommandMiddleware,
     prev: Array<Results>,
     description: Array<string>,
-    summary: { outputs: Array<string>; losses: Array<string> }
-  ) {
+    summary: {
+      outputs: Array<[number, string]>
+      losses: Array<[number, string]>
+    }
+  ): Promise<Array<Results>> {
     // Run sequence in order
     for (let node of this.sequence) {
       let result = await node.run(props, prev, description, summary)
@@ -357,14 +383,19 @@ class Results {
       }
       if (node.break) break
     }
+
+    return prev
   }
 
   async runBranch(
     props: CommandMiddleware,
     prev: Array<Results>,
     description: Array<string>,
-    summary: { outputs: Array<string>; losses: Array<string> }
-  ) {
+    summary: {
+      outputs: Array<[number, string]>
+      losses: Array<[number, string]>
+    }
+  ): Promise<Array<Results>> {
     // Run tree
     if (this.await) {
       if (Array.isArray(this.await))
@@ -388,16 +419,26 @@ class Results {
           where: {
             identityId: props.body.user_id,
             itemId: output
-          },
-          include: { item: true }
+          }
         })
-        if (existing) {
+        const item = await prisma.item.findUnique({ where: { name: output } })
+
+        const outputSummary = summary.outputs.findIndex(
+          summaryOutput => summaryOutput[1] === `${item.reaction} ${item.name}`
+        )
+        if (outputSummary >= 0)
+          summary.outputs[outputSummary] = [
+            summary.outputs[outputSummary][0] + 1,
+            `${item.reaction} ${item.name}`
+          ]
+        else summary.outputs.push([1, `${item.reaction} ${item.name}`])
+
+        if (existing)
           await prisma.instance.update({
             where: { id: existing.id },
             data: { quantity: existing.quantity + 1 }
           })
-        } else {
-          const item = await prisma.item.findUnique({ where: { name: output } })
+        else {
           await prisma.instance.create({
             data: {
               itemId: output,
@@ -418,13 +459,38 @@ class Results {
           where: {
             identityId: props.body.user_id,
             itemId: loss
-          }
+          },
+          include: { item: true }
         })
-        if (existing)
-          await prisma.instance.update({
-            where: { id: existing.id },
-            data: { quantity: existing.quantity - 1 }
-          })
+
+        if (existing) {
+          if (existing.quantity - 1 === 0)
+            await prisma.instance.update({
+              where: { id: existing.id },
+              data: { identity: { disconnect: true } }
+            })
+          else
+            await prisma.instance.update({
+              where: { id: existing.id },
+              data: { quantity: existing.quantity - 1 }
+            })
+
+          const lossSummary = summary.losses.findIndex(
+            summaryLoss =>
+              summaryLoss[1] ===
+              `${existing.item.reaction} ${existing.item.name}`
+          )
+          if (lossSummary >= 0)
+            summary.losses[lossSummary] = [
+              summary.losses[lossSummary][0] + 1,
+              `${existing.item.reaction} ${existing.item.name}`
+            ]
+          else
+            summary.losses.push([
+              1,
+              `${existing.item.reaction} ${existing.item.name}`
+            ])
+        }
       }
     }
 
@@ -436,21 +502,26 @@ class Results {
 
     if (this.goto) {
       // When a node with a goto completes, the action will move to the node with a matching tag. This lets us have multiple divergent branches that come back to an earlier node in the tree
-      prev = prev[0].search(this.goto, Infinity)
-      prev[prev.length - 1].thread = this.thread
+      let newTree = prev[0].search(this.goto, Infinity)
+      newTree[newTree.length - 1].thread = this.thread
+      return newTree
     } else if (this.gotoChildren) {
       // The gotoChildren field acts like goto, except it skips the contents of the tagged node and instead goes to its children. This is useful mostly when we want to return not to a specific node, but to some rnadomly-selected branch directly beneath it.
-      prev = prev[0].search(this.gotoChildren, Infinity)
-      const tree = prev[prev.length - 1]
+      let newTree = prev[0].search(this.gotoChildren, Infinity)
+      const tree = newTree[newTree.length - 1]
       tree.thread = this.thread
+      newTree.push(tree)
       if (tree.branches.length) {
         // Add a random child
         const branch = tree.pickBranch()
         branch.thread = this.thread
-        prev.push(branch)
-        console.log(prev)
+        await branch.run(props, newTree, description, summary)
       }
+      return newTree
     }
+
+    if (!this.loop) prev.push(this)
+    return prev
   }
 }
 

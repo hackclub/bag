@@ -14,7 +14,6 @@ import slack from './lib/slack/slack'
 import routes from './routes'
 import { fastifyConnectPlugin } from '@connectrpc/connect-fastify'
 import { fastify } from 'fastify'
-import fs from 'fs'
 
 ;(async () => {
   // Shutdown signal - shutdown Prisma client

@@ -211,10 +211,7 @@ slack.command('/huh', async props => {
     }
 
     try {
-      while (
-        trees[trees.length - 1].branches.length ||
-        trees[trees.length - 1].sequence.length
-      ) {
+      while (trees[trees.length - 1].branches.length) {
         // Even if there was a tag attached, run normally from there on out
         const tree = trees[trees.length - 1]
 
@@ -271,12 +268,12 @@ class Results {
 
   frequency: number
 
+  branches: Array<Results>
+  sequence: Array<Results>
+
   loop: boolean
   delay?: number | [number, number]
   await?: number | [number, number]
-
-  branches: Array<Results>
-  sequence: Array<Results>
 
   inputs: Array<string>
   outputs: Array<string>
@@ -295,22 +292,6 @@ class Results {
 
     this.frequency = obj.frequency || 0
 
-    this.loop = obj.loop || false
-    this.delay = obj.delay || obj.defaultDelay || [5, 10]
-    this.await = obj.await || 0
-
-    this.branches =
-      obj.branch?.map(branch => {
-        if (Array.isArray(branch)) {
-          // If an entry in a branch array is an array, treat that sub-array as a sequence, using any additional properties on the first node in the array as if they were on the sequence node
-          console.log(branch)
-        }
-        return new Results({
-          ...branch,
-          delay: branch.delay || obj.defaultDelay,
-          thread: this.thread
-        })
-      }) || []
     this.sequence =
       obj.sequence?.map(
         sequence =>
@@ -319,6 +300,29 @@ class Results {
             thread: this.thread
           })
       ) || []
+    this.branches =
+      obj.branch?.map(branch => {
+        if (Array.isArray(branch)) {
+          // If an entry in a branch array is an array, treat that sub-array as a sequence, using any additional properties on the first node in the array as if they were on the sequence node
+          const initial = branch[0] // Using any additional properties on the first node in the array as if they were on the sequence node
+          return new Results({
+            sequence: branch.map(sequence => ({ ...sequence })),
+            defaultDelay: initial.defaultDelay,
+            frequency: initial.frequency,
+            thread: this.thread
+          })
+        }
+        return new Results({
+          ...branch,
+          delay: branch.delay || obj.defaultDelay,
+          frequency: branch.frequency || this.frequency,
+          thread: this.thread
+        })
+      }) || []
+
+    this.loop = obj.loop || false
+    this.delay = obj.delay || obj.defaultDelay || [5, 10]
+    this.await = obj.await
 
     this.inputs = obj.inputs || []
     this.outputs = obj.outputs || []
@@ -344,7 +348,29 @@ class Results {
       if (branch.tag === tag) {
         branches.push(branch)
         return branches
-      } else if (curr < depth && branch.branches) {
+      } else if (curr < depth && branch.sequence.length) {
+        // Check branch sequence, too!
+        let traverse = []
+        for (let [i, sequence] of branch.sequence.entries()) {
+          traverse.push(sequence)
+          if (sequence.tag === tag) {
+            for (let after of branch.sequence.slice(i + 1)) {
+              sequence.sequence.push(after)
+            }
+            traverse[traverse.length - 1] = sequence
+            branches.push(...traverse)
+            return branches
+          } else if (curr < depth && sequence.branches.length) {
+            // Search up to depth
+            let traverseSequence = sequence.search(tag, depth, curr + 1)
+            if (traverseSequence.length) {
+              traverse.push(...traverseSequence)
+              branches.push(...traverse)
+              return branches
+            }
+          }
+        }
+      } else if (curr < depth && branch.branches.length) {
         // Search up to depth
         let traverse = branch.search(tag, depth, curr + 1)
         if (traverse.length) {
@@ -393,9 +419,12 @@ class Results {
     for (let node of this.sequence) {
       node.thread = this.thread
       let result = await node.run(props, prev, description, summary, instant)
-      if (node.branches) {
-        // Run through the branches
-        let trees = [node]
+      if (node.branches.length) {
+        // Run branches
+        console.log(node.branches)
+        let branch = node.pickBranch()
+        branch.thread = this.thread
+        await branch.run(props, prev, description, summary, instant)
       }
       if (node.break) break
     }
@@ -421,7 +450,7 @@ class Results {
     }
 
     if (this.description) {
-      description.push(this.description)
+      description.push(this.description.trim())
       await props.client.chat.update({
         ...this.thread,
         text: description.join('\n\n')

@@ -42,61 +42,65 @@ function toTitleCase(str) {
 }
 
 export async function getStaticProps({ params }) {
-  const res = fs.readFileSync(
-    path.join(process.cwd(), 'content', params.category, params.slug)
-  )
-  let menu = fs
-    .readdirSync(path.join(process.cwd(), 'content'), { withFileTypes: true })
-    .filter(dirent => dirent.isDirectory())
-    .map(dirent => {
-      return dirent.name
-    })
-  let gen = {}
-  let pageTitle
-  for (let title of menu) {
-    let push = []
-    let files = fs.readdirSync(path.join(process.cwd(), 'content', title))
-    for (let file of files) {
-      const content = fs.readFileSync(
-        path.join(process.cwd(), 'content', title, file)
-      )
-      let frontmatter = matter(content).data
-      push.push([`${title}/${file}`, frontmatter.title])
-      if (file === params.slug) pageTitle = frontmatter.title
-    }
-    push = push.sort((a, b) => {
-      if (a[2] < b[2]) return -1
-      return 1
-    })
-    gen[toTitleCase(title)] = push
-  }
+  // const res = fs.readFileSync(
+  //   path.join(process.cwd(), 'content', params.category, params.slug)
+  // )
+  // let menu = fs
+  //   .readdirSync(path.join(process.cwd(), 'content'), { withFileTypes: true })
+  //   .filter(dirent => dirent.isDirectory())
+  //   .map(dirent => {
+  //     return dirent.name
+  //   })
+  // let gen = {}
+  // let pageTitle
+  // for (let title of menu) {
+  //   let push = []
+  //   let files = fs.readdirSync(path.join(process.cwd(), 'content', title))
+  //   for (let file of files) {
+  //     const content = fs.readFileSync(
+  //       path.join(process.cwd(), 'content', title, file)
+  //     )
+  //     let frontmatter = matter(content).data
+  //     push.push([`${title}/${file}`, frontmatter.title])
+  //     if (file === params.slug) pageTitle = frontmatter.title
+  //   }
+  //   push = push.sort((a, b) => {
+  //     if (a[2] < b[2]) return -1
+  //     return 1
+  //   })
+  //   gen[toTitleCase(title)] = push
+  // }
+  // return {
+  //   props: {
+  //     source: await convertMDX(res),
+  //     title: pageTitle,
+  //     toc: await serialize(await generateToc(res.toString())),
+  //     menu: gen,
+  //     menuHeaders: ['Quickstart', 'Bot', 'Client']
+  //   }
+  // }
   return {
-    props: {
-      source: await convertMDX(res),
-      title: pageTitle,
-      toc: await serialize(await generateToc(res.toString())),
-      menu: gen,
-      menuHeaders: ['Quickstart', 'Bot', 'Client']
-    }
+    props: {}
   }
 }
 
 export async function getStaticPaths() {
-  let menu = fs
-    .readdirSync(path.join(process.cwd(), 'content'), { withFileTypes: true })
-    .filter(dirent => dirent.isDirectory())
-    .map(dirent => {
-      return dirent.name
-    })
-  let push = []
-  for (let title of menu) {
-    let files = fs.readdirSync(path.join(process.cwd(), 'content', title))
-    push.push(...files.map(file => ({ title, file })))
-  }
-  return {
-    paths: push.map(file => ({
-      params: { category: file.title, slug: file.file }
-    })),
-    fallback: true
-  }
+  // let menu = fs
+  //   .readdirSync(path.join(process.cwd(), 'content'), { withFileTypes: true })
+  //   .filter(dirent => dirent.isDirectory())
+  //   .map(dirent => {
+  //     return dirent.name
+  //   })
+  // let push = []
+  // for (let title of menu) {
+  //   let files = fs.readdirSync(path.join(process.cwd(), 'content', title))
+  //   push.push(...files.map(file => ({ title, file })))
+  // }
+  // return {
+  //   paths: push.map(file => ({
+  //     params: { category: file.title, slug: file.file }
+  //   })),
+  //   fallback: true
+  // }
+  return { paths: ['test'] }
 }

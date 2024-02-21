@@ -38,12 +38,14 @@ model Identity {
   initiatorTrades Trade[]          @relation("initiator")
   receiverTrades  Trade[]          @relation("receiver")
   crafting        Crafting[]
+  using           Use[]
   metadata        Json             @default("{}")
   specificApps    Int[]
   specificItems   String[]
   specificTrades  Int[]
   specificRecipes Int[]
   notifs          Boolean          @default(false)
+  UseInstance     UseInstance[]
 }
 
 model Item {
@@ -149,11 +151,23 @@ model Recipe {
 }
 
 model Use {
-  id        Int      @id @default(autoincrement())
+  id            Int           @id @default(autoincrement())
   // locations and tools are used for identifying if the user can use said tools in said locations; also useful for the workflow at hackclub/bag-manifest
-  locations String[]
-  tools     String[]
-  tree      Json
+  locations     String[]
+  tools         String[]
+  tree          Json
+  using         UseInstance[]
+  Identity      Identity?     @relation(fields: [identitySlack], references: [slack])
+  identitySlack String?
+}
+
+model UseInstance {
+  id         Int      @id @default(autoincrement())
+  done       Boolean  @default(false)
+  identityId String
+  identity   Identity @relation(fields: [identityId], references: [slack])
+  useId      Int
+  use        Use      @relation(fields: [useId], references: [id])
 }
 
 enum LoggerLevels {

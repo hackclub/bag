@@ -50,7 +50,7 @@ import fs from 'fs'
       reply.type('text/plain')
       reply.send('You found something...')
     })
-    await server.listen({ host: 'localhost', port: config.PORT })
+    await server.listen({ port: config.PORT })
     console.log(`GRPC server running on port ${config.PORT}!`)
   }
 })()

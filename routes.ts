@@ -44,6 +44,7 @@ export async function execute(
         'Invalid permissions. Request permissions in Slack with /edit-app.'
       )
     // Strip appId and key
+    log(util.inspect(req, { depth: Infinity }))
     delete req.appId
     delete req.key
     const result = await func(req, app)
@@ -442,6 +443,25 @@ export default (router: ConnectRouter) => {
     )
   })
 
+  router.rpc(BagService, BagService.methods.createAction, async req => {
+    return await execute(
+      req,
+      async req => {
+        // ! TODO: Assumes that channel exists and that tools exist too, since testing branches takes up too much effort
+        return {
+          action: await prisma.action.create({
+            data: {
+              locations: req.action.locations,
+              tools: req.action.tools.map(tool => tool.toLowerCase()),
+              branch: JSON.parse(req.action.branch)
+            }
+          })
+        }
+      },
+      mappedPermissionValues.ADMIN
+    )
+  })
+
   router.rpc(BagService, BagService.methods.readIdentity, async req => {
     return await execute(req, async (req, app) => {
       const user = await prisma.identity.findUnique({
@@ -504,6 +524,15 @@ export default (router: ConnectRouter) => {
           public: app.permissions === PermissionLevels.READ ? true : undefined
         }
       })
+
+      if (
+        mappedPermissionValues[app.permissions] <
+          mappedPermissionValues.WRITE &&
+        app.specificItems.includes(item.name)
+      )
+        return { item }
+
+      return {}
     })
   })
 
@@ -614,18 +643,46 @@ export default (router: ConnectRouter) => {
   router.rpc(BagService, BagService.methods.readRecipe, async req => {
     return await execute(req, async (req, app) => {
       // Search for recipe
-      if (!req.query.inputs.length) delete req.query.inputs
-      if (!req.query.outputs.length) delete req.query.outputs
-      if (!req.query.skills.length) delete req.query.skills
-      if (!req.query.tools.length) delete req.query.tools
       let recipes = await prisma.recipe.findMany({
-        where: {},
         include: {
           inputs: true,
           outputs: true,
           tools: true,
           skills: true
         }
+      })
+
+      // Search through recipes
+      recipes = recipes.filter(recipe => {
+        for (let input of req.query.inputs) {
+          if (
+            !recipe.inputs.find(
+              item => item.recipeItemId === input.recipeItemId
+            )
+          )
+            return false
+        }
+        for (let output of req.query.outputs) {
+          if (
+            !recipe.outputs.find(
+              item => item.recipeItemId === output.recipeItemId
+            )
+          )
+            return false
+        }
+        for (let tool of req.query.tools) {
+          if (
+            !recipe.tools.find(item => item.recipeItemId === tool.recipeItemId)
+          )
+            return false
+        }
+        for (let skill of req.query.skills) {
+          if (
+            !recipe.skills.find(recipeSkill => recipeSkill.name === skill.name)
+          )
+            return false
+        }
+        return true
       })
 
       if (app.permissions === PermissionLevels.READ)
@@ -637,6 +694,23 @@ export default (router: ConnectRouter) => {
           app.specificRecipes.find(id => recipe.id === id)
         )
       return { recipes }
+    })
+  })
+
+  router.rpc(BagService, BagService.methods.readAction, async req => {
+    return await execute(req, async (req, app) => {
+      // Search for action
+      let actions = await prisma.action.findMany({
+        where: {
+          locations: { hasSome: req.query.locations },
+          tools: { hasSome: req.query.tools.map(tool => tool.toLowerCase()) },
+          branch: req.query.branch
+            ? { equals: JSON.parse(req.query.branch) }
+            : undefined
+        }
+      })
+      console.log(actions)
+      return { actions }
     })
   })
 
@@ -851,24 +925,160 @@ export default (router: ConnectRouter) => {
     return await execute(
       req,
       async (req, app) => {
-        if (
-          app.permissions === PermissionLevels.WRITE_SPECIFIC &&
-          !app.specificRecipes.find(id => id === req.recipeId)
-        )
-          throw new Error('Invalid permissions')
+        // TODO: Make sure permissions are set
 
-        const old = await prisma.trade.findUnique({
-          where: { id: req.recipeId }
-        })
-        if (!old) throw new Error('Recipe not found')
-
-        const { new: recipe } = req
         let inputs: RecipeItem[] = []
         let outputs: RecipeItem[] = []
         let tools: RecipeItem[] = []
         let skills: Skill[] = []
+
+        const sum = (inputs: RecipeItem[], tools: RecipeItem[]): number => {
+          const inputTotal = inputs.reduce(
+            (curr: number, acc) => curr + acc.quantity,
+            0
+          )
+          const toolTotal = tools.reduce(
+            (curr: number, acc) => curr + acc.quantity,
+            0
+          )
+          return inputTotal + toolTotal
+        }
+
+        const { new: recipe } = req
+        if (sum(recipe.inputs, recipe.tools) < 2 || !recipe.outputs.length)
+          throw new Error(
+            'Recipe requires at least two inputs and/or at least one output'
+          )
+
+        // Update recipe
+        const update = await prisma.recipe.update({
+          where: { id: req.recipeId },
+          data: { description: recipe.description },
+          include: {
+            inputs: true,
+            outputs: true,
+            tools: true,
+            skills: true
+          }
+        })
+
+        for (let input of recipe.inputs) {
+          // Check if there's a existing RecipeItem, and use that if possible
+          if (
+            !update.inputs.find(
+              item => item.recipeItemId === input.recipeItemId
+            )
+          ) {
+            let create = await prisma.recipeItem.findFirst({ where: input })
+            if (create)
+              await prisma.recipeItem.update({
+                where: { id: create.id },
+                data: { inputs: { connect: { id: update.id } } }
+              })
+            // If recipeItem with item already exists, connect to that
+            else
+              await prisma.recipeItem.create({
+                data: {
+                  ...input,
+                  inputs: { connect: { id: update.id } }
+                }
+              })
+          }
+        }
+        for (let output of recipe.outputs) {
+          if (
+            !update.outputs.find(
+              item => item.recipeItemId === output.recipeItemId
+            )
+          ) {
+            let create = await prisma.recipeItem.findFirst({ where: output })
+            if (create)
+              await prisma.recipeItem.update({
+                where: { id: create.id },
+                data: { outputs: { connect: { id: update.id } } }
+              })
+            else
+              await prisma.recipeItem.create({
+                data: {
+                  ...output,
+                  outputs: { connect: { id: update.id } }
+                }
+              })
+          }
+        }
+        for (let tool of recipe.tools) {
+          if (
+            !update.tools.find(item => item.recipeItemId === tool.recipeItemId)
+          ) {
+            let create = await prisma.recipeItem.findFirst({ where: tool })
+            if (create)
+              await prisma.recipeItem.update({
+                where: { id: create.id },
+                data: { tools: { connect: { id: update.id } } }
+              })
+            else
+              await prisma.recipeItem.create({
+                data: {
+                  ...tool,
+                  tools: { connect: { id: update.id } }
+                }
+              })
+          }
+        }
+        for (let skill of recipe.skills) {
+          if (
+            !update.skills.find(
+              skillInstance => skillInstance.name === skill.name
+            )
+          ) {
+            let create = await prisma.skill.findFirst({ where: skill })
+            if (create)
+              await prisma.skill.update({
+                where: { name: create.name },
+                data: { recipe: { connect: { id: update.id } } }
+              })
+            else
+              await prisma.skill.create({
+                data: {
+                  ...skill,
+                  recipe: { connect: { id: update.id } }
+                }
+              })
+          }
+        }
+
+        return {
+          recipe: await prisma.recipe.findUnique({
+            where: { id: req.recipeId },
+            include: {
+              inputs: true,
+              outputs: true,
+              tools: true,
+              skills: true
+            }
+          })
+        }
       },
       mappedPermissionValues.WRITE_SPECIFIC
+    )
+  })
+
+  router.rpc(BagService, BagService.methods.updateAction, async req => {
+    return await execute(
+      req,
+      async (req, app) => {
+        return {
+          action: await prisma.action.update({
+            where: { id: req.actionId },
+            data: {
+              locations: req.new.locations,
+              tools: req.new.tools.map(tool => tool.toLowerCase()),
+              branch: JSON.parse(req.new.branch)
+            }
+          })
+        }
+      },
+      mappedPermissionValues.ADMIN
     )
   })
 

@@ -72,6 +72,18 @@ slack.command('/huh', async props => {
         response_type: 'ephemeral',
         text: 'no.'
       })
+    if (
+      await prisma.actionInstance.findFirst({
+        where: {
+          identityId: props.context.userId,
+          done: false
+        }
+      })
+    )
+      return await props.respond({
+        response_type: 'ephemeral',
+        text: ":clown_face: Unless you're some kind of god, you're stuck doing things one at a time."
+      })
 
     // Get inputs
     const message = props.command.text.trim()
@@ -126,53 +138,32 @@ slack.command('/huh', async props => {
     }
 
     // Check if inputs can be used in location
-    const uses = await actions()
-    let possible = []
-    try {
-      const conversation = await props.client.conversations.info({
-        channel: props.body.channel_id
-      })
-      for (let use of uses) {
-        if (
-          use.locations.includes(conversation.channel.name) ||
-          ACTION_TEST.includes(conversation.channel.name)
-        ) {
-          let canUse = true
-          const useInputs = [...(use.tools || []), ...(use.inputs || [])]
-          for (let input of useInputs) {
-            const inputCount = useInputs.reduce((acc, curr) => {
-              if (curr === input) return ++acc
-              return acc
-            }, 0)
-            // Exact uses
-            if (
-              !inputs.includes(input.toLowerCase()) ||
-              (await canBeUsed(user, {
-                itemId: input.toLowerCase(),
-                quantity: inputCount
-              })) === false
-            )
-              canUse = false
-          }
-          if (canUse) possible.push(use)
-        }
+    const conversation = await props.client.conversations.info({
+      channel: props.body.channel_id
+    })
+
+    let possible = await prisma.action.findFirst({
+      where: {
+        locations: ACTION_TEST.includes(conversation.channel.name)
+          ? undefined
+          : { has: conversation.channel.name },
+        tools: { hasEvery: inputs }
       }
-      if (!possible.length)
-        return await props.respond({
-          response_type: 'ephemeral',
-          text: `Looks like you can't use ${
-            inputs.length === 1 ? 'that' : 'those'
-          } for anything here.`
-        })
-    } catch (error) {
-      console.log(error)
+    })
+    if (!possible)
       return await props.respond({
         response_type: 'ephemeral',
         text: `Looks like you can't use ${
           inputs.length === 1 ? 'that' : 'those'
         } for anything here.`
       })
-    }
+
+    const action = await prisma.actionInstance.create({
+      data: {
+        identityId: user.slack,
+        actionId: possible.id
+      }
+    })
 
     let description = [`<@${user.slack}> ran \`/use ${message}\`:`]
     let summary = { outputs: [], losses: [] }
@@ -184,7 +175,7 @@ slack.command('/huh', async props => {
 
     let trees = [
       new Results({
-        ...possible[0],
+        ...possible,
         thread: { channel, ts }
       })
     ]
@@ -200,6 +191,7 @@ slack.command('/huh', async props => {
         })
       for (let [i, node] of trees.entries()) {
         node.thread = { channel, ts }
+        if (i === trees.length) node.delay = 0
         await node.run(
           props,
           trees.slice(0, i),
@@ -218,7 +210,9 @@ slack.command('/huh', async props => {
         let result
         if (!tree.sequence.length) result = tree.pickBranch()
         else result = tree
+
         result.thread = tree.thread
+        if (!result.branches.length) result.delay = 0
 
         let results = await result.run(
           props,
@@ -247,6 +241,10 @@ slack.command('/huh', async props => {
           .join(', ')}`
       )
 
+    await prisma.actionInstance.update({
+      where: { id: action.id },
+      data: { done: true }
+    })
     await props.client.chat.update({
       channel,
       ts,

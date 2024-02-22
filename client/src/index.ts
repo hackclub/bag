@@ -37,13 +37,14 @@ export class App {
     appId: number
     key: string
     baseUrl?: string
+    httpVersion?: any
   }) {
     let transport
     transport = createGrpcTransport({
       baseUrl: options.baseUrl
         ? options.baseUrl
         : 'https://bag-client.hackclub.com',
-      httpVersion: '2'
+      httpVersion: options.httpVersion ? options.httpVersion : '2'
     })
 
     const client = createPromiseClient(BagService, transport)
@@ -54,6 +55,7 @@ export class App {
 
   static format(obj: any) {
     // Format: convert metadata to JSON, etc.
+    if (!obj) return obj
     if (obj.response) throw new Error(obj.response)
     for (let [entry, value] of Object.entries(obj)) {
       if (entry === 'metadata') {
@@ -118,6 +120,15 @@ export class App {
   async createTrade(request: RecursivePartial<methods.CreateTradeRequest>) {
     return App.format(
       await this.client.createTrade({
+        ...this.request,
+        ...request
+      })
+    )
+  }
+
+  async createAction(request: RecursivePartial<methods.CreateActionRequest>) {
+    return App.format(
+      await this.client.createAction({
         ...this.request,
         ...request
       })
@@ -196,6 +207,15 @@ export class App {
     )
   }
 
+  async readAction(request: RecursivePartial<methods.ReadActionRequest>) {
+    return App.format(
+      await this.client.readAction({
+        ...this.request,
+        ...request
+      })
+    )
+  }
+
   async updateIdentityMetadata(
     request: RecursivePartial<methods.UpdateIdentityMetadataRequest>
   ) {
@@ -248,6 +268,15 @@ export class App {
   async updateRecipe(request: RecursivePartial<methods.UpdateRecipeRequest>) {
     return App.format(
       await this.client.updateRecipe({
+        ...this.request,
+        ...request
+      })
+    )
+  }
+
+  async updateAction(request: RecursivePartial<methods.UpdateActionRequest>) {
+    return App.format(
+      await this.client.updateAction({
         ...this.request,
         ...request
       })

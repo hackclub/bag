@@ -8,6 +8,7 @@ service BagService {
   rpc CreateInstance(CreateInstanceRequest) returns (CreateInstanceResponse) {}  // Should be able to create and assign instances, depending on permissions
   rpc CreateItem(CreateItemRequest) returns (CreateItemResponse) {}  // Should be able to create items, depending on permissions
   rpc CreateRecipe(CreateRecipeRequest) returns (CreateRecipeResponse) {}  // Should be able to create recipes that include items the app has access to
+  rpc CreateAction(CreateActionRequest) returns (CreateActionResponse) {}
   rpc CreateTrade(CreateTradeRequest) returns (CreateTradeResponse) {}  // Should be able to initiate trades that include items
   rpc ReadIdentity(ReadIdentityRequest) returns (ReadIdentityResponse) {}  // Should be able to read info about a Slack user
   rpc ReadInventory(ReadInventoryRequest) returns (ReadInventoryResponse) {}  // Should be able to read inventory of a user, including access to private items the app has access to
@@ -17,12 +18,14 @@ service BagService {
   rpc ReadApp(ReadAppRequest) returns (ReadAppResponse) {}  // Should be able to read other public apps, as well as itself
   rpc ReadTrade(ReadTradeRequest) returns (ReadTradeResponse) {} // Should be able to read public trades as well as trades the app has initiated
   rpc ReadRecipe(ReadRecipeRequest) returns (ReadRecipeResponse) {}  // Should be able to read recipes that include items the app has access to
+  rpc ReadAction(ReadActionRequest) returns (ReadActionResponse) {}
   rpc UpdateIdentityMetadata(UpdateIdentityMetadataRequest) returns (UpdateIdentityMetadataResponse) {}  // Only things apps should be able to update - metadata 
   rpc UpdateInstance(UpdateInstanceRequest) returns (UpdateInstanceResponse) {}  // Should be able to update instances that are instances of items the app has access to
   rpc UpdateItem(UpdateItemRequest) returns (UpdateItemResponse) {}  // Should be able to update items the app has access to
   rpc UpdateApp(UpdateAppRequest) returns (UpdateAppResponse) {}  // Should be able to update own data
   rpc UpdateTrade(UpdateTradeRequest) returns (UpdateTradeResponse) {}  // Should be able to update trades the app has access to
   rpc UpdateRecipe (UpdateRecipeRequest) returns (UpdateRecipeResponse) {} // Should be able to update recipes the app has access to
+  rpc UpdateAction (UpdateActionRequest) returns (UpdateActionResponse) {}
   rpc DeleteApp(DeleteAppRequest) returns (DeleteAppResponse) {} // Should be able to delete apps as a admin
   rpc DeleteInstance(DeleteInstanceRequest) returns (DeleteInstanceResponse) {}  // Should be able to delete instances that the app has access to
   rpc CloseTrade(CloseTradeRequest) returns (CloseTradeResponse) {} // Should be able to close instances that the app has access to
@@ -108,6 +111,22 @@ message Recipe {
   optional string description = 7;
 }
 
+message Action {
+  optional int32 id = 1;
+  repeated string locations = 2;
+  repeated string tools = 3;
+  optional string branch = 4;
+}
+
+message ActionInstance {
+  optional int32 id = 1;
+  optional bool done = 2;
+  optional string identityId = 3;
+  optional Identity identity = 4;
+  optional int32 actionId = 5;
+  optional Action action = 6;
+}
+
 message CreateInstancesRequest {
   int32 appId = 1;
   string key = 2;
@@ -188,6 +207,17 @@ message CreateTradeRequest {
 message CreateTradeResponse {
   optional string response = 1;
   optional Trade trade = 2;
+}
+
+message CreateActionRequest {
+  int32 appId = 1;
+  string key = 2;
+  Action action = 3;
+}
+
+message CreateActionResponse {
+  optional string response = 1;
+  optional Action action = 2;
 }
 
 message ReadIdentityRequest {
@@ -278,6 +308,17 @@ message ReadRecipeResponse {
   repeated Recipe recipes = 2;
 }
 
+message ReadActionRequest {
+  int32 appId = 1;
+  string key = 2;
+  Action query = 3;
+}
+
+message ReadActionResponse {
+  optional string response = 1;
+  repeated Action actions = 2;
+}
+
 message UpdateIdentityMetadataRequest {
   int32 appId = 1;
   string key = 2;
@@ -344,13 +385,25 @@ message UpdateTradeResponse {
 message UpdateRecipeRequest {
   int32 appId = 1;
   string key = 2;
-  string recipeId = 3;
+  int32 recipeId = 3;
   Recipe new = 4;
 }
 
 message UpdateRecipeResponse {
   optional string response = 1;
   optional Recipe recipe = 2;
+}
+
+message UpdateActionRequest {
+  int32 appId = 1;
+  string key = 2;
+  int32 actionId = 3;
+  Action new = 4;
+}
+
+message UpdateActionResponse {
+  optional string response = 1;
+  optional Action action = 2;
 }
 
 message DeleteAppRequest {

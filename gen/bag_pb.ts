@@ -598,6 +598,128 @@ export class Recipe extends Message<Recipe> {
 }
 
 /**
+ * @generated from message bag.Action
+ */
+export class Action extends Message<Action> {
+  /**
+   * @generated from field: optional int32 id = 1;
+   */
+  id?: number;
+
+  /**
+   * @generated from field: repeated string locations = 2;
+   */
+  locations: string[] = [];
+
+  /**
+   * @generated from field: repeated string tools = 3;
+   */
+  tools: string[] = [];
+
+  /**
+   * @generated from field: optional string branch = 4;
+   */
+  branch?: string;
+
+  constructor(data?: PartialMessage<Action>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bag.Action";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 2, name: "locations", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "tools", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Action {
+    return new Action().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Action {
+    return new Action().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Action {
+    return new Action().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Action | PlainMessage<Action> | undefined, b: Action | PlainMessage<Action> | undefined): boolean {
+    return proto3.util.equals(Action, a, b);
+  }
+}
+
+/**
+ * @generated from message bag.ActionInstance
+ */
+export class ActionInstance extends Message<ActionInstance> {
+  /**
+   * @generated from field: optional int32 id = 1;
+   */
+  id?: number;
+
+  /**
+   * @generated from field: optional bool done = 2;
+   */
+  done?: boolean;
+
+  /**
+   * @generated from field: optional string identityId = 3;
+   */
+  identityId?: string;
+
+  /**
+   * @generated from field: optional bag.Identity identity = 4;
+   */
+  identity?: Identity;
+
+  /**
+   * @generated from field: optional int32 actionId = 5;
+   */
+  actionId?: number;
+
+  /**
+   * @generated from field: optional bag.Action action = 6;
+   */
+  action?: Action;
+
+  constructor(data?: PartialMessage<ActionInstance>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bag.ActionInstance";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 2, name: "done", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 3, name: "identityId", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 4, name: "identity", kind: "message", T: Identity, opt: true },
+    { no: 5, name: "actionId", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 6, name: "action", kind: "message", T: Action, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ActionInstance {
+    return new ActionInstance().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ActionInstance {
+    return new ActionInstance().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ActionInstance {
+    return new ActionInstance().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ActionInstance | PlainMessage<ActionInstance> | undefined, b: ActionInstance | PlainMessage<ActionInstance> | undefined): boolean {
+    return proto3.util.equals(ActionInstance, a, b);
+  }
+}
+
+/**
  * @generated from message bag.CreateInstancesRequest
  */
 export class CreateInstancesRequest extends Message<CreateInstancesRequest> {
@@ -1242,6 +1364,98 @@ export class CreateTradeResponse extends Message<CreateTradeResponse> {
 
   static equals(a: CreateTradeResponse | PlainMessage<CreateTradeResponse> | undefined, b: CreateTradeResponse | PlainMessage<CreateTradeResponse> | undefined): boolean {
     return proto3.util.equals(CreateTradeResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message bag.CreateActionRequest
+ */
+export class CreateActionRequest extends Message<CreateActionRequest> {
+  /**
+   * @generated from field: int32 appId = 1;
+   */
+  appId = 0;
+
+  /**
+   * @generated from field: string key = 2;
+   */
+  key = "";
+
+  /**
+   * @generated from field: bag.Action action = 3;
+   */
+  action?: Action;
+
+  constructor(data?: PartialMessage<CreateActionRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bag.CreateActionRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "action", kind: "message", T: Action },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateActionRequest {
+    return new CreateActionRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateActionRequest {
+    return new CreateActionRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateActionRequest {
+    return new CreateActionRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateActionRequest | PlainMessage<CreateActionRequest> | undefined, b: CreateActionRequest | PlainMessage<CreateActionRequest> | undefined): boolean {
+    return proto3.util.equals(CreateActionRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message bag.CreateActionResponse
+ */
+export class CreateActionResponse extends Message<CreateActionResponse> {
+  /**
+   * @generated from field: optional string response = 1;
+   */
+  response?: string;
+
+  /**
+   * @generated from field: optional bag.Action action = 2;
+   */
+  action?: Action;
+
+  constructor(data?: PartialMessage<CreateActionResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bag.CreateActionResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "action", kind: "message", T: Action, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateActionResponse {
+    return new CreateActionResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateActionResponse {
+    return new CreateActionResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateActionResponse {
+    return new CreateActionResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateActionResponse | PlainMessage<CreateActionResponse> | undefined, b: CreateActionResponse | PlainMessage<CreateActionResponse> | undefined): boolean {
+    return proto3.util.equals(CreateActionResponse, a, b);
   }
 }
 
@@ -1982,6 +2196,98 @@ export class ReadRecipeResponse extends Message<ReadRecipeResponse> {
 }
 
 /**
+ * @generated from message bag.ReadActionRequest
+ */
+export class ReadActionRequest extends Message<ReadActionRequest> {
+  /**
+   * @generated from field: int32 appId = 1;
+   */
+  appId = 0;
+
+  /**
+   * @generated from field: string key = 2;
+   */
+  key = "";
+
+  /**
+   * @generated from field: bag.Action query = 3;
+   */
+  query?: Action;
+
+  constructor(data?: PartialMessage<ReadActionRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bag.ReadActionRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "query", kind: "message", T: Action },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReadActionRequest {
+    return new ReadActionRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ReadActionRequest {
+    return new ReadActionRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ReadActionRequest {
+    return new ReadActionRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ReadActionRequest | PlainMessage<ReadActionRequest> | undefined, b: ReadActionRequest | PlainMessage<ReadActionRequest> | undefined): boolean {
+    return proto3.util.equals(ReadActionRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message bag.ReadActionResponse
+ */
+export class ReadActionResponse extends Message<ReadActionResponse> {
+  /**
+   * @generated from field: optional string response = 1;
+   */
+  response?: string;
+
+  /**
+   * @generated from field: repeated bag.Action actions = 2;
+   */
+  actions: Action[] = [];
+
+  constructor(data?: PartialMessage<ReadActionResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bag.ReadActionResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "actions", kind: "message", T: Action, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReadActionResponse {
+    return new ReadActionResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ReadActionResponse {
+    return new ReadActionResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ReadActionResponse {
+    return new ReadActionResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ReadActionResponse | PlainMessage<ReadActionResponse> | undefined, b: ReadActionResponse | PlainMessage<ReadActionResponse> | undefined): boolean {
+    return proto3.util.equals(ReadActionResponse, a, b);
+  }
+}
+
+/**
  * @generated from message bag.UpdateIdentityMetadataRequest
  */
 export class UpdateIdentityMetadataRequest extends Message<UpdateIdentityMetadataRequest> {
@@ -2504,9 +2810,9 @@ export class UpdateRecipeRequest extends Message<UpdateRecipeRequest> {
   key = "";
 
   /**
-   * @generated from field: string recipeId = 3;
+   * @generated from field: int32 recipeId = 3;
    */
-  recipeId = "";
+  recipeId = 0;
 
   /**
    * @generated from field: bag.Recipe new = 4;
@@ -2523,7 +2829,7 @@ export class UpdateRecipeRequest extends Message<UpdateRecipeRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "recipeId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "recipeId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 4, name: "new", kind: "message", T: Recipe },
   ]);
 
@@ -2584,6 +2890,104 @@ export class UpdateRecipeResponse extends Message<UpdateRecipeResponse> {
 
   static equals(a: UpdateRecipeResponse | PlainMessage<UpdateRecipeResponse> | undefined, b: UpdateRecipeResponse | PlainMessage<UpdateRecipeResponse> | undefined): boolean {
     return proto3.util.equals(UpdateRecipeResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message bag.UpdateActionRequest
+ */
+export class UpdateActionRequest extends Message<UpdateActionRequest> {
+  /**
+   * @generated from field: int32 appId = 1;
+   */
+  appId = 0;
+
+  /**
+   * @generated from field: string key = 2;
+   */
+  key = "";
+
+  /**
+   * @generated from field: int32 actionId = 3;
+   */
+  actionId = 0;
+
+  /**
+   * @generated from field: bag.Action new = 4;
+   */
+  new?: Action;
+
+  constructor(data?: PartialMessage<UpdateActionRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bag.UpdateActionRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "actionId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 4, name: "new", kind: "message", T: Action },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateActionRequest {
+    return new UpdateActionRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateActionRequest {
+    return new UpdateActionRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateActionRequest {
+    return new UpdateActionRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateActionRequest | PlainMessage<UpdateActionRequest> | undefined, b: UpdateActionRequest | PlainMessage<UpdateActionRequest> | undefined): boolean {
+    return proto3.util.equals(UpdateActionRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message bag.UpdateActionResponse
+ */
+export class UpdateActionResponse extends Message<UpdateActionResponse> {
+  /**
+   * @generated from field: optional string response = 1;
+   */
+  response?: string;
+
+  /**
+   * @generated from field: optional bag.Action action = 2;
+   */
+  action?: Action;
+
+  constructor(data?: PartialMessage<UpdateActionResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bag.UpdateActionResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "action", kind: "message", T: Action, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateActionResponse {
+    return new UpdateActionResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateActionResponse {
+    return new UpdateActionResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateActionResponse {
+    return new UpdateActionResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateActionResponse | PlainMessage<UpdateActionResponse> | undefined, b: UpdateActionResponse | PlainMessage<UpdateActionResponse> | undefined): boolean {
+    return proto3.util.equals(UpdateActionResponse, a, b);
   }
 }
 

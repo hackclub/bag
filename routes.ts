@@ -44,7 +44,6 @@ export async function execute(
         'Invalid permissions. Request permissions in Slack with /edit-app.'
       )
     // Strip appId and key
-    log(util.inspect(req, { depth: Infinity }))
     delete req.appId
     delete req.key
     const result = await func(req, app)
@@ -111,7 +110,6 @@ export default (router: ConnectRouter) => {
             }
           })
 
-        console.log('Instances', req.instances)
         for (let instance of req.instances) {
           const item = await prisma.item.findUnique({
             where: {
@@ -131,7 +129,6 @@ export default (router: ConnectRouter) => {
             instance => instance.itemId === item.name
           )
           if (existing !== undefined) {
-            console.log(existing.quantity, instance.quantity)
             create = await prisma.instance.update({
               where: {
                 id: existing.id
@@ -699,6 +696,7 @@ export default (router: ConnectRouter) => {
 
   router.rpc(BagService, BagService.methods.readAction, async req => {
     return await execute(req, async (req, app) => {
+      // TODO: Filter for permissions
       // Search for action
       let actions = await prisma.action.findMany({
         where: {
@@ -709,7 +707,6 @@ export default (router: ConnectRouter) => {
             : undefined
         }
       })
-      console.log(actions)
       return { actions }
     })
   })

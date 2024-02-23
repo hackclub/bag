@@ -209,6 +209,7 @@ const showInventory = async (
       formatted.push(` x${instance.quantity} ${item.reaction} ${item.name}`)
     }
     if (formatted.length == 1) return formatted[0]
+    formatted = formatted.sort((a, b) => a.localeCompare(b))
     return (
       formatted.slice(0, formatted.length - 1).join(', ') +
       (formatted.length > 2 ? ',' : '') +

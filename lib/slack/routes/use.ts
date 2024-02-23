@@ -1,11 +1,9 @@
 import { type IdentityWithInventory, prisma } from '../../db'
 import { inMaintainers, maintainers } from '../../utils'
 import slack, { execute, CommandMiddleware } from '../slack'
-import fs from 'fs'
-import path from 'path'
-import { parse } from 'yaml'
 
 const ACTION_TEST = ['action-test', 'test888']
+const LOADING = '\n:loading-dots:'
 
 const canBeUsed = async (
   user: IdentityWithInventory,
@@ -58,20 +56,18 @@ const canBeUsed = async (
 
 slack.command('/huh', async props => {
   await execute(props, async props => {
+    const conversation = await props.client.conversations.info({
+      channel: props.body.channel_id
+    })
+
+    const test = ACTION_TEST.includes(conversation.channel.name)
+
     const user = await prisma.identity.findUnique({
       where: { slack: props.context.userId },
       include: { inventory: true }
     })
 
-    if (
-      !Object.values(maintainers)
-        .map((maintainer: any) => maintainer.slack)
-        .includes(user.slack)
-    )
-      return await props.respond({
-        response_type: 'ephemeral',
-        text: 'no.'
-      })
+    if (!inMaintainers(user.slack)) return
     if (
       await prisma.actionInstance.findFirst({
         where: {
@@ -122,7 +118,10 @@ slack.command('/huh', async props => {
                 })
 
             if (!ref) throw new Error(`Oops, couldn't find *${s.trim()}*.`)
-            if (!user.inventory.find(instance => instance.itemId === ref.name))
+            if (
+              !test &&
+              !user.inventory.find(instance => instance.itemId === ref.name)
+            )
               throw new Error(
                 `Oops, looks like you don't have ${ref.reaction} ${ref.name} in your inventory.`
               )
@@ -138,15 +137,9 @@ slack.command('/huh', async props => {
     }
 
     // Check if inputs can be used in location
-    const conversation = await props.client.conversations.info({
-      channel: props.body.channel_id
-    })
-
     let possible = await prisma.action.findFirst({
       where: {
-        locations: ACTION_TEST.includes(conversation.channel.name)
-          ? undefined
-          : { has: conversation.channel.name },
+        locations: test ? undefined : { has: conversation.channel.name },
         tools: { hasEvery: inputs }
       }
     })
@@ -168,29 +161,38 @@ slack.command('/huh', async props => {
     let description = [`<@${user.slack}> ran \`/use ${message}\`:`]
     let summary = { outputs: [], losses: [] }
 
-    const { channel, ts } = await props.client.chat.postMessage({
-      channel: props.body.channel_id,
-      text: description[0]
-    })
-
     let trees = [
       new Results({
         ...possible,
-        thread: { channel, ts }
+        test
       })
     ]
+
+    let channel = props.body.channel_id
+    let ts: string
 
     if (tag.length && trim(tag, '-').length) {
       // When the tag field is used for testing with a single-hyphen prefix the test should play out normally from the start
       // This means we search for a direct route to the result
       trees = trees[0].search(trim(tag, '-'), Infinity)
-      if (!trees.length)
+      if (!trees.length) {
+        await prisma.actionInstance.update({
+          where: { id: action.id },
+          data: { done: true }
+        })
         return await props.respond({
           response_type: 'ephemeral',
           text: `${tag} is not applicable.`
         })
+      }
+      ts = (
+        await props.client.chat.postMessage({
+          channel: props.body.channel_id,
+          text: description[0] + LOADING
+        })
+      ).ts
       for (let [i, node] of trees.entries()) {
-        node.thread = { channel, ts }
+        node.thread = i === 0 ? { channel, ts } : trees[i - 1].thread
         if (i === trees.length) node.delay = 0
         await node.run(
           props,
@@ -200,6 +202,14 @@ slack.command('/huh', async props => {
           tag.startsWith('--')
         )
       }
+    } else {
+      ts = (
+        await props.client.chat.postMessage({
+          channel: props.body.channel_id,
+          text: description[0] + LOADING
+        })
+      ).ts
+      trees[trees.length - 1].thread = { channel, ts }
     }
 
     try {
@@ -246,8 +256,7 @@ slack.command('/huh', async props => {
       data: { done: true }
     })
     await props.client.chat.update({
-      channel,
-      ts,
+      ...trees[trees.length - 1].thread,
       text: description.join('\n\n')
     })
   })
@@ -257,6 +266,7 @@ class Results {
   tag?: string
   description?: string
   thread: { channel: string; ts: string }
+  test: boolean
 
   goto?: string
   gotoChildren?: string
@@ -281,6 +291,7 @@ class Results {
     this.tag = obj.tag
     this.description = obj.description
     this.thread = obj.thread
+    this.test = obj.test || false
 
     this.goto = obj.goto
     this.gotoChildren = obj.gotoChildren
@@ -295,7 +306,8 @@ class Results {
         sequence =>
           new Results({
             ...sequence,
-            thread: this.thread
+            thread: this.thread,
+            test: this.test
           })
       ) || []
     this.branches =
@@ -307,14 +319,16 @@ class Results {
             sequence: branch.map(sequence => ({ ...sequence })),
             defaultDelay: initial.defaultDelay,
             frequency: initial.frequency,
-            thread: this.thread
+            thread: this.thread,
+            test: this.test
           })
         }
         return new Results({
           ...branch,
           delay: branch.delay || obj.defaultDelay,
           frequency: branch.frequency || this.frequency,
-          thread: this.thread
+          thread: this.thread,
+          test: this.test
         })
       }) || []
 
@@ -338,7 +352,7 @@ class Results {
     }
   }
 
-  search(tag: string, depth: number = 1, curr: number = 1): Array<Results> {
+  search(tag: string, depth: number = 1, curr: number = 1) {
     // Search for branch that has tag up to depth
     if (this.tag === tag) return [this]
     let branches = []
@@ -352,9 +366,8 @@ class Results {
         for (let [i, sequence] of branch.sequence.entries()) {
           traverse.push(sequence)
           if (sequence.tag === tag) {
-            for (let after of branch.sequence.slice(i + 1)) {
+            for (let after of branch.sequence.slice(i + 1))
               sequence.sequence.push(after)
-            }
             traverse[traverse.length - 1] = sequence
             branches.push(...traverse)
             return branches
@@ -419,12 +432,12 @@ class Results {
       let result = await node.run(props, prev, description, summary, instant)
       if (node.branches.length) {
         // Run branches
-        console.log(node.branches)
         let branch = node.pickBranch()
         branch.thread = this.thread
-        await branch.run(props, prev, description, summary, instant)
+        result = await branch.run(props, prev, description, summary, instant)
       }
       if (node.break) break
+      this.thread = result[result.length - 1].thread
     }
 
     return prev
@@ -449,34 +462,59 @@ class Results {
 
     if (this.description) {
       description.push(this.description.trim())
-      await props.client.chat.update({
-        ...this.thread,
-        text: description.join('\n\n')
-      })
+      try {
+        await props.client.chat.update({
+          ...this.thread,
+          text: description.join('\n\n') + LOADING
+        })
+      } catch {
+        // Length too long? Start a new thread
+        await props.client.chat.update({
+          ...this.thread,
+          text: description.slice(0, description.length - 1).join('\n\n')
+        })
+        const { permalink } = await props.client.chat.getPermalink({
+          channel: this.thread.channel,
+          message_ts: this.thread.ts
+        })
+        description.push(
+          `Continued from <${permalink}|the past>:`,
+          `<@${
+            props.context.userId
+          }> ran \`/use ${props.command.text.trim()}\`:`,
+          description[description.length - 1]
+        )
+        description.splice(0, description.length - 3)
+        const { channel, ts } = await props.client.chat.postMessage({
+          channel: this.thread.channel,
+          text: description.join('\n\n') + LOADING,
+          unfurl_links: false
+        })
+        this.thread = { channel, ts }
+      }
     }
 
-    if (this.outputs) {
+    for (let output of this.outputs) {
       // Give user the outputs
-      for (let output of this.outputs) {
-        // Check if user already has an instance and add to that instance
+      const item = await prisma.item.findUnique({ where: { name: output } })
+
+      const outputSummary = summary.outputs.findIndex(
+        summaryOutput => summaryOutput[1] === `${item.reaction} ${item.name}`
+      )
+      if (outputSummary >= 0)
+        summary.outputs[outputSummary] = [
+          summary.outputs[outputSummary][0] + 1,
+          `${item.reaction} ${item.name}`
+        ]
+      else summary.outputs.push([1, `${item.reaction} ${item.name}`])
+
+      if (!this.test) {
         const existing = await prisma.instance.findFirst({
           where: {
             identityId: props.body.user_id,
             itemId: output
           }
         })
-        const item = await prisma.item.findUnique({ where: { name: output } })
-
-        const outputSummary = summary.outputs.findIndex(
-          summaryOutput => summaryOutput[1] === `${item.reaction} ${item.name}`
-        )
-        if (outputSummary >= 0)
-          summary.outputs[outputSummary] = [
-            summary.outputs[outputSummary][0] + 1,
-            `${item.reaction} ${item.name}`
-          ]
-        else summary.outputs.push([1, `${item.reaction} ${item.name}`])
-
         if (existing)
           await prisma.instance.update({
             where: { id: existing.id },
@@ -495,19 +533,18 @@ class Results {
       }
     }
 
-    if (this.losses) {
+    for (let loss of this.losses) {
       // Remove losses from user's inventory
-      for (let loss of this.losses) {
-        // Check if user has instance
-        const existing = await prisma.instance.findFirst({
-          where: {
-            identityId: props.body.user_id,
-            itemId: loss
-          },
-          include: { item: true }
-        })
+      const existing = await prisma.instance.findFirst({
+        where: {
+          identityId: props.body.user_id,
+          itemId: loss
+        },
+        include: { item: true }
+      })
 
-        if (existing) {
+      if (existing) {
+        if (!this.test) {
           if (existing.quantity - 1 === 0)
             await prisma.instance.update({
               where: { id: existing.id },
@@ -518,23 +555,22 @@ class Results {
               where: { id: existing.id },
               data: { quantity: existing.quantity - 1 }
             })
-
-          const lossSummary = summary.losses.findIndex(
-            summaryLoss =>
-              summaryLoss[1] ===
-              `${existing.item.reaction} ${existing.item.name}`
-          )
-          if (lossSummary >= 0)
-            summary.losses[lossSummary] = [
-              summary.losses[lossSummary][0] + 1,
-              `${existing.item.reaction} ${existing.item.name}`
-            ]
-          else
-            summary.losses.push([
-              1,
-              `${existing.item.reaction} ${existing.item.name}`
-            ])
         }
+
+        const lossSummary = summary.losses.findIndex(
+          summaryLoss =>
+            summaryLoss[1] === `${existing.item.reaction} ${existing.item.name}`
+        )
+        if (lossSummary >= 0)
+          summary.losses[lossSummary] = [
+            summary.losses[lossSummary][0] + 1,
+            `${existing.item.reaction} ${existing.item.name}`
+          ]
+        else
+          summary.losses.push([
+            1,
+            `${existing.item.reaction} ${existing.item.name}`
+          ])
       }
     }
 
@@ -545,12 +581,12 @@ class Results {
     }
 
     if (this.goto) {
-      // When a node with a goto completes, the action will move to the node with a matching tag. This lets us have multiple divergent branches that come back to an earlier node in the tree
+      // When a node with a goto completes, this action will move to the node with a matching tag.
       let newTree = prev[0].search(this.goto, Infinity)
       newTree[newTree.length - 1].thread = this.thread
       return newTree
     } else if (this.gotoChildren) {
-      // The gotoChildren field acts like goto, except it skips the contents of the tagged node and instead goes to its children. This is useful mostly when we want to return not to a specific node, but to some rnadomly-selected branch directly beneath it.
+      // The gotoChildren field acts like goto, except it skips the contents of the tagged node and instead goes to its children. This is useful mostly whe we want to return not to a specific node, but to some randomly-selected branch directly beneath it.
       let newTree = prev[0].search(this.gotoChildren, Infinity)
       const tree = newTree[newTree.length - 1]
       tree.thread = this.thread
@@ -574,13 +610,3 @@ const random = (min: number, max: number) =>
 
 const sleep = async (seconds: number) =>
   new Promise(r => setTimeout(r, seconds * 1000))
-
-const actions = async () => {
-  if (!global.uses) {
-    global.uses = parse(
-      fs.readFileSync(path.join(process.cwd(), './test.yaml'), 'utf-8')
-    )
-  }
-
-  return global.uses
-}

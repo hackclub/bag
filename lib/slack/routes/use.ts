@@ -54,7 +54,7 @@ const canBeUsed = async (
   return true
 }
 
-slack.command('/huh', async props => {
+slack.command('/use', async props => {
   await execute(props, async props => {
     const conversation = await props.client.conversations.info({
       channel: props.body.channel_id
@@ -118,12 +118,18 @@ slack.command('/huh', async props => {
                 })
 
             if (!ref) throw new Error(`Oops, couldn't find *${s.trim()}*.`)
-            if (
-              !test &&
-              !user.inventory.find(instance => instance.itemId === ref.name)
+
+            let instance = user.inventory.find(
+              instance => instance.itemId === ref.name
             )
+
+            if (!test && !instance)
               throw new Error(
                 `Oops, looks like you don't have ${ref.reaction} ${ref.name} in your inventory.`
+              )
+            else if (!(await canBeUsed(user, instance)))
+              throw new Error(
+                `Oops, looks like you don't have enough ${ref.reaction} ${ref.name} in your inventory. You could possibly be using ${ref.reaction} ${ref.name} somewhere else.`
               )
 
             return ref.name.toLowerCase()

@@ -14,6 +14,7 @@ import {
   RecipeItem,
   Skill
 } from '@prisma/client'
+import type { Block, KnownBlock } from '@slack/bolt'
 import { WebClient } from '@slack/web-api'
 import util from 'util'
 import { v4 as uuid } from 'uuid'
@@ -176,7 +177,10 @@ export default (router: ConnectRouter) => {
               formatted[formatted.length - 1]
             }! They're all in your bag now.`
           )
-        if (req.note) text.push(`\n\n>${req.note}`)
+        if (req.note) {
+          if (req.note.includes('\n')) text.push(`\n\n${req.note}`)
+          else text.push(`\n\n\n>${req.note}`)
+        }
         await web.chat.postMessage({
           channel: req.identityId,
           blocks: [
@@ -265,25 +269,52 @@ export default (router: ConnectRouter) => {
           })
 
         // Send message to instance receiver
-        let text = []
+        let text: (Block | KnownBlock)[] = []
         if (req.show !== false)
-          text.push(
-            `*${app.name}* just sent you x${req.quantity || 1} ${
-              item.reaction
-            } *${item.name}*! It's in your bag now.`
-          )
-        if (req.note) text.push(`\n\n>${req.note}`)
+          text.push({
+            type: 'section',
+            text: {
+              text: `*${app.name}* just sent you x${req.quantity || 1} ${
+                item.reaction
+              } *${item.name}*! It's in your bag now.`,
+              type: 'mrkdwn'
+            }
+          })
+        if (req.note) {
+          if (req.note.includes('\n'))
+            text.push(
+              {
+                type: 'divider'
+              },
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: `${req.note}`
+                }
+              },
+              {
+                type: 'divider'
+              }
+            )
+          else
+            text.push(
+              { type: 'divider' },
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: `${req.note}`
+                }
+              },
+              {
+                type: 'divider'
+              }
+            )
+        }
         await web.chat.postMessage({
           channel: req.identityId,
-          blocks: [
-            {
-              type: 'section',
-              text: {
-                type: 'mrkdwn',
-                text: text.join('')
-              }
-            }
-          ]
+          blocks: text
         })
 
         return { instance: instance }
@@ -762,7 +793,7 @@ export default (router: ConnectRouter) => {
           data: req.new
         })
 
-        let text = []
+        let text: (Block | KnownBlock)[] = []
         if (instance.quantity === 0) {
           // Delete instance
           instance = await prisma.instance.delete({
@@ -775,20 +806,59 @@ export default (router: ConnectRouter) => {
           })
 
           if (req.show !== false)
-            text.push(
-              `*${app.name}* just removed ${
-                (instance as InstanceWithItem).item.name
-              } from your bag!`
-            )
+            text.push({
+              type: 'section',
+              text: {
+                text: `*${app.name}* just removed ${
+                  (instance as InstanceWithItem).item.name
+                } from your bag!`,
+                type: 'mrkdwn'
+              }
+            })
         } else {
           if (req.show !== false)
+            text.push({
+              type: 'section',
+              text: {
+                text: `*${app.name}* just updated ${
+                  (instance as InstanceWithItem).item.name
+                } from your bag!`,
+                type: 'mrkdwn'
+              }
+            })
+        }
+        if (req.note) {
+          if (req.note.includes('\n'))
             text.push(
-              `*${app.name}* just updated ${
-                (instance as InstanceWithItem).item.name
-              } from your bag!`
+              {
+                type: 'divider'
+              },
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: `${req.note}`
+                }
+              },
+              {
+                type: 'divider'
+              }
+            )
+          else
+            text.push(
+              { type: 'divider' },
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: `${req.note}`
+                }
+              },
+              {
+                type: 'divider'
+              }
             )
         }
-        if (req.note) text.push(`\n\n${req.note}`)
         await web.chat.postMessage({
           channel: req.identityId,
           blocks: [

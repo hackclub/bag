@@ -127,10 +127,6 @@ slack.command('/use', async props => {
               throw new Error(
                 `Oops, looks like you don't have ${ref.reaction} ${ref.name} in your inventory.`
               )
-            else if (!(await canBeUsed(user, instance)))
-              throw new Error(
-                `Oops, looks like you don't have enough ${ref.reaction} ${ref.name} in your inventory. You could possibly be using ${ref.reaction} ${ref.name} somewhere else.`
-              )
 
             return ref.name.toLowerCase()
           })

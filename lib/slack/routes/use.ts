@@ -67,7 +67,6 @@ slack.command('/use', async props => {
       include: { inventory: true }
     })
 
-    if (!inMaintainers(user.slack)) return
     if (
       await prisma.actionInstance.findFirst({
         where: {
@@ -126,6 +125,10 @@ slack.command('/use', async props => {
             if (!test && !instance)
               throw new Error(
                 `Oops, looks like you don't have ${ref.reaction} ${ref.name} in your inventory.`
+              )
+            else if (!(await canBeUsed(user, instance)))
+              throw new Error(
+                `Oops, looks like you don't have enough ${ref.reaction} ${ref.name} in your inventory. You could possibly be using ${ref.reaction} ${ref.name} somewhere else.`
               )
 
             return ref.name.toLowerCase()

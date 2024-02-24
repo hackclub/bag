@@ -183,15 +183,7 @@ export default (router: ConnectRouter) => {
         }
         await web.chat.postMessage({
           channel: req.identityId,
-          blocks: [
-            {
-              type: 'section',
-              text: {
-                type: 'mrkdwn',
-                text: text.join('')
-              }
-            }
-          ]
+          blocks: text
         })
 
         return { instances: created }

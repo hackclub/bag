@@ -4,6 +4,79 @@ import slack, { execute } from '../slack'
 import views from '../views'
 import type { Block, KnownBlock, View } from '@slack/bolt'
 
+const craft = async (slack: string, craftingId: number, recipeId: number) => {
+  const crafting = await prisma.crafting.findUnique({
+    where: { id: craftingId }
+  })
+
+  const updated = await prisma.crafting.update({
+    where: { id: craftingId },
+    data: { recipeId },
+    include: {
+      recipe: {
+        include: {
+          inputs: true,
+          tools: true,
+          outputs: { include: { recipeItem: true } }
+        }
+      },
+      inputs: { include: { instance: true } }
+    }
+  })
+
+  // Deduce inputs (not tools) from user's inventory
+  for (let part of updated.inputs) {
+    const { instance } = part
+    // Make sure instance is actually in recipe before deducting
+    if (
+      !updated.recipe.inputs.find(
+        input => input.recipeItemId === part.recipeItemId
+      )
+    )
+      continue
+    if (part.quantity < instance.quantity) {
+      // Subtract from quantity
+      await prisma.instance.update({
+        where: { id: instance.id },
+        data: { quantity: instance.quantity - part.quantity }
+      })
+    } else {
+      // Detach entire instance
+      await prisma.instance.update({
+        where: { id: instance.id },
+        data: {
+          identity: { disconnect: true }
+        }
+      })
+    }
+
+    // Give user the output
+    for (let output of updated.recipe.outputs) {
+      // Check if user already has an instance and add to that instance
+      const existing = await prisma.instance.findFirst({
+        where: {
+          identityId: slack,
+          itemId: output.recipeItemId
+        }
+      })
+      if (existing)
+        await prisma.instance.update({
+          where: { id: existing.id },
+          data: { quantity: output.quantity + existing.quantity }
+        })
+      else
+        await prisma.instance.create({
+          data: {
+            itemId: output.recipeItemId,
+            identityId: crafting.identityId,
+            quantity: output.quantity,
+            public: output.recipeItem.public
+          }
+        })
+    }
+  }
+}
+
 slack.command('/huh', async props => {
   return await execute(props, async props => {
     if (!inMaintainers(props.context.userId))
@@ -57,6 +130,69 @@ slack.command('/huh', async props => {
           ts: crafting.ts
         })
       } catch {}
+    }
+
+    if (props.body.text.startsWith(':')) {
+      // Craft directly
+      const reactions = props.body.text
+        .trim()
+        .split(' ')
+        .reduce((acc: any, curr) => {
+          const index = acc.findIndex(reaction => reaction.reaction === curr)
+          if (index >= 0) {
+            acc[index].quantity++
+          } else acc.push({ quantity: 1, reaction: curr })
+          return acc
+        }, [])
+      const items = await prisma.item.findMany({
+        where: {
+          reaction: { in: props.body.text.trim().split(' ') }
+        }
+      })
+
+      if (items.length) {
+        // Make sure user has access to all items
+        let instances = {}
+        for (let item of items) {
+          const reaction = reactions.find(
+            reaction => reaction.reaction === item.reaction
+          )
+          const instance = await prisma.instance.findFirst({
+            where: {
+              identityId: props.context.userId,
+              itemId: item.name,
+              quantity: {
+                gte: reaction.quantity
+              }
+            }
+          })
+          if (!instance)
+            return await props.respond({
+              response_type: 'ephemeral',
+              text: `Woah woah woah! It doesn't look like you have ${reaction.quantity} ${item.reaction} ${item.name} to craft. You could possibly be using ${item.reaction} ${item.name} somewhere else.`
+            })
+          else
+            instances[item.name] = {
+              id: instance.id,
+              quantity: reaction.quantity
+            }
+        }
+
+        // Create instances
+        let inputs = []
+        for (let item of items) {
+          inputs.push(
+            await prisma.recipeItem.create({
+              data: {
+                recipeItemId: item.name,
+                instanceId: instances[item.name].id,
+                quantity: instances[item.name].quantity,
+                craftingInputs: { connect: { id: crafting.id } }
+              }
+            })
+          )
+        }
+      }
     }
 
     const { channel, ts } = await props.client.chat.postMessage({
@@ -236,83 +372,7 @@ slack.action('complete-crafting', async props => {
     // @ts-expect-error
     let { craftingId, recipeId, channel, ts } = JSON.parse(props.action.value)
 
-    const crafting = await prisma.crafting.findUnique({
-      where: { id: craftingId }
-    })
-    if (crafting.identityId !== props.body.user.id)
-      return await props.respond({
-        response_type: 'ephemeral',
-        replace_original: false,
-        text: "Woah woah woah! Don't be rude, you can't mess with the stuff on someone else's worktable."
-      })
-
-    // Link recipe to "close" crafting
-    const updated = await prisma.crafting.update({
-      where: { id: craftingId },
-      data: { recipeId },
-      include: {
-        recipe: {
-          include: {
-            inputs: true,
-            tools: true,
-            outputs: { include: { recipeItem: true } }
-          }
-        },
-        inputs: { include: { instance: true } }
-      }
-    })
-
-    // Deduce inputs (not tools) from user's inventory
-    for (let part of updated.inputs) {
-      const { instance } = part
-      // Make sure instance is actually in recipe before deducting
-      if (
-        !updated.recipe.inputs.find(
-          input => input.recipeItemId === part.recipeItemId
-        )
-      )
-        continue
-      if (part.quantity < instance.quantity) {
-        // Subtract from quantity
-        await prisma.instance.update({
-          where: { id: instance.id },
-          data: { quantity: instance.quantity - part.quantity }
-        })
-      } else {
-        // Detach entire instance
-        await prisma.instance.update({
-          where: { id: instance.id },
-          data: {
-            identity: { disconnect: true }
-          }
-        })
-      }
-    }
-
-    // Give user the output
-    for (let output of updated.recipe.outputs) {
-      // Check if user already has an instance and add to that instance
-      const existing = await prisma.instance.findFirst({
-        where: {
-          identityId: props.body.user.id,
-          itemId: output.recipeItemId
-        }
-      })
-      if (existing)
-        await prisma.instance.update({
-          where: { id: existing.id },
-          data: { quantity: output.quantity + existing.quantity }
-        })
-      else
-        await prisma.instance.create({
-          data: {
-            itemId: output.recipeItemId,
-            identityId: crafting.identityId,
-            quantity: output.quantity,
-            public: output.recipeItem.public
-          }
-        })
-    }
+    await craft(props.body.user.id, Number(craftingId), Number(recipeId))
 
     // @ts-expect-error
     await props.client.chat.update({
@@ -748,7 +808,7 @@ const showCrafting = async (
             type: 'plain_text',
             text: 'Cancel'
           },
-          value: JSON.stringify({ craftingId }),
+          value: JSON.stringify({ craftingId, ...thread }),
           style: 'danger',
           action_id: 'cancel-crafting'
         }

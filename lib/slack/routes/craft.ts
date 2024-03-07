@@ -79,13 +79,6 @@ const craft = async (slack: string, craftingId: number, recipeId: number) => {
 
 slack.command('/craft', async props => {
   return await execute(props, async props => {
-    if (!inMaintainers(props.context.userId))
-      return await props.client.chat.postMessage({
-        channel: props.body.channel_id,
-        user: props.context.userId,
-        text: "You found something... but it's not ready yet."
-      })
-
     try {
       const conversation = await props.client.conversations.info({
         channel: props.body.channel_id

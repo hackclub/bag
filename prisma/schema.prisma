@@ -105,6 +105,8 @@ model Trade {
   receiverAgreed      Boolean         @default(false)
   public              Boolean         @default(true)
   closed              Boolean         @default(false)
+  channel             String?
+  ts                  String?
 }
 
 model TradeInstance {
@@ -123,6 +125,8 @@ model Crafting {
   inputs     RecipeItem[] @relation("craftingInputs")
   recipeId   Int?
   recipe     Recipe?      @relation(fields: [recipeId], references: [id])
+  channel    String?
+  ts         String?
 }
 
 model RecipeItem {

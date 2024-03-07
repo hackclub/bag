@@ -1,12 +1,12 @@
 import { prisma } from '../../db'
-import { channelBlacklist, channels, maintainers } from '../../utils'
+import { channelBlacklist, channels, inMaintainers } from '../../utils'
 import slack, { execute } from '../slack'
 import views from '../views'
 import type { Block, KnownBlock, View } from '@slack/bolt'
 
-slack.command('/craft', async props => {
+slack.command('/huh', async props => {
   return await execute(props, async props => {
-    if (!maintainers.includes(props.context.userId))
+    if (!inMaintainers(props.context.userId))
       return await props.client.chat.postMessage({
         channel: props.body.channel_id,
         user: props.context.userId,
@@ -49,6 +49,13 @@ slack.command('/craft', async props => {
       crafting = await prisma.crafting.create({
         data: { identityId: props.context.userId }
       })
+    else if (crafting.channel && crafting.ts) {
+      // Delete previous thread
+      await props.client.chat.delete({
+        channel: crafting.channel,
+        ts: crafting.ts
+      })
+    }
 
     const { channel, ts } = await props.client.chat.postMessage({
       channel: props.body.channel_id,
@@ -62,6 +69,12 @@ slack.command('/craft', async props => {
         channel,
         ts
       })
+    })
+
+    // Update crafting with new channel and thread
+    await prisma.crafting.update({
+      where: { id: crafting.id },
+      data: { channel, ts }
     })
   })
 })
@@ -91,7 +104,7 @@ slack.action('edit-crafting', async props => {
     const { view } = await props.client.views.open({
       // @ts-expect-error
       trigger_id: props.body.trigger_id,
-      views: views.loadingDialog('Edit crafting')
+      view: views.loadingDialog('Edit crafting')
     })
 
     // @ts-expect-error
@@ -551,8 +564,7 @@ const showCrafting = async (
               inputs: { some: { recipeItemId: item.name, instanceId: null } }
             },
             { tools: { some: { recipeItemId: item.name, instanceId: null } } }
-          ], // Either in inputs or tools and not being used in crafting
-          crafted: undefined
+          ] // Either in inputs or tools and not being used in crafting
         },
         include: {
           inputs: { include: { recipeItem: true } },
@@ -564,10 +576,16 @@ const showCrafting = async (
         // Exact inputs and tools
         const inputs = [...recipe.inputs, ...recipe.tools]
         for (let input of inputs) {
-          if (!crafting.inputs.find(i => i.id === input.id)) return false
+          if (
+            !crafting.inputs.find(
+              instance => instance.recipeItemId === input.recipeItemId
+            )
+          )
+            return false
         }
         return true
       })
+
       canMake.push(
         ...partOf.map(recipe => {
           let inputs = recipe.inputs
@@ -583,7 +601,11 @@ const showCrafting = async (
             )
             .join(', ')
           let formatted =
-            inputs + (tools.length ? ' ~ ' + tools : '') + ' *→* ' + outputs
+            inputs +
+            (tools.length ? ' ~ ' + tools : '') +
+            ' *→* ' +
+            outputs +
+            '\n'
           let block: Block | KnownBlock = {
             type: 'section',
             text: {
@@ -609,9 +631,12 @@ const showCrafting = async (
           return block
         })
       )
+
+      return `x${input.quantity} ${item.reaction} ${item.name}`
     })
   )
 
+  // Find all recipes that includes the inputs as either an input or a tool
   let blocks: (Block | KnownBlock)[] = []
   if (crafted) {
     const { recipe } = crafting
@@ -639,12 +664,12 @@ const showCrafting = async (
       )
       .join(', ')
     const recipeFormatted =
-      inputs + (tools.length ? ' ~ ' + tools : '') + ' → ' + outputsFormatted
+      inputs + (tools.length ? ' + ' + tools : '') + ' → ' + outputsFormatted
     blocks.push({
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `<@${userId}> just crafted ${recipeFormatted}\n>_${crafting.recipe.description}_`
+        text: `<@${userId}> just crafted ${outputsFormatted}.\n>_${crafting.recipe.description}_`
       }
     })
   } else
@@ -664,7 +689,7 @@ const showCrafting = async (
               text:
                 inputs.slice(0, inputs.length - 1).join(', ') +
                 (inputs.length > 2 ? ',' : '') +
-                (inputs.length > 1 ? ' and ' : '') +
+                ' and ' +
                 inputs[inputs.length - 1]
             }
           }
@@ -672,7 +697,7 @@ const showCrafting = async (
             type: 'section',
             text: {
               type: 'mrkdwn',
-              text: 'TODO'
+              text: '_Add something from your inventory to see what you can make with it._'
             }
           },
       {
@@ -695,35 +720,37 @@ const showCrafting = async (
               type: 'section',
               text: {
                 type: 'mrkdwn',
-                text: 'TODO'
+                text: "_You can't make anything with those ingredients._"
               }
             } as Block
-          ]),
-      {
-        type: 'actions',
-        elements: [
-          {
-            type: 'button',
-            text: {
-              type: 'plain_text',
-              text: 'Edit'
-            },
-            value: JSON.stringify({ craftingId, ...thread }),
-            style: 'primary',
-            action_id: 'edit-crafting'
-          },
-          {
-            type: 'button',
-            text: {
-              type: 'plain_text',
-              text: 'Cancel'
-            },
-            value: JSON.stringify({ craftingId, ...thread }),
-            style: 'danger',
-            action_id: 'cancel-crafting'
-          }
-        ]
-      }
+          ])
     )
+
+  if (!crafted)
+    blocks.push({
+      type: 'actions',
+      elements: [
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: 'Edit'
+          },
+          value: JSON.stringify({ craftingId, ...thread }),
+          style: 'primary',
+          action_id: 'edit-crafting'
+        },
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: 'Cancel'
+          },
+          value: JSON.stringify({ craftingId }),
+          style: 'danger',
+          action_id: 'cancel-crafting'
+        }
+      ]
+    })
   return blocks
 }

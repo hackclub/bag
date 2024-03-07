@@ -229,7 +229,7 @@ export default (router: ConnectRouter) => {
         const existing = identity.inventory.find(
           instance => instance.itemId === item.name
         )
-        if (existing !== undefined)
+        if (existing !== undefined && existing.identityId !== '')
           instance = await prisma.instance.update({
             where: {
               id: existing.id
@@ -304,10 +304,10 @@ export default (router: ConnectRouter) => {
               }
             )
         }
-        await web.chat.postMessage({
-          channel: req.identityId,
-          blocks: text
-        })
+        // await web.chat.postMessage({
+        //   channel: req.identityId,
+        //   blocks: text
+        // })
 
         return { instance: instance }
       },

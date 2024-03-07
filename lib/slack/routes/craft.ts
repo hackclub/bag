@@ -372,6 +372,16 @@ slack.action('complete-crafting', async props => {
     // @ts-expect-error
     let { craftingId, recipeId, channel, ts } = JSON.parse(props.action.value)
 
+    const crafting = await prisma.crafting.findUnique({
+      where: { id: craftingId }
+    })
+    if (crafting.identityId !== props.body.user.id)
+      return await props.respond({
+        response_type: 'ephemeral',
+        replace_original: false,
+        text: "Woah woah woah! Don't be rude, you can't mess with the stuff on someone else's worktable."
+      })
+
     await craft(props.body.user.id, Number(craftingId), Number(recipeId))
 
     // @ts-expect-error
@@ -635,14 +645,15 @@ const showCrafting = async (
       partOf = partOf.filter(recipe => {
         // Exact inputs and tools
         const inputs = [...recipe.inputs, ...recipe.tools]
+        let covered = []
         for (let input of inputs) {
-          if (
-            !crafting.inputs.find(
-              instance => instance.recipeItemId === input.recipeItemId
-            )
+          const index = crafting.inputs.findIndex(
+            instance => instance.recipeItemId === input.recipeItemId
           )
-            return false
+          if (index < 0) return false
+          covered.push(index)
         }
+        if (covered.length !== crafting.inputs.length) return false
         return true
       })
 

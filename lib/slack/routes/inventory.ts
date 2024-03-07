@@ -226,7 +226,6 @@ const showInventory = async (
       const bSplit = b.trim().split(' ')
       return aSplit.slice(1).join(' ').localeCompare(bSplit.slice(1).join(' '))
     })
-    console.log(formatted)
     return (
       formatted.slice(0, formatted.length - 1).join(', ') +
       (formatted.length > 2 ? ',' : '') +

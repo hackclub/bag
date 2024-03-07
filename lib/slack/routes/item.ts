@@ -228,7 +228,6 @@ slack.view('edit-item', async props => {
 })
 
 const getItem = (item: Item, user: Identity): (Block | KnownBlock)[] => {
-  console.log(item)
   let blocks: (Block | KnownBlock)[] = [
     {
       type: 'section',
@@ -236,7 +235,7 @@ const getItem = (item: Item, user: Identity): (Block | KnownBlock)[] => {
         type: 'mrkdwn',
         text: `Here's ${item.reaction} *${item.name}*: ${
           item.description
-            ? '\n\n>_' + item.description + '_'
+            ? '\n\n>' + item.description
             : '_No description provided._'
         }`
       }

@@ -1,4 +1,10 @@
-import { Block, KnownBlock, View } from '@slack/bolt'
+import {
+  Block,
+  KnownBlock,
+  PlainTextOption,
+  View,
+  directMention
+} from '@slack/bolt'
 
 const error = (err: string) => {
   return [
@@ -98,8 +104,22 @@ const loadingDialog = (title: string): View => {
   }
 }
 
+const sortDropdown = (
+  dropdown: PlainTextOption[],
+  func?: (a: PlainTextOption, b: PlainTextOption) => number
+): PlainTextOption[] => {
+  // Sort dropdowns that show items
+  if (func) return dropdown.sort(func)
+  return dropdown.sort((a, b) => {
+    const aSplit = a.text.text.trim().split(' ')
+    const bSplit = b.text.text.trim().split(' ')
+    return aSplit.slice(1).join(' ').localeCompare(bSplit.slice(1).join(' '))
+  })
+}
+
 export default {
   error,
   helpDialog,
-  loadingDialog
+  loadingDialog,
+  sortDropdown
 }

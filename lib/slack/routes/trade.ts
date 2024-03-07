@@ -527,7 +527,7 @@ slack.action('accept-trade', async props => {
 })
 
 slack.action('remove-trade', async props => {
-  await execute(props, async props => {
+  return await execute(props, async props => {
     // Remove from the trade
     const { tradeInstanceId, tradeId, channel, ts } = JSON.parse(
       // @ts-expect-error
@@ -538,6 +538,16 @@ slack.action('remove-trade', async props => {
         id: tradeId
       }
     })
+
+    if (trade.closed || trade.initiatorAgreed || trade.receiverAgreed) {
+      // Close modal
+      await props.respond({
+        response_type: 'ephemeral',
+        replace_original: false,
+        text: "Woah woah woah! Trade already confirmed, you can't make any more edits."
+      })
+      return { response_action: 'clear' }
+    }
 
     await prisma.tradeInstance.delete({
       where: {
@@ -785,7 +795,7 @@ const tradeDialog = async (
     callback_id: 'add-trade',
     title: {
       type: 'plain_text',
-      text: 'Edit trade'
+      text: 'Edit offer'
     },
     submit: {
       type: 'plain_text',
@@ -826,7 +836,7 @@ const tradeDialog = async (
             type: 'plain_text',
             text: 'Add an item'
           },
-          options: offering
+          options: views.sortDropdown(offering)
         },
         label: {
           type: 'plain_text',
@@ -987,7 +997,7 @@ const startTrade = async (
             type: 'plain_text',
             text: 'Choose a item'
           },
-          options: offers
+          options: views.sortDropdown(offers)
         },
         label: {
           type: 'plain_text',

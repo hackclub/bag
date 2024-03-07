@@ -51,10 +51,12 @@ slack.command('/huh', async props => {
       })
     else if (crafting.channel && crafting.ts) {
       // Delete previous thread
-      await props.client.chat.delete({
-        channel: crafting.channel,
-        ts: crafting.ts
-      })
+      try {
+        await props.client.chat.delete({
+          channel: crafting.channel,
+          ts: crafting.ts
+        })
+      } catch {}
     }
 
     const { channel, ts } = await props.client.chat.postMessage({
@@ -471,9 +473,7 @@ const craftingDialog = async (
             type: 'plain_text',
             text: 'Item'
           },
-          options: possible.sort((a, b) =>
-            a.text.text.localeCompare(b.text.text)
-          )
+          options: views.sortDropdown(possible)
         },
         label: {
           type: 'plain_text',
@@ -669,7 +669,7 @@ const showCrafting = async (
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `<@${userId}> just crafted ${outputsFormatted}.\n>_${crafting.recipe.description}_`
+        text: `<@${userId}> just crafted ${outputsFormatted}.\n>${crafting.recipe.description}`
       }
     })
   } else
@@ -687,10 +687,12 @@ const showCrafting = async (
             text: {
               type: 'mrkdwn',
               text:
-                inputs.slice(0, inputs.length - 1).join(', ') +
-                (inputs.length > 2 ? ',' : '') +
-                ' and ' +
-                inputs[inputs.length - 1]
+                inputs.length === 1
+                  ? inputs[0]
+                  : inputs.slice(0, inputs.length - 1).join(', ') +
+                    (inputs.length > 2 ? ',' : '') +
+                    ' and ' +
+                    inputs[inputs.length - 1]
             }
           }
         : {

@@ -52,6 +52,12 @@ slack.command('/bag', async props => {
       const mentionId = message.slice(2, message.indexOf('|'))
       const mention = await findOrCreateIdentity(mentionId)
 
+      const name = (
+        await props.client.users.info({
+          user: mentionId
+        })
+      ).user.profile.display_name
+
       const user = await prisma.identity.findUnique({
         where: { slack: props.context.userId }
       })
@@ -76,10 +82,10 @@ slack.command('/bag', async props => {
             type: 'section',
             text: {
               type: 'mrkdwn',
-              text: `<@${props.context.userId}> ran \`/bag ${message}\`:`
+              text: `<@${props.context.userId}> ran \`/bag ${name}\`:`
             }
           },
-          ...(await showInventory(mention))
+          ...(await showInventory(mention, name))
         ]
       })
     }
@@ -152,6 +158,12 @@ slack.event('app_mention', async props => {
           const mentionId = message.slice(2, message.length - 1) // Remove the formatted ID
           const mention = await findOrCreateIdentity(mentionId)
 
+          const name = (
+            await props.client.users.info({
+              user: mentionId
+            })
+          ).user.profile.display_name
+
           const user = await prisma.identity.findUnique({
             where: { slack: props.context.userId }
           })
@@ -172,7 +184,7 @@ slack.event('app_mention', async props => {
 
           return await props.client.chat.postMessage({
             channel: props.event.channel,
-            blocks: await showInventory(mention),
+            blocks: await showInventory(mention, name),
             thread_ts
           })
         }
@@ -196,7 +208,7 @@ slack.event('app_mention', async props => {
 
 const showInventory = async (
   user: IdentityWithInventory,
-  ts?: string
+  name?: string
 ): Promise<(Block | KnownBlock)[]> => {
   const formatInventory = async (inventory: Instance[]): Promise<string> => {
     let formatted: string[] = []
@@ -209,7 +221,12 @@ const showInventory = async (
       formatted.push(` x${instance.quantity} ${item.reaction} ${item.name}`)
     }
     if (formatted.length == 1) return formatted[0]
-    formatted = formatted.sort((a, b) => a.localeCompare(b))
+    formatted = formatted.sort((a, b) => {
+      const aSplit = a.trim().split(' ')
+      const bSplit = b.trim().split(' ')
+      return aSplit.slice(1).join(' ').localeCompare(bSplit.slice(1).join(' '))
+    })
+    console.log(formatted)
     return (
       formatted.slice(0, formatted.length - 1).join(', ') +
       (formatted.length > 2 ? ',' : '') +
@@ -220,8 +237,8 @@ const showInventory = async (
 
   let text = []
   if (user.permissions === 'ADMIN')
-    text.push(`<@${user.slack}> is an admin and has:`)
-  else text.push(`<@${user.slack}> has:`)
+    text.push(`${name ? `${name}` : `<@${user.slack}>`} is an admin and has:`)
+  else text.push(`${name ? `${name}` : `<@${user.slack}>`} has:`)
 
   if (!user.inventory.length)
     text.push(

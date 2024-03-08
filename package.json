@@ -35,6 +35,7 @@
     "@slack/web-api": "^6.11.0",
     "dotenv": "^16.3.1",
     "fastify": "^4.26.0",
+    "lru-cache": "^10.2.0",
     "node-cron": "^3.0.3",
     "octokit": "^3.1.2",
     "tsx": "^4.5.0",

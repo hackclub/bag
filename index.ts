@@ -11,10 +11,9 @@ import './lib/slack/routes/perms'
 import './lib/slack/routes/trade'
 import './lib/slack/routes/use'
 import slack from './lib/slack/slack'
-import routes from './routes'
+import routes from './router'
 import { fastifyConnectPlugin } from '@connectrpc/connect-fastify'
 import { fastify } from 'fastify'
-import fs from 'fs'
 
 ;(async () => {
   // Shutdown signal - shutdown Prisma client

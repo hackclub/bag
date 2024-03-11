@@ -198,6 +198,15 @@ export class App {
     )
   }
 
+  async readRecipes(request: RecursivePartial<methods.ReadRecipesRequest>) {
+    return App.format(
+      await this.client.readRecipes({
+        ...this.request,
+        ...request
+      })
+    )
+  }
+
   async readRecipe(request: RecursivePartial<methods.ReadRecipeRequest>) {
     return App.format(
       await this.client.readRecipe({

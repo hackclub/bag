@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CloseTradeRequest, CloseTradeResponse, CreateActionRequest, CreateActionResponse, CreateAppRequest, CreateAppResponse, CreateInstanceRequest, CreateInstanceResponse, CreateInstancesRequest, CreateInstancesResponse, CreateItemRequest, CreateItemResponse, CreateRecipeRequest, CreateRecipeResponse, CreateTradeRequest, CreateTradeResponse, DeleteAppRequest, DeleteAppResponse, DeleteInstanceRequest, DeleteInstanceResponse, ReadActionRequest, ReadActionResponse, ReadAppRequest, ReadAppResponse, ReadIdentityRequest, ReadIdentityResponse, ReadInstanceRequest, ReadInstanceResponse, ReadInventoryRequest, ReadInventoryResponse, ReadItemRequest, ReadItemResponse, ReadItemsRequest, ReadItemsResponse, ReadRecipeRequest, ReadRecipeResponse, ReadTradeRequest, ReadTradeResponse, UpdateActionRequest, UpdateActionResponse, UpdateAppRequest, UpdateAppResponse, UpdateIdentityMetadataRequest, UpdateIdentityMetadataResponse, UpdateInstanceRequest, UpdateInstanceResponse, UpdateItemRequest, UpdateItemResponse, UpdateRecipeRequest, UpdateRecipeResponse, UpdateTradeRequest, UpdateTradeResponse, VerifyKeyRequest, VerifyKeyResponse } from "./bag_pb.js";
+import { CloseTradeRequest, CloseTradeResponse, CreateActionRequest, CreateActionResponse, CreateAppRequest, CreateAppResponse, CreateInstanceRequest, CreateInstanceResponse, CreateInstancesRequest, CreateInstancesResponse, CreateItemRequest, CreateItemResponse, CreateRecipeRequest, CreateRecipeResponse, CreateTradeRequest, CreateTradeResponse, DeleteAppRequest, DeleteAppResponse, DeleteInstanceRequest, DeleteInstanceResponse, ReadActionRequest, ReadActionResponse, ReadAppRequest, ReadAppResponse, ReadIdentityRequest, ReadIdentityResponse, ReadInstanceRequest, ReadInstanceResponse, ReadInventoryRequest, ReadInventoryResponse, ReadItemRequest, ReadItemResponse, ReadItemsRequest, ReadItemsResponse, ReadRecipeRequest, ReadRecipeResponse, ReadRecipesRequest, ReadRecipesResponse, ReadTradeRequest, ReadTradeResponse, UpdateActionRequest, UpdateActionResponse, UpdateAppRequest, UpdateAppResponse, UpdateIdentityMetadataRequest, UpdateIdentityMetadataResponse, UpdateInstanceRequest, UpdateInstanceResponse, UpdateItemRequest, UpdateItemResponse, UpdateRecipeRequest, UpdateRecipeResponse, UpdateTradeRequest, UpdateTradeResponse, VerifyKeyRequest, VerifyKeyResponse } from "./bag_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -136,6 +136,15 @@ export const BagService = {
       name: "ReadTrade",
       I: ReadTradeRequest,
       O: ReadTradeResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc bag.BagService.ReadRecipes
+     */
+    readRecipes: {
+      name: "ReadRecipes",
+      I: ReadRecipesRequest,
+      O: ReadRecipesResponse,
       kind: MethodKind.Unary,
     },
     /**

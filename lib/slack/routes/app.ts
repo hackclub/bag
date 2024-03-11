@@ -1,14 +1,21 @@
 import { prisma } from '../../db'
 import { mappedPermissionValues } from '../../permissions'
-import { channels, getKeyByValue } from '../../utils'
+import { channels, getKeyByValue, inMaintainers } from '../../utils'
 import slack, { execute } from '../slack'
 import { cascadingPermissions } from '../views'
 import { App, PermissionLevels } from '@prisma/client'
 import { Block, KnownBlock, View, PlainTextOption } from '@slack/bolt'
 import { v4 as uuid } from 'uuid'
 
-slack.command('/app', async props => {
+slack.command('/huh', async props => {
   await execute(props, async (props, permission) => {
+    if (!inMaintainers(props.context.userId))
+      return props.client.chat.postEphemeral({
+        channel: props.body.channel_id,
+        user: props.context.userId,
+        text: "You found something, but it's not ready yet."
+      })
+
     const message = props.command.text.trim()
 
     const user = await prisma.identity.findUnique({

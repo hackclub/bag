@@ -4,6 +4,7 @@ import { mappedPermissionValues } from '../permissions'
 import { execute } from './routing'
 import { ConnectRouter } from '@connectrpc/connect'
 import { PermissionLevels, RecipeItem, Skill } from '@prisma/client'
+import { PrismaClientExtends } from '@prisma/client/extension'
 
 export default (router: ConnectRouter) => {
   router.rpc(BagService, BagService.methods.createRecipe, async req => {
@@ -115,7 +116,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
-  router.rpc(BagService, BagService.methods.readRecipe, async req => {
+  router.rpc(BagService, BagService.methods.readRecipes, async req => {
     return await execute(req, async (req, app) => {
       let recipes = await prisma.recipe.findMany({
         include: {
@@ -126,40 +127,77 @@ export default (router: ConnectRouter) => {
         }
       })
 
-      const query = JSON.parse(req.query)
+      const query = req.query
 
       // Search through recipes
-      recipes = recipes.filter(recipe => {
-        for (let input of query.inputs) {
-          if (
-            !recipe.inputs.find(
-              item => item.recipeItemId === input.recipeItemId
+      if (req.inclusive) {
+        // Search for recipes that include at least one of the inputs/outputs/tools/skills
+        recipes = recipes.filter(recipe => {
+          for (let item of recipe.inputs) {
+            if (
+              query.inputs.find(
+                input => input.recipeItemId === item.recipeItemId
+              )
             )
-          )
-            return false
-        }
-        for (let output of query.outputs) {
-          if (
-            !recipe.outputs.find(
-              item => item.recipeItemId === output.recipeItemId
+              return true
+          }
+          for (let item of recipe.outputs) {
+            if (
+              query.outputs.find(
+                output => output.recipeItemId === item.recipeItemId
+              )
             )
-          )
-            return false
-        }
-        for (let tool of query.tools) {
-          if (
-            !recipe.tools.find(item => item.recipeItemId === tool.recipeItemId)
-          )
-            return false
-        }
-        for (let skill of query.skills) {
-          if (
-            !recipe.skills.find(recipeSkill => recipeSkill.name === skill.name)
-          )
-            return false
-        }
-        return true
-      })
+              return true
+          }
+          for (let item of recipe.tools) {
+            if (
+              query.tools.find(tool => tool.recipeItemId === item.recipeItemId)
+            )
+              return true
+          }
+          for (let recipeSkill of recipe.skills) {
+            if (query.skills.find(skill => skill.name === recipeSkill.name))
+              return true
+          }
+          return false
+        })
+      } else {
+        recipes = recipes.filter(recipe => {
+          for (let input of query.inputs) {
+            if (
+              !recipe.inputs.find(
+                item => item.recipeItemId === input.recipeItemId
+              )
+            )
+              return false
+          }
+          for (let output of query.outputs) {
+            if (
+              !recipe.outputs.find(
+                item => item.recipeItemId === output.recipeItemId
+              )
+            )
+              return false
+          }
+          for (let tool of query.tools) {
+            if (
+              !recipe.tools.find(
+                item => item.recipeItemId === tool.recipeItemId
+              )
+            )
+              return false
+          }
+          for (let skill of query.skills) {
+            if (
+              !recipe.skills.find(
+                recipeSkill => recipeSkill.name === skill.name
+              )
+            )
+              return false
+          }
+          return true
+        })
+      }
 
       if (app.permissions === PermissionLevels.READ)
         recipes = recipes.filter(recipe => recipe.public)

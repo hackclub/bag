@@ -1,7 +1,13 @@
 // Type helpers for Prisma
 import { Prisma, PrismaClient } from '@prisma/client'
 
-export const prisma = new PrismaClient()
+const prismaClient = () => new PrismaClient()
+
+declare global {
+  var prisma: undefined | ReturnType<typeof prismaClient>
+}
+
+export const prisma = globalThis.prisma ?? prismaClient()
 
 const identityWithInventory = Prisma.validator<Prisma.IdentityDefaultArgs>()({
   include: { inventory: true }

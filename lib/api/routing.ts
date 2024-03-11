@@ -22,8 +22,6 @@ export async function execute(
   permission?: number
 ) {
   try {
-    // Rate limit accordingly
-
     let app = await prisma.app.findUnique({
       where: { id: req.appId, AND: [{ key: req.key }] }
     })
@@ -35,12 +33,13 @@ export async function execute(
     // Strip appId and key
     delete req.appId
     delete req.key
-    const result = func(req, app)
+    const result = await func(req, app)
     let formatted = {}
     for (let [key, value] of Object.entries(result))
       formatted[key] = format(value)
     return formatted
   } catch (error) {
+    console.log(error)
     return { response: error.toString() }
   }
 }

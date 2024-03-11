@@ -66,14 +66,18 @@ export default (router: ConnectRouter) => {
         // Send message to instance receiver
         let text = []
         if (req.show !== false)
-          text.push(
-            `*${app.name}* just sent you ${
-              formatted.slice(0, formatted.length - 1).join(', ') +
-              (formatted.length > 2 ? ',' : '') +
-              (formatted.length > 1 ? ' and ' : '') +
-              formatted[formatted.length - 1]
-            }! They're all in your bag now.`
-          )
+          text.push({
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `*${app.name}* just sent you ${
+                formatted.slice(0, formatted.length - 1).join(', ') +
+                (formatted.length > 2 ? ',' : '') +
+                (formatted.length > 1 ? ' and ' : '') +
+                formatted[formatted.length - 1]
+              }! They're all in your bag now.`
+            }
+          })
         if (req.note)
           text.push(
             { type: 'divider' },
@@ -86,6 +90,11 @@ export default (router: ConnectRouter) => {
             },
             { type: 'divider' }
           )
+        console.log(text)
+        await web.chat.postMessage({
+          channel: req.identityId,
+          blocks: text
+        })
 
         return { instances: created }
       },

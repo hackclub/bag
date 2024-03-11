@@ -17,6 +17,7 @@ service BagService {
   rpc ReadInstance(ReadInstanceRequest) returns (ReadInstanceResponse) {}  // Should be able to read instances
   rpc ReadApp(ReadAppRequest) returns (ReadAppResponse) {}  // Should be able to read other public apps, as well as itself
   rpc ReadTrade(ReadTradeRequest) returns (ReadTradeResponse) {} // Should be able to read public trades as well as trades the app has initiated
+  rpc ReadRecipes(ReadRecipesRequest) returns (ReadRecipesResponse) {}
   rpc ReadRecipe(ReadRecipeRequest) returns (ReadRecipeResponse) {}  // Should be able to read recipes that include items the app has access to
   rpc ReadAction(ReadActionRequest) returns (ReadActionResponse) {}
   rpc UpdateIdentityMetadata(UpdateIdentityMetadataRequest) returns (UpdateIdentityMetadataResponse) {}  // Only things apps should be able to update - metadata 
@@ -297,6 +298,18 @@ message ReadTradeResponse {
   optional Trade trade = 2;
 }
 
+message ReadRecipesRequest {
+  int32 appId = 1;
+  string key = 2;
+  Recipe query = 3;
+  optional bool inclusive = 4;  // Return recipes that include at least one input/output/tool/skill in query
+}
+
+message ReadRecipesResponse {
+  optional string response = 1;
+  repeated Recipe recipes = 2;
+}
+
 message ReadRecipeRequest {
   int32 appId = 1;
   string key = 2;
@@ -305,7 +318,7 @@ message ReadRecipeRequest {
 
 message ReadRecipeResponse {
   optional string response = 1;
-  repeated Recipe recipes = 2;
+  Recipe recipe = 2;
 }
 
 message ReadActionRequest {

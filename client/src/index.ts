@@ -39,8 +39,7 @@ export class App {
     baseUrl?: string
     httpVersion?: any
   }) {
-    let transport
-    transport = createGrpcTransport({
+    let transport = createGrpcTransport({
       baseUrl: options.baseUrl
         ? options.baseUrl
         : 'https://bag-client.hackclub.com',

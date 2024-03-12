@@ -25,7 +25,7 @@ export default (router: ConnectRouter) => {
     kind(router)
   }
 
-  router.rpc(BagService, BagService.methods.verifyKey, async req => {
+  router.rpc(BagService, BagService.methods.verifyKey, async (req, context) => {
     return await execute(req, async (_, app) => {
       if (!app) return { valid: false }
       return { valid: true }

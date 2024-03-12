@@ -6,7 +6,7 @@ import { App } from '@prisma/client'
 import { WebClient } from '@slack/web-api'
 import { LRUCache } from 'lru-cache'
 
-// TODO: Use lru-cache for rate limiting requests
+const maxRequests = 60
 export const cache = new LRUCache({
   max: 100,
   ttl: 60000
@@ -33,13 +33,22 @@ export async function execute(
       where: { id: req.appId, AND: [{ key: req.key }] }
     })
     if (!app) throw new Error('App not found or invalid app key')
+
+    let rate = cache.get(app.id)
+    console.log('Rate: ', rate)
+    if (!rate) cache.set(app.id, 1)
+    else if (Number(rate) >= maxRequests) throw new Error('Rate limit reached')
+    else cache.set(app.id, Number(rate) + 1)
+
     if (mappedPermissionValues[app.permissions] < permission)
       throw new Error(
         'Invalid permissions. Request permissions in Slack with /app.'
       )
+
     // Strip appId and key
     delete req.appId
     delete req.key
+
     const result = await func(req, app)
     let formatted = {}
     for (let [key, value] of Object.entries(result))

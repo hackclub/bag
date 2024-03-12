@@ -4,6 +4,13 @@ import { prisma } from '../db'
 import { mappedPermissionValues } from '../permissions'
 import { App } from '@prisma/client'
 import { WebClient } from '@slack/web-api'
+import { LRUCache } from 'lru-cache'
+
+// TODO: Use lru-cache for rate limiting requests
+export const cache = new LRUCache({
+  max: 100,
+  ttl: 60000
+})
 
 export const web = new WebClient(config.SLACK_BOT_TOKEN)
 

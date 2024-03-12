@@ -181,8 +181,158 @@ export default (router: ConnectRouter) => {
             : 'receiverTrades'
 
         // Add to trades, merging with ones that have already been added
+        const crafting = await prisma.crafting.findFirst({
+          where: {
+            identityId: req.identityId,
+            recipeId: null
+          },
+          include: { inputs: true }
+        })
+
         for (let instance of req.add) {
-          // TODO
+          const search = trade[updateKey].find(
+            add => add.instanceId === instance.id
+          )
+          const ref = await prisma.instance.findUnique({
+            where: { id: instance.id },
+            include: { item: true }
+          })
+
+          let quantityLeft = ref.quantity - instance.quantity
+
+          // Deduct from crafting
+          const inCrafting = crafting.inputs.find(
+            input => input.instanceId === instance.id
+          )
+          if (inCrafting) quantityLeft -= inCrafting.quantity
+
+          // Deduct from other trades
+          const otherTrades = await prisma.trade.findMany({
+            where: {
+              closed: false, // Not closed
+              OR: [
+                { initiatorTrades: { some: { instanceId: instance.id } } },
+                { receiverTrades: { some: { instanceId: instance.id } } }
+              ], // Either in initiatorTrades or receiverTrades
+              NOT: [{ id: trade.id }]
+            },
+            include: {
+              initiatorTrades: true,
+              receiverTrades: true
+            }
+          })
+          let otherOffers = otherTrades
+            .map(offer => ({
+              ...offer,
+              trades: [...offer.initiatorTrades, ...offer.receiverTrades]
+            }))
+            .filter(offer =>
+              offer.trades.find(trade => trade.instanceId === instance.id)
+            )
+            .reduce((acc, curr) => {
+              return (
+                acc -
+                curr.trades.find(trade => trade.instanceId === instance.id)
+                  .quantity
+              )
+            }, instance.quantity)
+
+          if (quantityLeft - otherOffers > 0) {
+            if (search) {
+              await prisma.tradeInstance.update({
+                where: { id: search.id },
+                data: { quantity: search.quantity + instance.quantity }
+              })
+            } else {
+              await prisma.tradeInstance.create({
+                data: {
+                  instanceId: instance.id,
+                  quantity: instance.quantity,
+                  [updateKey]: { connect: trade }
+                }
+              })
+            }
+          } else
+            throw new Error(
+              `Not enough ${ref.item.reaction} ${ref.item.name} to add to trade`
+            )
+        }
+
+        return {
+          trade: await prisma.trade.findUnique({
+            where: { id: req.tradeId }
+          })
+        }
+      },
+      mappedPermissionValues.WRITE_SPECIFIC
+    )
+  })
+
+  router.rpc(BagService, BagService.methods.updateTrade, async req => {
+    return await execute(
+      req,
+      async (req, app) => {
+        if (
+          app.permissions === PermissionLevels.WRITE_SPECIFIC &&
+          !app.specificTrades.find(tradeId => tradeId === req.tradeId)
+        )
+          throw new Error('Trade not found')
+
+        const trade = await prisma.trade.findUnique({
+          where: { id: req.tradeId },
+          include: {
+            initiatorTrades: true,
+            receiverTrades: true
+          }
+        })
+        if (!trade) throw new Error('Trade not found')
+        if (
+          ![trade.initiatorIdentityId, trade.receiverIdentityId].includes(
+            req.identityId
+          )
+        )
+          throw new Error('Identity not allowed to edit trade')
+
+        const updateKey =
+          trade.initiatorIdentityId === req.identityId
+            ? 'initiatorTrades'
+            : 'receiverTrades'
+
+        // Add to trades, merging with ones that have already been added
+        for (let instance of req.add) {
+          const search = trade[updateKey].find(
+            add => add.instanceId === instance.id
+          )
+
+          const ref = await prisma.instance.findUnique({
+            where: { id: instance.id }
+          })
+
+          let quantityLeft = ref.quantity - instance.quantity
+
+          // Make sure there's enough to put in trade
+          const crafting = await prisma.crafting.findFirst({
+            where: {
+              identityId: req.identityId,
+              recipeId: null
+            },
+            include: { inputs: true }
+          })
+
+          if (search) {
+            await prisma.tradeInstance.update({
+              where: { id: req.tradeId },
+              data: { quantity: search.quantity + instance.quantity }
+            })
+          } else {
+            await prisma.tradeInstance.create({
+              data: {
+                instanceId: instance.id,
+                quantity: instance.quantity,
+                [updateKey]: { connect: trade }
+              }
+            })
+          }
         }
 
         return {

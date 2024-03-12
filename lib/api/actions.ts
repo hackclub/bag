@@ -9,12 +9,11 @@ export default (router: ConnectRouter) => {
     return await execute(
       req,
       async req => {
-        // ! TODO: Assumes that channel exists and that tools exist too, since testing branches takes up too much effort
         return {
           action: await prisma.action.create({
             data: {
               locations: req.action.locations,
-              tools: req.actions.tools.map(tool => tool.toLowerCase()),
+              tools: req.action.tools.map(tool => tool.toLowerCase()),
               branch: JSON.parse(req.action.branch)
             }
           })
@@ -26,7 +25,6 @@ export default (router: ConnectRouter) => {
 
   router.rpc(BagService, BagService.methods.readAction, async req => {
     return await execute(req, async req => {
-      // TODO: Filter for permissions
       let actions = await prisma.action.findMany({
         where: {
           locations: { hasSome: req.query.locations },

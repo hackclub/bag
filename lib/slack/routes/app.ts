@@ -1,14 +1,15 @@
-import { prisma } from '../../db'
+import { findOrCreateIdentity, prisma } from '../../db'
 import { mappedPermissionValues } from '../../permissions'
 import { channels, getKeyByValue, inMaintainers } from '../../utils'
 import slack, { execute } from '../slack'
 import { cascadingPermissions } from '../views'
+import views from '../views'
 import { App, PermissionLevels } from '@prisma/client'
 import { Block, KnownBlock, View, PlainTextOption } from '@slack/bolt'
 import { v4 as uuid } from 'uuid'
 
 slack.command('/huh', async props => {
-  await execute(props, async (props, permission) => {
+  await execute(props, async props => {
     if (!inMaintainers(props.context.userId))
       return props.client.chat.postEphemeral({
         channel: props.body.channel_id,
@@ -16,51 +17,61 @@ slack.command('/huh', async props => {
         text: "You found something, but it's not ready yet."
       })
 
-    const message = props.command.text.trim()
-
-    const user = await prisma.identity.findUnique({
-      where: { slack: props.context.userId }
-    })
-
+    const message = props.command.text.trim().split(' ')
     try {
-      const apps = await prisma.app.findMany({
+      if (message.length == 2) {
+        // Check app and key
+        const app = await prisma.app.findUnique({
+          where: {
+            id: Number(message[0]),
+            key: message[1]
+          }
+        })
+        if (!app) throw new Error()
+        return await props.client.views.open({
+          trigger_id: props.body.trigger_id,
+          view: editApp(app)
+        })
+      }
+    } catch {
+      const user = await findOrCreateIdentity(props.context.userId)
+
+      // Search by name instead
+      const app = await prisma.app.findFirst({
         where: {
           name: {
-            equals: message.split(' ').join(' ').toLowerCase(),
+            equals: message.join(' ').toLowerCase(),
             mode: 'insensitive'
           }
         }
       })
 
-      if (!apps.length) throw new Error()
-      const app = apps[0]
-      if (user.permissions === PermissionLevels.READ && !app.public)
-        throw new Error()
       if (
-        mappedPermissionValues[user.permissions] <
+        !app ||
+        (mappedPermissionValues[user.permissions] <
           mappedPermissionValues.ADMIN &&
-        !app.public &&
-        !user.specificApps.find(appId => appId === app.id)
+          !app.public &&
+          !user.specificApps.find(appId => appId === app.id))
       )
-        throw new Error()
+        return await props.respond({
+          response_type: 'ephemeral',
+          text: `Oops, couldn't find an app named *${message.join(' ')}*.`
+        })
 
       return await props.respond({
         response_type: 'ephemeral',
         blocks: getApp(app)
       })
-    } catch {
-      if (!message.length)
-        return await props.respond({
-          response_type: 'ephemeral',
-          text: 'Try running `/app <name>`!'
-        })
-      return await props.respond({
-        response_type: 'ephemeral',
-        text: `Oops, couldn't find an app named *${message
-          .split(' ')
-          .join(' ')}*.`
-      })
     }
+
+    return await props.client.views.open({
+      trigger_id: props.body.trigger_id,
+      view: createApp(
+        inMaintainers(props.context.userId)
+          ? PermissionLevels.ADMIN
+          : PermissionLevels.READ
+      )
+    })
   })
 })
 
@@ -93,7 +104,11 @@ slack.view('create-app', async props => {
 
     // Make sure app doesn't exist yet
     if (await prisma.app.findUnique({ where: { name: fields.name } }))
-      throw new Error('Name is already being used')
+      return await props.client.chat.postEphemeral({
+        channel: props.context.userId,
+        user: props.context.userId,
+        text: 'Name is already being used.'
+      })
 
     // Create app
     const app = await prisma.app.create({
@@ -140,6 +155,8 @@ slack.view('edit-app', async props => {
         fields[Object.keys(field)[0]] = false
     }
 
+    console.log(fields)
+
     const { prevName } = JSON.parse(props.view.private_metadata)
 
     if (fields['delete-app']) {
@@ -179,14 +196,10 @@ slack.view('edit-app', async props => {
     )
       // Give downgrade without permissions
       await prisma.app.update({
-        where: {
-          name: prevName
-        },
-        data: {
-          permissions: fields.permissions
-        }
+        where: { name: prevName },
+        data: { permissions: fields.permissions }
       })
-    else if (app.permissions !== fields.permissions) {
+    else if (app.permissions !== fields.permissions)
       await props.client.chat.postMessage({
         channel: channels.approvals,
         blocks: approveOrDenyAppPerms(
@@ -195,17 +208,15 @@ slack.view('edit-app', async props => {
           fields.permissions as PermissionLevels
         )
       })
-    }
 
     delete fields.permissions
     app = await prisma.app.update({
-      where: {
-        name: prevName
-      },
+      where: { name: prevName },
       data: fields
     })
-    await props.respond({
-      response_type: 'ephemeral',
+    await props.client.chat.postEphemeral({
+      channel: props.context.userId,
+      user: props.context.userId,
       text: `Updated *${app.name}* successfully.`
     })
   })
@@ -223,9 +234,7 @@ slack.action('app-approve-perms', async props => {
 
     await prisma.app.update({
       where: { id: appId },
-      data: {
-        permissions: permissions as PermissionLevels
-      }
+      data: { permissions: permissions as PermissionLevels }
     })
     await props.respond(`${permissions} for app *${appId}* approved.`)
 
@@ -251,121 +260,192 @@ slack.action('app-deny-perms', async props => {
   })
 })
 
-const getApp = (app: App): (Block | KnownBlock)[] => {
-  return [
-    {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: `Here's *${app.name}*:
-
->_${app.description}_`
-      }
+const approveOrDenyAppPerms = (
+  user: string,
+  app: App,
+  permissions: PermissionLevels
+): (Block | KnownBlock)[] => [
+  {
+    type: 'section',
+    text: {
+      type: 'mrkdwn',
+      text: `${app.name} (an app) just asked for ${permissions} permissions. Accept or deny:`
     }
-  ]
-}
-
-const createApp = (permission: PermissionLevels): View => {
-  return {
-    callback_id: 'create-app',
-    title: {
-      type: 'plain_text',
-      text: 'Create app'
-    },
-    submit: {
-      type: 'plain_text',
-      text: 'Create app'
-    },
-    type: 'modal',
-    blocks: [
+  },
+  {
+    type: 'actions',
+    elements: [
       {
-        type: 'input',
-        element: {
-          type: 'plain_text_input',
-          action_id: 'name',
-          placeholder: {
-            type: 'plain_text',
-            text: 'Name of app'
-          }
-        },
-        label: {
+        type: 'button',
+        style: 'primary',
+        text: {
           type: 'plain_text',
-          text: 'Name'
-        }
+          text: 'Approve'
+        },
+        value: JSON.stringify({
+          user,
+          app: app.id,
+          permissions
+        }),
+        action_id: 'app-approve-perms'
       },
       {
-        type: 'input',
-        optional: true,
-        element: {
-          type: 'plain_text_input',
-          multiline: true,
-          action_id: 'description',
-          placeholder: {
-            type: 'plain_text',
-            text: "What's up with this app?"
-          }
-        },
-        label: {
+        type: 'button',
+        style: 'danger',
+        text: {
           type: 'plain_text',
-          text: 'Description',
-          emoji: true
-        }
-      },
-      {
-        type: 'input',
-        element: {
-          action_id: 'public',
-          type: 'static_select',
-          placeholder: {
-            type: 'plain_text',
-            text: 'Public'
-          },
-          options: [
-            {
-              text: {
-                type: 'plain_text',
-                text: 'Is public'
-              },
-              value: 'true'
-            },
-            {
-              text: {
-                type: 'plain_text',
-                text: 'Is private'
-              },
-              value: 'false'
-            }
-          ]
+          text: 'Deny'
         },
-        label: {
-          type: 'plain_text',
-          text: '(Can be viewed by everyone)'
-        }
-      },
-      {
-        type: 'input',
-        element: {
-          type: 'static_select',
-          placeholder: {
-            type: 'plain_text',
-            text: 'Permission',
-            emoji: true
-          },
-          options: cascadingPermissions.slice(
-            0,
-            mappedPermissionValues[permission] + 1
-          ) as Array<PlainTextOption>,
-          action_id: 'permissions'
-        },
-        label: {
-          type: 'plain_text',
-          text: 'Select a permission level',
-          emoji: true
-        }
+        value: JSON.stringify({
+          user,
+          app: app.id,
+          permissions
+        }),
+        action_id: 'app-deny-perms'
       }
     ]
   }
-}
+]
+
+const editApp = (app: App): View => ({
+  callback_id: 'edit-app',
+  private_metadata: JSON.stringify({
+    prevName: app.name
+  }),
+  title: {
+    type: 'plain_text',
+    text: 'Edit app'
+  },
+  submit: {
+    type: 'plain_text',
+    text: 'Update app'
+  },
+  type: 'modal',
+  blocks: [
+    {
+      type: 'input',
+      element: {
+        type: 'plain_text_input',
+        action_id: 'name',
+        placeholder: {
+          type: 'plain_text',
+          text: 'Name of app'
+        },
+        initial_value: app.name
+      },
+      label: {
+        type: 'plain_text',
+        text: 'App name',
+        emoji: true
+      }
+    },
+    {
+      type: 'input',
+      element: {
+        type: 'plain_text_input',
+        action_id: 'description',
+        placeholder: {
+          type: 'plain_text',
+          text: 'Description'
+        },
+        initial_value: app.description,
+        multiline: true
+      },
+      label: {
+        type: 'plain_text',
+        text: 'What does this do?',
+        emoji: true
+      }
+    },
+    {
+      type: 'input',
+      element: {
+        type: 'radio_buttons',
+        options: [
+          {
+            text: {
+              type: 'plain_text',
+              text: 'Public'
+            },
+            value: 'true'
+          },
+          {
+            text: {
+              type: 'plain_text',
+              text: 'Private'
+            },
+            value: 'false'
+          }
+        ],
+        action_id: 'public',
+        initial_option: {
+          text: {
+            type: 'plain_text',
+            text: app.public ? 'Public' : 'Private'
+          },
+          value: app.public ? 'true' : 'false'
+        }
+      },
+      label: {
+        type: 'plain_text',
+        text: 'Visibility'
+      }
+    },
+    {
+      type: 'input',
+      element: {
+        type: 'static_select',
+        placeholder: {
+          type: 'plain_text',
+          text: 'Request permissions',
+          emoji: true
+        },
+        options: cascadingPermissions as Array<PlainTextOption>,
+        action_id: 'permissions',
+        initial_option: cascadingPermissions[
+          mappedPermissionValues[app.permissions]
+        ] as PlainTextOption
+      },
+      label: {
+        type: 'plain_text',
+        text: 'Select a permission level',
+        emoji: true
+      }
+    },
+    {
+      type: 'input',
+      element: {
+        type: 'plain_text_input',
+        action_id: 'delete-app',
+        placeholder: {
+          type: 'plain_text',
+          text: 'App key'
+        }
+      },
+      label: {
+        type: 'plain_text',
+        text: 'Delete app'
+      },
+      optional: true,
+      hint: {
+        type: 'plain_text',
+        text: 'This will permanently delete your app, but not associated data, e.g. instances created! Please make sure this is what you want to do.'
+      }
+    }
+  ]
+})
+
+const getApp = (app: App): (Block | KnownBlock)[] => [
+  {
+    type: 'section',
+    text: {
+      type: 'mrkdwn',
+      text: `Here's *${app.name}*:
+      
+>_${app.description}_`
+    }
+  }
+]
 
 const createdApp = (app: App): (Block | KnownBlock)[] => {
   const permissionDesc = {
@@ -386,189 +466,110 @@ const createdApp = (app: App): (Block | KnownBlock)[] => {
           app.key
         }\`. (Don't share it with anyone unless they're also working on the app!) Your app can: ${
           permissionDesc[app.permissions]
-        }\n\nTo edit your app/request a permission level, run \`/bag-app edit ${
+        }\n\nTo edit your app/request a permission level, run \`/app ${
           app.id
-        } ${app.key}\``
+        } ${app.key}\`.`
       }
     }
   ]
 }
 
-const editApp = (app: App): View => {
-  return {
-    callback_id: 'edit-app',
-    private_metadata: JSON.stringify({
-      prevName: app.name
-    }),
-    title: {
-      type: 'plain_text',
-      text: 'Edit app'
-    },
-    submit: {
-      type: 'plain_text',
-      text: 'Update app'
-    },
-    type: 'modal',
-    blocks: [
-      {
-        type: 'input',
-        element: {
-          type: 'plain_text_input',
-          action_id: 'name',
-          placeholder: {
-            type: 'plain_text',
-            text: 'Name of app'
-          },
-          initial_value: app.name
-        },
-        label: {
+const createApp = (permission: PermissionLevels): View => ({
+  callback_id: 'create-app',
+  title: {
+    type: 'plain_text',
+    text: 'Create app'
+  },
+  submit: {
+    type: 'plain_text',
+    text: 'Create app'
+  },
+  type: 'modal',
+  blocks: [
+    {
+      type: 'input',
+      element: {
+        type: 'plain_text_input',
+        action_id: 'name',
+        placeholder: {
           type: 'plain_text',
-          text: 'App name',
-          emoji: true
+          text: 'Name of app'
         }
       },
-      {
-        type: 'input',
-        element: {
-          type: 'plain_text_input',
-          action_id: 'description',
-          placeholder: {
-            type: 'plain_text',
-            text: 'Description'
-          },
-          initial_value: app.description,
-          multiline: true
-        },
-        label: {
+      label: {
+        type: 'plain_text',
+        text: 'Name'
+      }
+    },
+    {
+      type: 'input',
+      optional: true,
+      element: {
+        type: 'plain_text_input',
+        multiline: true,
+        action_id: 'description',
+        placeholder: {
           type: 'plain_text',
-          text: 'What does this do?',
-          emoji: true
+          text: "What's up with this app?"
         }
       },
-      {
-        type: 'input',
-        element: {
-          type: 'radio_buttons',
-          options: [
-            {
-              text: {
-                type: 'plain_text',
-                text: 'Public'
-              },
-              value: 'true'
-            },
-            {
-              text: {
-                type: 'plain_text',
-                text: 'Private'
-              },
-              value: 'false'
-            }
-          ],
-          action_id: 'public',
-          initial_option: {
+      label: {
+        type: 'plain_text',
+        text: 'Description',
+        emoji: true
+      }
+    },
+    {
+      type: 'input',
+      element: {
+        action_id: 'public',
+        type: 'static_select',
+        placeholder: {
+          type: 'plain_text',
+          text: 'Public'
+        },
+        options: [
+          {
             text: {
               type: 'plain_text',
-              text: app.public ? 'Public' : 'Private'
+              text: 'Is public'
             },
-            value: app.public ? 'true' : 'false'
-          }
-        },
-        label: {
-          type: 'plain_text',
-          text: 'Visibility'
-        }
-      },
-      {
-        type: 'input',
-        element: {
-          type: 'static_select',
-          placeholder: {
-            type: 'plain_text',
-            text: 'Request permissons',
-            emoji: true
+            value: 'true'
           },
-          options: cascadingPermissions as Array<PlainTextOption>,
-          action_id: 'permissions',
-          initial_option: cascadingPermissions[
-            mappedPermissionValues[app.permissions]
-          ] as PlainTextOption
-        },
-        label: {
-          type: 'plain_text',
-          text: 'Select a permission level',
-          emoji: true
-        }
-      },
-      {
-        type: 'input',
-        element: {
-          type: 'plain_text_input',
-          action_id: 'delete-app',
-          placeholder: {
-            type: 'plain_text',
-            text: 'App key'
+          {
+            text: {
+              type: 'plain_text',
+              text: 'Is private'
+            },
+            value: 'false'
           }
-        },
-        label: {
-          type: 'plain_text',
-          text: 'Delete app'
-        },
-        optional: true,
-        hint: {
-          type: 'plain_text',
-          text: 'This will permanently delete your app, but not associated data, e.g. instances created! Please make sure this is what you want to do.'
-        }
-      }
-    ]
-  }
-}
-
-const approveOrDenyAppPerms = (
-  user: string,
-  app: App,
-  permissions: PermissionLevels
-): (Block | KnownBlock)[] => {
-  return [
-    {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: `${app.name} (an app) just asked for ${permissions} permissions. Accept or deny:`
+        ]
+      },
+      label: {
+        type: 'plain_text',
+        text: '(Can be viewed by everyone)'
       }
     },
     {
-      type: 'actions',
-      elements: [
-        {
-          type: 'button',
-          style: 'primary',
-          text: {
-            type: 'plain_text',
-            text: 'Approve'
-          },
-          value: JSON.stringify({
-            user,
-            app: app.id,
-            permissions
-          }),
-          action_id: 'app-approve-perms'
+      type: 'input',
+      element: {
+        type: 'static_select',
+        placeholder: {
+          type: 'plain_text',
+          text: 'Permission',
+          emoji: true
         },
-        {
-          type: 'button',
-          style: 'danger',
-          text: {
-            type: 'plain_text',
-            text: 'Deny'
-          },
-          value: JSON.stringify({
-            user,
-            app: app.id,
-            permissions
-          }),
-          action_id: 'app-deny-perms'
-        }
-      ]
+        options: cascadingPermissions.slice(
+          0,
+          mappedPermissionValues[permission] + 1
+        ) as Array<PlainTextOption>,
+        action_id: 'permissions'
+      },
+      label: {
+        type: 'plain_text',
+        text: 'Select a permission level',
+        emoji: true
+      }
     }
   ]
-}
+})

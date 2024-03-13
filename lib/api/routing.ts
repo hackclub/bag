@@ -1,6 +1,7 @@
 // Utils for router requests
 import config from '../../config'
 import { prisma } from '../db'
+import { log } from '../logger'
 import { mappedPermissionValues } from '../permissions'
 import { App } from '@prisma/client'
 import { WebClient } from '@slack/web-api'
@@ -29,6 +30,7 @@ export async function execute(
   permission?: number
 ) {
   try {
+    console.log(req)
     let app = await prisma.app.findUnique({
       where: { id: req.appId, AND: [{ key: req.key }] }
     })

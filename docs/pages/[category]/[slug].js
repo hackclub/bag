@@ -1,4 +1,4 @@
-import Content, { Toc } from '@/components/Content'
+import Content from '@/components/Content'
 import Menu from '@/components/Menu'
 import convertMDX, { generateToc } from '@/utils'
 import fs from 'fs'
@@ -7,7 +7,13 @@ import 'highlight.js/styles/xcode.css'
 import { MDXRemote } from 'next-mdx-remote'
 import { serialize } from 'next-mdx-remote/serialize'
 import path from 'path'
-import { Container, Grid, Box, Flex } from 'theme-ui'
+import { Grid, Box } from 'theme-ui'
+
+function toTitleCase(str) {
+  return str.replace(/\w\S*/g, function (txt) {
+    return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+  })
+}
 
 export default function Doc({ source, toc, title, menu, menuHeaders }) {
   return (
@@ -31,76 +37,61 @@ export default function Doc({ source, toc, title, menu, menuHeaders }) {
           <MDXRemote {...source} />
         </Content>
       </Box>
+      <MDXRemote {...toc} />
     </Grid>
   )
 }
 
-function toTitleCase(str) {
-  return str.replace(/\w\S*/g, function (txt) {
-    return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-  })
-}
-
 export async function getStaticProps({ params }) {
-  // const res = fs.readFileSync(
-  //   path.join(process.cwd(), 'content', params.category, params.slug)
-  // )
-  // let menu = fs
-  //   .readdirSync(path.join(process.cwd(), 'content'), { withFileTypes: true })
-  //   .filter(dirent => dirent.isDirectory())
-  //   .map(dirent => {
-  //     return dirent.name
-  //   })
-  // let gen = {}
-  // let pageTitle
-  // for (let title of menu) {
-  //   let push = []
-  //   let files = fs.readdirSync(path.join(process.cwd(), 'content', title))
-  //   for (let file of files) {
-  //     const content = fs.readFileSync(
-  //       path.join(process.cwd(), 'content', title, file)
-  //     )
-  //     let frontmatter = matter(content).data
-  //     push.push([`${title}/${file}`, frontmatter.title])
-  //     if (file === params.slug) pageTitle = frontmatter.title
-  //   }
-  //   push = push.sort((a, b) => {
-  //     if (a[2] < b[2]) return -1
-  //     return 1
-  //   })
-  //   gen[toTitleCase(title)] = push
-  // }
-  // return {
-  //   props: {
-  //     source: await convertMDX(res),
-  //     title: pageTitle,
-  //     toc: await serialize(await generateToc(res.toString())),
-  //     menu: gen,
-  //     menuHeaders: ['Quickstart', 'Bot', 'Client']
-  //   }
-  // }
+  const res = fs.readFileSync(
+    path.join('content', params.category, params.slug)
+  )
+  let menu = fs
+    .readdirSync('content', { withFileTypes: true })
+    .filter(dirent => dirent.isDirectory())
+    .map(dirent => dirent.name)
+  let gen = {}
+  let pageTitle
+  for (let title of menu) {
+    let push = []
+    let files = fs.readdirSync(path.join('content', title))
+    for (let file of files) {
+      const content = fs.readFileSync(path.join('content', title, file))
+      let frontmatter = matter(content).data
+      push.push([`${title}/${file}`, frontmatter.title, frontmatter.order])
+      if (file === params.slug) pageTitle = frontmatter.title
+    }
+    push = push.sort((a, b) => {
+      if (a[2] < b[2]) return -1
+      return 1
+    })
+    gen[toTitleCase(title)] = push
+  }
   return {
-    props: {}
+    props: {
+      source: await convertMDX(res),
+      title: pageTitle,
+      toc: await serialize(await generateToc(res.toString())),
+      menu: gen,
+      menuHeaders: ['Quickstart', 'Bot', 'Client']
+    }
   }
 }
 
 export async function getStaticPaths() {
-  // let menu = fs
-  //   .readdirSync(path.join(process.cwd(), 'content'), { withFileTypes: true })
-  //   .filter(dirent => dirent.isDirectory())
-  //   .map(dirent => {
-  //     return dirent.name
-  //   })
-  // let push = []
-  // for (let title of menu) {
-  //   let files = fs.readdirSync(path.join(process.cwd(), 'content', title))
-  //   push.push(...files.map(file => ({ title, file })))
-  // }
-  // return {
-  //   paths: push.map(file => ({
-  //     params: { category: file.title, slug: file.file }
-  //   })),
-  //   fallback: true
-  // }
-  return { paths: ['test'] }
+  let menu = fs
+    .readdirSync(path.join('content'), { withFileTypes: true })
+    .filter(dirent => dirent.isDirectory())
+    .map(dirent => dirent.name)
+  let push = []
+  for (let title of menu) {
+    let files = fs.readdirSync(path.join('content', title))
+    push.push(...files.map(file => ({ title, file })))
+  }
+  return {
+    paths: push.map(file => ({
+      params: { category: file.title, slug: file.file }
+    })),
+    fallback: true
+  }
 }

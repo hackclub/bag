@@ -24,56 +24,54 @@ const craft = async (slack: string, craftingId: number, recipeId: number) => {
     }
   })
 
-  // Deduce inputs (not tools) from user's inventory
-  for (let part of updated.inputs) {
-    const { instance } = part
-    // Make sure instance is actually in recipe before deducting
-    if (
-      !updated.recipe.inputs.find(
-        input => input.recipeItemId === part.recipeItemId
-      )
+  // Deduce inputs (not tools) from users' inventory
+  for (let part of updated.recipe.inputs) {
+    const instance = updated.inputs.find(
+      instance => instance.recipeItemId === part.recipeItemId
     )
-      continue
-    if (part.quantity < instance.quantity) {
+    console.log(instance)
+    if (part.quantity < instance.instance.quantity) {
       // Subtract from quantity
       await prisma.instance.update({
-        where: { id: instance.id },
-        data: { quantity: instance.quantity - part.quantity }
+        where: { id: instance.instanceId },
+        data: { quantity: instance.instance.quantity - part.quantity }
       })
     } else {
       // Detach entire instance
       await prisma.instance.update({
-        where: { id: instance.id },
+        where: { id: instance.instanceId },
         data: {
           identity: { disconnect: true }
         }
       })
     }
+  }
 
-    // Give user the output
-    for (let output of updated.recipe.outputs) {
-      // Check if user already has an instance and add to that instance
-      const existing = await prisma.instance.findFirst({
-        where: {
-          identityId: slack,
-          itemId: output.recipeItemId
+  // Give user the output
+  for (let output of updated.recipe.outputs) {
+    // Check if user already has an instance and add to that instance
+    const existing = await prisma.instance.findFirst({
+      where: {
+        identityId: slack,
+        itemId: output.recipeItemId
+      }
+    })
+    console.log(output.quantity + existing.quantity)
+
+    if (existing)
+      await prisma.instance.update({
+        where: { id: existing.id },
+        data: { quantity: output.quantity + existing.quantity }
+      })
+    else
+      await prisma.instance.create({
+        data: {
+          itemId: output.recipeItemId,
+          identityId: crafting.identityId,
+          quantity: output.quantity,
+          public: output.recipeItem.public
         }
       })
-      if (existing)
-        await prisma.instance.update({
-          where: { id: existing.id },
-          data: { quantity: output.quantity + existing.quantity }
-        })
-      else
-        await prisma.instance.create({
-          data: {
-            itemId: output.recipeItemId,
-            identityId: crafting.identityId,
-            quantity: output.quantity,
-            public: output.recipeItem.public
-          }
-        })
-    }
   }
 }
 

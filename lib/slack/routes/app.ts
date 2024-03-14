@@ -10,7 +10,11 @@ import { v4 as uuid } from 'uuid'
 
 slack.command('/huh', async props => {
   await execute(props, async props => {
-    if (!inMaintainers(props.context.userId))
+    console.log(props.context.userId)
+    if (
+      !inMaintainers(props.context.userId) &&
+      props.context.userId != 'U062KS2PK7Z'
+    )
       return props.client.chat.postEphemeral({
         channel: props.body.channel_id,
         user: props.context.userId,

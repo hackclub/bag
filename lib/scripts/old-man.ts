@@ -6,13 +6,13 @@ export async function kickoff(slack: string) {
   return new Promise(async (resolve, reject) => {
     const app = await App.connect({
       appId: config.APP_ID,
-      key: config.APP_TOKEN,
-      baseUrl: 'https://bag-client.hackclub.com'
+      key: config.APP_KEY,
+      baseUrl: `http://0.0.0.0:${config.PORT}`
     })
 
     // Get all common ites
     const items = (
-      await app.readItem({
+      await app.readItems({
         query: JSON.stringify({})
       })
     ).items.filter(item => {
@@ -48,12 +48,6 @@ export async function kickoff(slack: string) {
     let day = 1
     const task = cron.schedule('0 10 * * *', async () => {
       day++
-
-      const app = await App.connect({
-        appId: Number(process.env.APP_ID),
-        key: process.env.APP_TOKEN,
-        baseUrl: 'https://bag-client.hackclub.com'
-      })
 
       for (let item of items.sort((a, b) => (Math.random() < 0.5 ? 1 : -1))) {
         const prob = Math.random()

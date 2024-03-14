@@ -26,7 +26,7 @@
     "@connectrpc/connect-fastify": "^1.3.0",
     "@connectrpc/connect-node": "^1.1.4",
     "@connectrpc/protoc-gen-connect-es": "^1.1.4",
-    "@hackclub/bag": "^1.0.24",
+    "@hackclub/bag": "^1.0.30",
     "@octokit/auth-app": "^6.0.3",
     "@octokit/core": "^5.1.0",
     "@prisma/client": "^5.10.2",

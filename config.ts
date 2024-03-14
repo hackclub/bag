@@ -10,7 +10,7 @@ export interface Env {
   SLACK_BOT: boolean
   DATABASE_URL: string
   APP_ID: number
-  APP_TOKEN: string
+  APP_KEY: string
 }
 
 let env: Env = {
@@ -22,7 +22,7 @@ let env: Env = {
   SLACK_SIGNING_SECRET: process.env.SLACK_SIGNING_SECRET,
   DATABASE_URL: process.env.DATABASE_URL,
   APP_ID: Number(process.env.APP_ID),
-  APP_TOKEN: process.env.APP_TOKEN,
+  APP_KEY: process.env.APP_KEY,
   SLACK_BOT: process.env.SLACK_BOT ? true : false
 }
 

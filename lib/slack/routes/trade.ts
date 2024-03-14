@@ -541,12 +541,11 @@ slack.action('remove-trade', async props => {
 
     if (trade.closed || trade.initiatorAgreed || trade.receiverAgreed) {
       // Close modal
-      await props.respond({
+      return await props.respond({
         response_type: 'ephemeral',
         replace_original: false,
         text: "Woah woah woah! Trade already confirmed, you can't make any more edits."
       })
-      return { response_action: 'clear' }
     }
 
     await prisma.tradeInstance.delete({

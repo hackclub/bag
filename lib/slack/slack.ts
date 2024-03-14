@@ -3,7 +3,7 @@ import { prisma } from '../db'
 import { err } from '../logger'
 import { mappedPermissionValues } from '../permissions'
 import { kickoff } from '../scripts/old-man'
-import { maintainers } from '../utils'
+import { inMaintainers, maintainers } from '../utils'
 import views from './views'
 import { PermissionLevels } from '@prisma/client'
 import {
@@ -88,11 +88,16 @@ export async function execute(
       // Not in database yet... create user
       user = await prisma.identity.create({
         data: {
-          slack: props.context.userId
+          slack: props.context.userId,
+          permissions: inMaintainers(props.context.userId)
+            ? PermissionLevels.ADMIN
+            : undefined
         }
       })
+      console.log(user)
       // Newbies get nothing until they run /bag me, and that kicks off the old man, but they can only get common items (items with a rarity > 0.4)
-      await kickoff(props.context.userId)
+      if (!inMaintainers(props.context.userId))
+        await kickoff(props.context.userId)
     }
 
     const permissionLevel = mappedPermissionValues[user.permissions]

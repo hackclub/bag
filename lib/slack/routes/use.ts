@@ -1,4 +1,5 @@
 import { type IdentityWithInventory, prisma } from '../../db'
+import { mappedPermissionValues } from '../../permissions'
 import { inMaintainers, maintainers } from '../../utils'
 import slack, { execute, CommandMiddleware } from '../slack'
 
@@ -55,212 +56,217 @@ const canBeUsed = async (
 }
 
 slack.command('/use', async props => {
-  await execute(props, async props => {
-    const conversation = await props.client.conversations.info({
-      channel: props.body.channel_id
-    })
-
-    const test = ACTION_TEST.includes(conversation.channel.name)
-
-    const user = await prisma.identity.findUnique({
-      where: { slack: props.context.userId },
-      include: { inventory: true }
-    })
-
-    if (
-      await prisma.actionInstance.findFirst({
-        where: {
-          identityId: props.context.userId,
-          done: false
-        }
-      })
-    )
-      return await props.respond({
-        response_type: 'ephemeral',
-        text: ":clown_face: Unless you're some kind of god, you're stuck doing things one at a time."
+  await execute(
+    props,
+    async props => {
+      const conversation = await props.client.conversations.info({
+        channel: props.body.channel_id
       })
 
-    // Get inputs
-    const message = props.command.text.trim()
-    if (!message.length)
-      return await props.respond({
-        response_type: 'ephemeral',
-        text: 'Try running `/use <item>, <item>` or `/use :-item-tag, :item-tag`!'
+      const test = ACTION_TEST.includes(conversation.channel.name)
+
+      const user = await prisma.identity.findUnique({
+        where: { slack: props.context.userId },
+        include: { inventory: true }
       })
 
-    const trim = (str: string, chars: string) =>
-      str.split(chars).filter(Boolean).join(chars)
-    let inputs: Array<string> = message.split(',')
-    let tag = message.split(' ')[message.split(' ').length - 1]
-    if (inMaintainers(user.slack)) {
-      // Check if a tag is attached
-      if (tag.startsWith('-'))
-        inputs[inputs.length - 1] = trim(inputs[inputs.length - 1], tag)
-      else tag = ''
-    } else tag = ''
-
-    try {
-      inputs = await Promise.all(
-        inputs
-          .filter(s => s.length)
-          .map(async s => {
-            let item = s.trim().toLowerCase()
-            const ref = item.startsWith(':')
-              ? await prisma.item.findFirst({ where: { reaction: item } })
-              : await prisma.item.findFirst({
-                  where: {
-                    name: {
-                      equals: item,
-                      mode: 'insensitive'
-                    }
-                  }
-                })
-
-            if (!ref) throw new Error(`Oops, couldn't find *${s.trim()}*.`)
-
-            let instance = user.inventory.find(
-              instance => instance.itemId === ref.name
-            )
-
-            if (!test && !instance)
-              throw new Error(
-                `Oops, looks like you don't have ${ref.reaction} ${ref.name} in your inventory.`
-              )
-
-            return ref.name.toLowerCase()
-          })
-      )
-    } catch (error) {
-      return await props.respond({
-        response_type: 'ephemeral',
-        text: error.message
-      })
-    }
-
-    // Check if inputs can be used in location
-    let possible = await prisma.action.findFirst({
-      where: {
-        locations: test ? undefined : { has: conversation.channel.name },
-        tools: { hasEvery: inputs }
-      }
-    })
-    if (!possible)
-      return await props.respond({
-        response_type: 'ephemeral',
-        text: `Looks like you can't use ${
-          inputs.length === 1 ? 'that' : 'those'
-        } for anything here.`
-      })
-
-    const action = await prisma.actionInstance.create({
-      data: {
-        identityId: user.slack,
-        actionId: possible.id
-      }
-    })
-
-    let description = [`<@${user.slack}> ran \`/use ${message}\`:`]
-    let summary = { outputs: [], losses: [] }
-
-    let trees = [
-      new Results({
-        ...possible,
-        test
-      })
-    ]
-
-    let channel = props.body.channel_id
-    let ts: string
-
-    if (tag.length && trim(tag, '-').length) {
-      // When the tag field is used for testing with a single-hyphen prefix the test should play out normally from the start
-      // This means we search for a direct route to the result
-      trees = trees[0].search(trim(tag, '-'), Infinity)
-      if (!trees.length) {
-        await prisma.actionInstance.update({
-          where: { id: action.id },
-          data: { done: true }
+      if (
+        await prisma.actionInstance.findFirst({
+          where: {
+            identityId: props.context.userId,
+            done: false
+          }
         })
+      )
         return await props.respond({
           response_type: 'ephemeral',
-          text: `${tag} is not applicable.`
+          text: ":clown_face: Unless you're some kind of god, you're stuck doing things one at a time."
         })
-      }
-      ts = (
-        await props.client.chat.postMessage({
-          channel: props.body.channel_id,
-          text: description[0] + LOADING
+
+      // Get inputs
+      const message = props.command.text.trim()
+      if (!message.length)
+        return await props.respond({
+          response_type: 'ephemeral',
+          text: 'Try running `/use <item>, <item>` or `/use :-item-tag, :item-tag`!'
         })
-      ).ts
-      for (let [i, node] of trees.entries()) {
-        node.thread = i === 0 ? { channel, ts } : trees[i - 1].thread
-        if (i === trees.length) node.delay = 0
-        await node.run(
-          props,
-          trees.slice(0, i),
-          description,
-          summary,
-          tag.startsWith('--')
+
+      const trim = (str: string, chars: string) =>
+        str.split(chars).filter(Boolean).join(chars)
+      let inputs: Array<string> = message.split(',')
+      let tag = message.split(' ')[message.split(' ').length - 1]
+      if (inMaintainers(user.slack)) {
+        // Check if a tag is attached
+        if (tag.startsWith('-'))
+          inputs[inputs.length - 1] = trim(inputs[inputs.length - 1], tag)
+        else tag = ''
+      } else tag = ''
+
+      try {
+        inputs = await Promise.all(
+          inputs
+            .filter(s => s.length)
+            .map(async s => {
+              let item = s.trim().toLowerCase()
+              const ref = item.startsWith(':')
+                ? await prisma.item.findFirst({ where: { reaction: item } })
+                : await prisma.item.findFirst({
+                    where: {
+                      name: {
+                        equals: item,
+                        mode: 'insensitive'
+                      }
+                    }
+                  })
+
+              if (!ref) throw new Error(`Oops, couldn't find *${s.trim()}*.`)
+
+              let instance = user.inventory.find(
+                instance => instance.itemId === ref.name
+              )
+
+              if (!test && !instance)
+                throw new Error(
+                  `Oops, looks like you don't have ${ref.reaction} ${ref.name} in your inventory.`
+                )
+
+              return ref.name.toLowerCase()
+            })
         )
-      }
-    } else {
-      ts = (
-        await props.client.chat.postMessage({
-          channel: props.body.channel_id,
-          text: description[0] + LOADING
+      } catch (error) {
+        return await props.respond({
+          response_type: 'ephemeral',
+          text: error.message
         })
-      ).ts
-      trees[trees.length - 1].thread = { channel, ts }
-    }
-
-    try {
-      while (trees[trees.length - 1].branches.length) {
-        // Even if there was a tag attached, run normally from there on out
-        const tree = trees[trees.length - 1]
-
-        let result
-        if (!tree.sequence.length) result = tree.pickBranch()
-        else result = tree
-
-        result.thread = tree.thread
-        if (!result.branches.length) result.delay = 0
-
-        let results = await result.run(
-          props,
-          trees,
-          description,
-          summary,
-          tag.startsWith('---')
-        )
-        trees = results
-        if (result.terminate) break
       }
-    } catch (error) {
-      console.log(error)
-    }
 
-    if (summary.outputs.length)
-      description.push(
-        `\n*What you got*: ${summary.outputs
-          .map(output => `x${output[0]} ${output[1]}`)
-          .join(', ')}`
-      )
-    if (summary.losses.length)
-      description.push(
-        `\n*What you lost*: ${summary.losses
-          .map(loss => `x${loss[0]} ${loss[1]}`)
-          .join(', ')}`
-      )
+      // Check if inputs can be used in location
+      let possible = await prisma.action.findFirst({
+        where: {
+          locations: test ? undefined : { has: conversation.channel.name },
+          tools: { hasEvery: inputs }
+        }
+      })
+      if (!possible)
+        return await props.respond({
+          response_type: 'ephemeral',
+          text: `Looks like you can't use ${
+            inputs.length === 1 ? 'that' : 'those'
+          } for anything here.`
+        })
 
-    await prisma.actionInstance.update({
-      where: { id: action.id },
-      data: { done: true }
-    })
-    await props.client.chat.update({
-      ...trees[trees.length - 1].thread,
-      text: description.join('\n\n')
-    })
-  })
+      const action = await prisma.actionInstance.create({
+        data: {
+          identityId: user.slack,
+          actionId: possible.id
+        }
+      })
+
+      let description = [`<@${user.slack}> ran \`/use ${message}\`:`]
+      let summary = { outputs: [], losses: [] }
+
+      let trees = [
+        new Results({
+          ...possible,
+          test
+        })
+      ]
+
+      let channel = props.body.channel_id
+      let ts: string
+
+      if (tag.length && trim(tag, '-').length) {
+        // When the tag field is used for testing with a single-hyphen prefix the test should play out normally from the start
+        // This means we search for a direct route to the result
+        trees = trees[0].search(trim(tag, '-'), Infinity)
+        if (!trees.length) {
+          await prisma.actionInstance.update({
+            where: { id: action.id },
+            data: { done: true }
+          })
+          return await props.respond({
+            response_type: 'ephemeral',
+            text: `${tag} is not applicable.`
+          })
+        }
+        ts = (
+          await props.client.chat.postMessage({
+            channel: props.body.channel_id,
+            text: description[0] + LOADING
+          })
+        ).ts
+        for (let [i, node] of trees.entries()) {
+          node.thread = i === 0 ? { channel, ts } : trees[i - 1].thread
+          if (i === trees.length) node.delay = 0
+          await node.run(
+            props,
+            trees.slice(0, i),
+            description,
+            summary,
+            tag.startsWith('--')
+          )
+        }
+      } else {
+        ts = (
+          await props.client.chat.postMessage({
+            channel: props.body.channel_id,
+            text: description[0] + LOADING
+          })
+        ).ts
+        trees[trees.length - 1].thread = { channel, ts }
+      }
+
+      try {
+        while (trees[trees.length - 1].branches.length) {
+          // Even if there was a tag attached, run normally from there on out
+          const tree = trees[trees.length - 1]
+
+          let result
+          if (!tree.sequence.length) result = tree.pickBranch()
+          else result = tree
+
+          result.thread = tree.thread
+          if (!result.branches.length) result.delay = 0
+
+          let results = await result.run(
+            props,
+            trees,
+            description,
+            summary,
+            tag.startsWith('---')
+          )
+          trees = results
+          if (result.terminate) break
+        }
+      } catch (error) {
+        console.log(error)
+      }
+
+      if (summary.outputs.length)
+        description.push(
+          `\n*What you got*: ${summary.outputs
+            .map(output => `x${output[0]} ${output[1]}`)
+            .join(', ')}`
+        )
+      if (summary.losses.length)
+        description.push(
+          `\n*What you lost*: ${summary.losses
+            .map(loss => `x${loss[0]} ${loss[1]}`)
+            .join(', ')}`
+        )
+
+      await prisma.actionInstance.update({
+        where: { id: action.id },
+        data: { done: true }
+      })
+      await props.client.chat.update({
+        ...trees[trees.length - 1].thread,
+        text: description.join('\n\n')
+      })
+    },
+    mappedPermissionValues.READ,
+    true
+  )
 })
 
 class Results {

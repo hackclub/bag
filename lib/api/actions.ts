@@ -19,7 +19,8 @@ export default (router: ConnectRouter) => {
           })
         }
       },
-      mappedPermissionValues.ADMIN
+      mappedPermissionValues.ADMIN,
+      true
     )
   })
 

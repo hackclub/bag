@@ -4,13 +4,12 @@ import { channels, getKeyByValue, inMaintainers } from '../../utils'
 import slack, { execute } from '../slack'
 import { cascadingPermissions } from '../views'
 import views from '../views'
-import { App, PermissionLevels } from '@prisma/client'
+import { App, Identity, PermissionLevels } from '@prisma/client'
 import { Block, KnownBlock, View, PlainTextOption } from '@slack/bolt'
 import { v4 as uuid } from 'uuid'
 
 slack.command('/huh', async props => {
   await execute(props, async props => {
-    console.log(props.context.userId)
     if (
       !inMaintainers(props.context.userId) &&
       props.context.userId != 'U062KS2PK7Z'
@@ -21,7 +20,10 @@ slack.command('/huh', async props => {
         text: "You found something, but it's not ready yet."
       })
 
-    const message = props.command.text.trim().split(' ')
+    const message = props.command.text
+      .trim()
+      .split(' ')
+      .filter(s => s !== '')
     try {
       if (message.length == 2) {
         // Check app and key
@@ -36,7 +38,7 @@ slack.command('/huh', async props => {
           trigger_id: props.body.trigger_id,
           view: editApp(app)
         })
-      }
+      } else if (message.length > 0) throw new Error()
     } catch {
       const user = await findOrCreateIdentity(props.context.userId)
 
@@ -64,7 +66,7 @@ slack.command('/huh', async props => {
 
       return await props.respond({
         response_type: 'ephemeral',
-        blocks: getApp(app)
+        blocks: getApp(app, user)
       })
     }
 
@@ -125,6 +127,14 @@ slack.view('create-app', async props => {
       }
     })
 
+    // Add to user's specificApps list
+    await prisma.identity.update({
+      where: { slack: props.context.userId },
+      data: {
+        specificApps: { push: app.id }
+      }
+    })
+
     return await props.client.chat.postMessage({
       channel: props.context.userId,
       blocks: createdApp(app)
@@ -158,8 +168,6 @@ slack.view('edit-app', async props => {
       else if (fields[Object.keys(field)[0]] === 'false')
         fields[Object.keys(field)[0]] = false
     }
-
-    console.log(fields)
 
     const { prevName } = JSON.parse(props.view.private_metadata)
 
@@ -203,7 +211,11 @@ slack.view('edit-app', async props => {
         where: { name: prevName },
         data: { permissions: fields.permissions }
       })
-    else if (app.permissions !== fields.permissions)
+    else if (app.permissions !== fields.permissions) {
+      await props.client.chat.postMessage({
+        channel: props.context.userId,
+        text: `App permission request made for *${app.name}*! You should get a response sometime in the next 24 hours if today is a weekday, and 72 hours otherwise!`
+      })
       await props.client.chat.postMessage({
         channel: channels.approvals,
         blocks: approveOrDenyAppPerms(
@@ -212,6 +224,7 @@ slack.view('edit-app', async props => {
           fields.permissions as PermissionLevels
         )
       })
+    }
 
     delete fields.permissions
     app = await prisma.app.update({
@@ -234,19 +247,18 @@ slack.action('app-approve-perms', async props => {
       permissions
       // @ts-expect-error
     } = JSON.parse(props.action.value)
-    permissions = getKeyByValue(mappedPermissionValues, permissions)
 
-    await prisma.app.update({
+    const updated = await prisma.app.update({
       where: { id: appId },
       data: { permissions: permissions as PermissionLevels }
     })
-    await props.respond(`${permissions} for app *${appId}* approved.`)
+    await props.respond(`${permissions} for app *${updated.name}* approved.`)
 
     // Let user know
     // @ts-expect-error
     await props.client.chat.postMessage({
       channel: userId,
-      text: `Your request to update *${appId}*'s permissions to ${permissions} was approved!`
+      text: `Your request to update *${updated.name}*'s permissions to ${permissions} was approved!`
     })
   })
 })
@@ -254,9 +266,8 @@ slack.action('app-approve-perms', async props => {
 slack.action('app-deny-perms', async props => {
   // @ts-expect-error
   let { app: appId, user: userId, permissions } = JSON.parse(props.action.value)
-  permissions = getKeyByValue(mappedPermissionValues, permissions)
 
-  await props.respond(`${permissions} for app *${appId}* denied.`)
+  await props.respond(`${permissions} permissions for app *${appId}* denied.`)
 
   await props.client.chat.postMessage({
     channel: userId,
@@ -273,7 +284,7 @@ const approveOrDenyAppPerms = (
     type: 'section',
     text: {
       type: 'mrkdwn',
-      text: `${app.name} (an app) just asked for ${permissions} permissions. Accept or deny:`
+      text: `*${app.name}* (an app) just asked for ${permissions} permissions. Approve or deny:`
     }
   },
   {
@@ -302,7 +313,7 @@ const approveOrDenyAppPerms = (
         },
         value: JSON.stringify({
           user,
-          app: app.id,
+          app: app.name,
           permissions
         }),
         action_id: 'app-deny-perms'
@@ -439,17 +450,40 @@ const editApp = (app: App): View => ({
   ]
 })
 
-const getApp = (app: App): (Block | KnownBlock)[] => [
-  {
-    type: 'section',
-    text: {
-      type: 'mrkdwn',
-      text: `Here's *${app.name}*:
-      
->_${app.description}_`
+const getApp = (app: App, user: Identity): (Block | KnownBlock)[] => {
+  let blocks: (Block | KnownBlock)[] = [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `Here's *${app.name}*:\n>_${app.description}_`
+      }
     }
-  }
-]
+  ]
+
+  if (
+    user.permissions === PermissionLevels.ADMIN ||
+    (mappedPermissionValues[user.permissions] >=
+      mappedPermissionValues.WRITE_SPECIFIC &&
+      user.specificApps.find(id => app.id === id))
+  )
+    blocks.push({
+      type: 'actions',
+      elements: [
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: 'Edit'
+          },
+          action_id: 'edit-app',
+          value: JSON.stringify({ app: app.id })
+        }
+      ]
+    })
+
+  return blocks
+}
 
 const createdApp = (app: App): (Block | KnownBlock)[] => {
   const permissionDesc = {
@@ -466,13 +500,15 @@ const createdApp = (app: App): (Block | KnownBlock)[] => {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `*${app.name}* created, your app token is \`${
+        text: `*${app.name}* created, your app ID is ${
+          app.id
+        } and your app token is \`${
           app.key
         }\`. (Don't share it with anyone unless they're also working on the app!) Your app can: ${
           permissionDesc[app.permissions]
         }\n\nTo edit your app/request a permission level, run \`/app ${
-          app.id
-        } ${app.key}\`.`
+          app.name
+        }\`.`
       }
     }
   ]

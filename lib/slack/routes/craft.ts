@@ -1,4 +1,5 @@
 import { prisma } from '../../db'
+import { mappedPermissionValues } from '../../permissions'
 import { channelBlacklist, channels, inMaintainers } from '../../utils'
 import slack, { execute } from '../slack'
 import views from '../views'
@@ -76,136 +77,141 @@ const craft = async (slack: string, craftingId: number, recipeId: number) => {
 }
 
 slack.command('/craft', async props => {
-  return await execute(props, async props => {
-    try {
-      const conversation = await props.client.conversations.info({
-        channel: props.body.channel_id
-      })
-      if (channelBlacklist.includes(conversation.channel.id))
-        return await props.respond({
-          response_type: 'ephemeral',
-          text: `Crafting in this channel isn't allowed. Try running \`/craft\` in a public channel, like <#${channels.lounge}>!`
+  return await execute(
+    props,
+    async props => {
+      try {
+        const conversation = await props.client.conversations.info({
+          channel: props.body.channel_id
         })
-      else if (conversation.channel.is_im || conversation.channel.is_mpim)
+        if (channelBlacklist.includes(conversation.channel.id))
+          return await props.respond({
+            response_type: 'ephemeral',
+            text: `Crafting in this channel isn't allowed. Try running \`/craft\` in a public channel, like <#${channels.lounge}>!`
+          })
+        else if (conversation.channel.is_im || conversation.channel.is_mpim)
+          return await props.respond({
+            response_type: 'ephemeral',
+            text: `Crafting in DMs isn't allowed yet. Try running \`/craft\` in a public channel, like <#${channels.lounge}>!`
+          })
+      } catch {
         return await props.respond({
           response_type: 'ephemeral',
           text: `Crafting in DMs isn't allowed yet. Try running \`/craft\` in a public channel, like <#${channels.lounge}>!`
         })
-    } catch {
-      return await props.respond({
-        response_type: 'ephemeral',
-        text: `Crafting in DMs isn't allowed yet. Try running \`/craft\` in a public channel, like <#${channels.lounge}>!`
-      })
-    }
-
-    let crafting = await prisma.crafting.findFirst({
-      where: {
-        identityId: props.context.userId,
-        recipe: null
       }
-    })
-    if (crafting?.recipeId)
-      return await props.respond({
-        response_type: 'ephemeral',
-        text: "Woah woah woah! It's all said and done."
-      })
-    if (!crafting)
-      crafting = await prisma.crafting.create({
-        data: { identityId: props.context.userId }
-      })
-    else if (crafting.channel && crafting.ts) {
-      // Delete previous thread
-      try {
-        await props.client.chat.delete({
-          channel: crafting.channel,
-          ts: crafting.ts
-        })
-      } catch {}
-    }
 
-    if (props.body.text.startsWith(':')) {
-      // Craft directly
-      const reactions = props.body.text
-        .trim()
-        .split(' ')
-        .reduce((acc: any, curr) => {
-          const index = acc.findIndex(reaction => reaction.reaction === curr)
-          if (index >= 0) {
-            acc[index].quantity++
-          } else acc.push({ quantity: 1, reaction: curr })
-          return acc
-        }, [])
-      const items = await prisma.item.findMany({
+      let crafting = await prisma.crafting.findFirst({
         where: {
-          reaction: { in: props.body.text.trim().split(' ') }
+          identityId: props.context.userId,
+          recipe: null
         }
       })
-
-      if (items.length) {
-        // Make sure user has access to all items
-        let instances = {}
-        for (let item of items) {
-          const reaction = reactions.find(
-            reaction => reaction.reaction === item.reaction
-          )
-          const instance = await prisma.instance.findFirst({
-            where: {
-              identityId: props.context.userId,
-              itemId: item.name,
-              quantity: {
-                gte: reaction.quantity
-              }
-            }
+      if (crafting?.recipeId)
+        return await props.respond({
+          response_type: 'ephemeral',
+          text: "Woah woah woah! It's all said and done."
+        })
+      if (!crafting)
+        crafting = await prisma.crafting.create({
+          data: { identityId: props.context.userId }
+        })
+      else if (crafting.channel && crafting.ts) {
+        // Delete previous thread
+        try {
+          await props.client.chat.delete({
+            channel: crafting.channel,
+            ts: crafting.ts
           })
-          if (!instance)
-            return await props.respond({
-              response_type: 'ephemeral',
-              text: `Woah woah woah! It doesn't look like you have ${reaction.quantity} ${item.reaction} ${item.name} to craft. You could possibly be using ${item.reaction} ${item.name} somewhere else.`
-            })
-          else
-            instances[item.name] = {
-              id: instance.id,
-              quantity: reaction.quantity
-            }
-        }
+        } catch {}
+      }
 
-        // Create instances
-        let inputs = []
-        for (let item of items) {
-          inputs.push(
-            await prisma.recipeItem.create({
-              data: {
-                recipeItemId: item.name,
-                instanceId: instances[item.name].id,
-                quantity: instances[item.name].quantity,
-                craftingInputs: { connect: { id: crafting.id } }
+      if (props.body.text.startsWith(':')) {
+        // Craft directly
+        const reactions = props.body.text
+          .trim()
+          .split(' ')
+          .reduce((acc: any, curr) => {
+            const index = acc.findIndex(reaction => reaction.reaction === curr)
+            if (index >= 0) {
+              acc[index].quantity++
+            } else acc.push({ quantity: 1, reaction: curr })
+            return acc
+          }, [])
+        const items = await prisma.item.findMany({
+          where: {
+            reaction: { in: props.body.text.trim().split(' ') }
+          }
+        })
+
+        if (items.length) {
+          // Make sure user has access to all items
+          let instances = {}
+          for (let item of items) {
+            const reaction = reactions.find(
+              reaction => reaction.reaction === item.reaction
+            )
+            const instance = await prisma.instance.findFirst({
+              where: {
+                identityId: props.context.userId,
+                itemId: item.name,
+                quantity: {
+                  gte: reaction.quantity
+                }
               }
             })
-          )
+            if (!instance)
+              return await props.respond({
+                response_type: 'ephemeral',
+                text: `Woah woah woah! It doesn't look like you have ${reaction.quantity} ${item.reaction} ${item.name} to craft. You could possibly be using ${item.reaction} ${item.name} somewhere else.`
+              })
+            else
+              instances[item.name] = {
+                id: instance.id,
+                quantity: reaction.quantity
+              }
+          }
+
+          // Create instances
+          let inputs = []
+          for (let item of items) {
+            inputs.push(
+              await prisma.recipeItem.create({
+                data: {
+                  recipeItemId: item.name,
+                  instanceId: instances[item.name].id,
+                  quantity: instances[item.name].quantity,
+                  craftingInputs: { connect: { id: crafting.id } }
+                }
+              })
+            )
+          }
         }
       }
-    }
 
-    const { channel, ts } = await props.client.chat.postMessage({
-      channel: props.body.channel_id,
-      blocks: await showCrafting(props.context.userId, crafting.id)
-    })
-
-    await props.client.chat.update({
-      channel,
-      ts,
-      blocks: await showCrafting(props.context.userId, crafting.id, {
-        channel,
-        ts
+      const { channel, ts } = await props.client.chat.postMessage({
+        channel: props.body.channel_id,
+        blocks: await showCrafting(props.context.userId, crafting.id)
       })
-    })
 
-    // Update crafting with new channel and thread
-    await prisma.crafting.update({
-      where: { id: crafting.id },
-      data: { channel, ts }
-    })
-  })
+      await props.client.chat.update({
+        channel,
+        ts,
+        blocks: await showCrafting(props.context.userId, crafting.id, {
+          channel,
+          ts
+        })
+      })
+
+      // Update crafting with new channel and thread
+      await prisma.crafting.update({
+        where: { id: crafting.id },
+        data: { channel, ts }
+      })
+    },
+    mappedPermissionValues.READ,
+    true
+  )
 })
 
 slack.action('edit-crafting', async props => {

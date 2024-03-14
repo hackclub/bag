@@ -17,6 +17,12 @@ import {
   HTTPReceiver
 } from '@slack/bolt'
 import { StringIndexed } from '@slack/bolt/dist/types/helpers'
+import { LRUCache } from 'lru-cache'
+
+export const cache = new LRUCache({
+  max: 500,
+  ttl: 1000 * 60 * 60 * 24
+})
 
 export const receiver = new HTTPReceiver({
   signingSecret: config.SLACK_SIGNING_SECRET
@@ -47,35 +53,56 @@ export async function execute(
     props: SlackActionMiddlewareArgs,
     permission?: PermissionLevels
   ) => any,
-  permission?: number
+  permission?: number,
+  limit?: boolean
 )
 export async function execute(
   props: CommandMiddleware,
   func: (props: CommandMiddleware, permission?: number) => any,
-  permission?: number
+  permission?: number,
+  limit?: boolean
 )
 export async function execute(
   props: EventMiddleware,
   func: (props: EventMiddleware, permission?: number) => any,
-  permission?: number
+  permission?: number,
+  limit?: boolean
 )
 export async function execute(
   props: ViewMiddleware,
   func: (props: ViewMiddleware, permission?: number) => any,
-  permission?: number
+  permission?: number,
+  limit?: boolean
 )
 export async function execute(
   props: ActionMiddleware,
   func: (props: ActionMiddleware, permission?: number) => any,
-  permission?: number
+  permission?: number,
+  limit?: boolean
 )
 export async function execute(
   props: Middleware,
   func: (props: Middleware, permission?: number) => any,
-  permission: number = mappedPermissionValues.READ
+  permission: number = mappedPermissionValues.READ,
+  limit: boolean = false
 ) {
   try {
     if (props.ack) await props.ack()
+
+    if (limit) {
+      const curr = cache.get(props.context.userId)
+      if (curr === undefined) cache.set(props.context.userId, 1)
+      else if (Number(curr) > 26)
+        return // Even sending messages can make the bot hit Slack API rate limits, so let's only do that one time
+      else if (Number(curr) == 25) {
+        await props.client.chat.postEphemeral({
+          channel: props.context.userId,
+          user: props.context.userId,
+          text: ''
+        })
+        cache.set(props.context.userId, 26)
+      } else cache.set(props.context.userId, Number(curr) + 1)
+    }
 
     // Ensure there are enough permissions to continue running
     let user = await prisma.identity.findUnique({

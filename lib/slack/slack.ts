@@ -91,16 +91,17 @@ export async function execute(
 
     if (limit) {
       const curr = cache.get(props.context.userId)
+      console.log('Cache', props.context.userId, curr)
       if (curr === undefined) cache.set(props.context.userId, 1)
       else if (Number(curr) > 26)
         return // Even sending messages can make the bot hit Slack API rate limits, so let's only do that one time
-      else if (Number(curr) == 25) {
+      else if (Number(curr) > 5 && Number(curr !== 999)) {
         await props.client.chat.postEphemeral({
           channel: props.context.userId,
           user: props.context.userId,
-          text: ''
+          text: "Wow, you're tired from all this hard work. Rest up and come back tomorrow!"
         })
-        cache.set(props.context.userId, 26)
+        cache.set(props.context.userId, 999)
       } else cache.set(props.context.userId, Number(curr) + 1)
     }
 

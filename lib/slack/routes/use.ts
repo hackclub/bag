@@ -1,7 +1,7 @@
 import { type IdentityWithInventory, prisma } from '../../db'
 import { mappedPermissionValues } from '../../permissions'
 import { inMaintainers, maintainers } from '../../utils'
-import slack, { execute, CommandMiddleware } from '../slack'
+import slack, { execute, CommandMiddleware, cache } from '../slack'
 
 const ACTION_TEST = ['action-test', 'test888']
 const LOADING = '\n:loading-dots:'

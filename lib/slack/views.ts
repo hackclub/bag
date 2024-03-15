@@ -1,9 +1,9 @@
-import {
+import type {
   Block,
   KnownBlock,
   PlainTextOption,
   View,
-  directMention
+  ViewStateValue
 } from '@slack/bolt'
 
 const error = (err: string) => {
@@ -117,9 +117,99 @@ const sortDropdown = (
   })
 }
 
+const splitDropdown = (
+  options: PlainTextOption[],
+  initial_options: PlainTextOption[],
+  element: {
+    action_id: string
+    type: 'multi_static_select' | 'static_select'
+    placeholder: {
+      type: 'plain_text'
+      text: string
+    }
+  },
+  extra: {
+    label: {
+      type: 'plain_text'
+      text: string
+    }
+    optional?: boolean
+  }
+): (Block | KnownBlock)[] => {
+  // Split dropdown with > 100 items into multiple dropdowns
+  options = sortDropdown(options)
+  let dropdowns: (Block | KnownBlock)[] = []
+  let i = 0
+  while (options.length) {
+    i++
+    if (options.length > 100) {
+      const slice = options.splice(0, 100)
+      const starting = initial_options.filter(option =>
+        slice.find(possible => possible.value === option.value)
+      )
+      dropdowns.push({
+        type: 'input',
+        element: {
+          ...{
+            ...element,
+            action_id: `${element.action_id}${i}`
+          },
+          options: slice,
+          initial_options: starting.length ? starting : undefined
+        },
+        ...extra
+      })
+    } else {
+      const starting = initial_options.filter(option =>
+        options.find(possible => possible.value === option.value)
+      )
+      dropdowns.push({
+        type: 'input',
+        element: {
+          ...{
+            ...element,
+            action_id: `${element.action_id}${i}`
+          },
+          options,
+          initial_options: starting.length ? starting : undefined
+        },
+        ...extra,
+        hint: {
+          type: 'plain_text',
+          text: `We've separated the dropdowns above into ${i} separate ones because of Slack's dropdown limits.`
+        }
+      })
+      break
+    }
+  }
+  return dropdowns
+}
+
+const readFields = (values: {
+  [blockId: string]: {
+    [actionId: string]: ViewStateValue
+  }
+}): any => {
+  let fields = {}
+  for (let field of Object.values(values)) {
+    if (field[Object.keys(field)[0]].value === null) continue
+    fields[Object.keys(field)[0]] =
+      field[Object.keys(field)[0]]?.value ||
+      Object.values(field)[0].selected_option?.value ||
+      ''
+    if (fields[Object.keys(field)[0]] === 'true')
+      fields[Object.keys(field)[0]] = true
+    else if (fields[Object.keys(field)[0]] === 'false')
+      fields[Object.keys(field)[0]] = false
+  }
+  return fields
+}
+
 export default {
   error,
   helpDialog,
   loadingDialog,
-  sortDropdown
+  sortDropdown,
+  splitDropdown,
+  readFields
 }

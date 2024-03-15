@@ -1,12 +1,13 @@
 import Content from '@/components/Content'
 import Menu from '@/components/Menu'
-import convertMDX, { generateToc } from '@/utils'
 import fs from 'fs'
 import matter from 'gray-matter'
 import 'highlight.js/styles/xcode.css'
 import { MDXRemote } from 'next-mdx-remote'
 import { serialize } from 'next-mdx-remote/serialize'
 import path from 'path'
+import { remark } from 'remark'
+import remarkToc from 'remark-toc'
 import { Grid, Box } from 'theme-ui'
 
 function toTitleCase(str) {
@@ -20,7 +21,7 @@ export default function Doc({ source, toc, title, menu, menuHeaders }) {
     <Grid
       sx={{ bg: 'snow', position: 'relative', alignItems: 'flex-start' }}
       columns={['', '2fr 4fr', '2fr 4fr', '2fr 6fr 2fr']}>
-      <Menu menu={menu} headers={menuHeaders} />
+      {menu && menuHeaders && <Menu menu={menu} headers={menuHeaders} />}
       <Box
         sx={{
           bg: 'white',
@@ -34,19 +35,32 @@ export default function Doc({ source, toc, title, menu, menuHeaders }) {
         p={[3, 4]}>
         <Content>
           <h1>{title}</h1>
-          <MDXRemote {...source} />
+          {source && <MDXRemote {...source} />}
         </Content>
       </Box>
-      <MDXRemote {...toc} />
+      {toc && <MDXRemote {...toc} />}
     </Grid>
   )
 }
 
 export async function getStaticProps({ params }) {
+  async function generateToc(content) {
+    const headings = [
+      '## Table of contents',
+      ...content.split('\n').filter(x => /^[#]{1,6} /.test(x))
+    ].join('\n')
+    const toc = String(await remark().use(remarkToc).process(headings))
+    return toc
+      .split('\n')
+      .filter(x => !x.startsWith('#'))
+      .join('\n')
+  }
+
   const res = fs.readFileSync(
-    path.join('content', params.category, params.slug)
+    path.join('content', params.category, params.slug),
+    'utf-8'
   )
-  let menu = fs
+  const menu = fs
     .readdirSync('content', { withFileTypes: true })
     .filter(dirent => dirent.isDirectory())
     .map(dirent => dirent.name)
@@ -57,7 +71,7 @@ export async function getStaticProps({ params }) {
     let files = fs.readdirSync(path.join('content', title))
     for (let file of files) {
       const content = fs.readFileSync(path.join('content', title, file))
-      let frontmatter = matter(content).data
+      const frontmatter = matter(content).data
       push.push([`${title}/${file}`, frontmatter.title, frontmatter.order])
       if (file === params.slug) pageTitle = frontmatter.title
     }
@@ -69,9 +83,9 @@ export async function getStaticProps({ params }) {
   }
   return {
     props: {
-      source: await convertMDX(res),
+      source: await serialize(res, { parseFrontmatter: true }),
       title: pageTitle,
-      toc: await serialize(await generateToc(res.toString())),
+      toc: await serialize(await generateToc(res)),
       menu: gen,
       menuHeaders: ['Quickstart', 'Bot', 'Client']
     }
@@ -79,8 +93,8 @@ export async function getStaticProps({ params }) {
 }
 
 export async function getStaticPaths() {
-  let menu = fs
-    .readdirSync(path.join('content'), { withFileTypes: true })
+  const menu = fs
+    .readdirSync('content', { withFileTypes: true })
     .filter(dirent => dirent.isDirectory())
     .map(dirent => dirent.name)
   let push = []

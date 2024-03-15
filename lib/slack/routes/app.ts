@@ -1,11 +1,17 @@
 import { findOrCreateIdentity, prisma } from '../../db'
 import { mappedPermissionValues } from '../../permissions'
-import { channels, getKeyByValue, inMaintainers } from '../../utils'
+import { channels, inMaintainers } from '../../utils'
 import slack, { execute } from '../slack'
 import { cascadingPermissions } from '../views'
 import views from '../views'
 import { App, Identity, PermissionLevels } from '@prisma/client'
-import { Block, KnownBlock, View, PlainTextOption } from '@slack/bolt'
+import type {
+  Block,
+  KnownBlock,
+  View,
+  PlainTextOption,
+  ActionsBlock
+} from '@slack/bolt'
 import { v4 as uuid } from 'uuid'
 
 slack.command('/huh', async props => {
@@ -20,38 +26,18 @@ slack.command('/huh', async props => {
         text: "You found something, but it's not ready yet."
       })
 
-    const message = props.command.text
-      .trim()
-      .split(' ')
-      .filter(s => s !== '')
-    try {
-      if (message.length == 2) {
-        // Check app and key
-        const app = await prisma.app.findUnique({
-          where: {
-            id: Number(message[0]),
-            key: message[1]
-          }
-        })
-        if (!app) throw new Error()
-        return await props.client.views.open({
-          trigger_id: props.body.trigger_id,
-          view: editApp(app)
-        })
-      } else if (message.length > 0) throw new Error()
-    } catch {
+    const message = props.command.text.trim()
+    if (message.length) {
       const user = await findOrCreateIdentity(props.context.userId)
 
-      // Search by name instead
       const app = await prisma.app.findFirst({
         where: {
           name: {
-            equals: message.join(' ').toLowerCase(),
+            equals: message.toLowerCase(),
             mode: 'insensitive'
           }
         }
       })
-
       if (
         !app ||
         (mappedPermissionValues[user.permissions] <
@@ -61,7 +47,7 @@ slack.command('/huh', async props => {
       )
         return await props.respond({
           response_type: 'ephemeral',
-          text: `Oops, couldn't find an app named *${message.join(' ')}*.`
+          text: `Oops, couldn't find an app named *${message}*.`
         })
 
       return await props.respond({
@@ -81,8 +67,6 @@ slack.command('/huh', async props => {
   })
 })
 
-// TODO: Should allow existing apps to give permissions to new apps through some sort of visual interface
-
 slack.view('create-app', async props => {
   await execute(props, async props => {
     let fields: {
@@ -90,23 +74,7 @@ slack.view('create-app', async props => {
       description: string
       public: boolean
       permissions: PermissionLevels
-    } = {
-      name: '',
-      description: '',
-      public: false,
-      permissions: undefined
-    }
-    for (let field of Object.values(props.view.state.values)) {
-      if (field[Object.keys(field)[0]].value === null) continue
-      fields[Object.keys(field)[0]] =
-        field[Object.keys(field)[0]]?.value ||
-        Object.values(field)[0].selected_option?.value ||
-        ''
-      if (fields[Object.keys(field)[0]] === 'true')
-        fields[Object.keys(field)[0]] = true
-      else if (fields[Object.keys(field)[0]] === 'false')
-        fields[Object.keys(field)[0]] = false
-    }
+    } = views.readFields(props.view.state.values)
 
     // Make sure app doesn't exist yet
     if (await prisma.app.findUnique({ where: { name: fields.name } }))
@@ -137,7 +105,20 @@ slack.view('create-app', async props => {
 
     return await props.client.chat.postMessage({
       channel: props.context.userId,
-      blocks: createdApp(app)
+      blocks: privateApp(app)
+    })
+  })
+})
+
+slack.action('edit-app', async props => {
+  await execute(props, async props => {
+    // @ts-expect-error
+    const { app: appId } = JSON.parse(props.action.value)
+    // @ts-expect-error
+    return await props.client.views.open({
+      // @ts-expect-error
+      trigger_id: props.body.trigger_id,
+      view: editApp(await prisma.app.findUnique({ where: { id: appId } }))
     })
   })
 })
@@ -145,61 +126,15 @@ slack.view('create-app', async props => {
 slack.view('edit-app', async props => {
   await execute(props, async props => {
     let fields: {
-      'name': string
-      'description': string
-      'public': boolean
-      'permissions': PermissionLevels
-      'delete-app': string
-    } = {
-      'name': '',
-      'description': '',
-      'public': false,
-      'permissions': undefined,
-      'delete-app': undefined
-    }
-    for (let field of Object.values(props.view.state.values)) {
-      if (field[Object.keys(field)[0]].value === null) continue
-      fields[Object.keys(field)[0]] =
-        field[Object.keys(field)[0]]?.value ||
-        Object.values(field)[0].selected_option?.value ||
-        ''
-      if (fields[Object.keys(field)[0]] === 'true')
-        fields[Object.keys(field)[0]] = true
-      else if (fields[Object.keys(field)[0]] === 'false')
-        fields[Object.keys(field)[0]] = false
-    }
+      name: string
+      description: string
+      public: boolean
+      permissions: PermissionLevels
+    } = views.readFields(props.view.state.values)
 
     const { prevName } = JSON.parse(props.view.private_metadata)
 
-    if (fields['delete-app']) {
-      // Send user notification that their app was deleted
-      let app = await prisma.app.findUnique({
-        where: {
-          name: prevName,
-          key: fields['delete-app']
-        }
-      })
-      if (!app)
-        return await props.respond({
-          response_type: 'ephemeral',
-          text: `Unable to delete *${app.name}* - you provided the wrong key.`
-        })
-      await prisma.app.delete({
-        where: {
-          name: prevName,
-          key: fields['delete-app']
-        }
-      })
-      return await props.client.chat.postMessage({
-        channel: props.context.userId,
-        user: props.context.userId,
-        text: `Deleted *${app.name}*.`
-      })
-    }
-
-    let app = await prisma.app.findUnique({
-      where: { name: prevName }
-    })
+    const app = await prisma.app.findUnique({ where: { name: prevName } })
 
     // Request permissions if changed
     if (
@@ -212,70 +147,349 @@ slack.view('edit-app', async props => {
         data: { permissions: fields.permissions }
       })
     else if (app.permissions !== fields.permissions) {
-      await props.client.chat.postMessage({
+      await props.client.chat.postEphemeral({
         channel: props.context.userId,
+        user: props.context.userId,
         text: `App permission request made for *${app.name}*! You should get a response sometime in the next 24 hours if today is a weekday, and 72 hours otherwise!`
       })
       await props.client.chat.postMessage({
         channel: channels.approvals,
-        blocks: approveOrDenyAppPerms(
-          props.context.userId,
-          app,
-          fields.permissions as PermissionLevels
-        )
+        blocks: approveOrDeny(props.context.userId, app, fields.permissions)
       })
     }
 
     delete fields.permissions
-    app = await prisma.app.update({
+    const updated = await prisma.app.update({
       where: { name: prevName },
       data: fields
     })
     await props.client.chat.postEphemeral({
       channel: props.context.userId,
       user: props.context.userId,
-      text: `Updated *${app.name}* successfully.`
+      text: `Updated *${updated.name}* successfully.`
     })
   })
 })
 
-slack.action('app-approve-perms', async props => {
+slack.action('approve-perms', async props => {
   await execute(props, async props => {
-    let {
-      app: appId,
-      user: userId,
-      permissions
-      // @ts-expect-error
-    } = JSON.parse(props.action.value)
+    // @ts-expect-error
+    let { id, user, permissions } = JSON.parse(props.action.value)
 
     const updated = await prisma.app.update({
-      where: { id: appId },
-      data: { permissions: permissions as PermissionLevels }
+      where: { id },
+      data: { permissions }
     })
+
     await props.respond(`${permissions} for app *${updated.name}* approved.`)
 
-    // Let user know
     // @ts-expect-error
     await props.client.chat.postMessage({
-      channel: userId,
+      channel: user,
       text: `Your request to update *${updated.name}*'s permissions to ${permissions} was approved!`
     })
   })
 })
 
-slack.action('app-deny-perms', async props => {
-  // @ts-expect-error
-  let { app: appId, user: userId, permissions } = JSON.parse(props.action.value)
+slack.action('deny-perms', async props => {
+  await execute(props, async props => {
+    // @ts-expect-error
+    let { app, user, permissions } = JSON.parse(props.action.value)
 
-  await props.respond(`${permissions} permissions for app *${appId}* denied.`)
+    await props.respond(`${permissions} permissions for app *${app}* denied.`)
 
-  await props.client.chat.postMessage({
-    channel: userId,
-    text: `Your request to update *${appId}*'s permissions to ${permissions} was rejected.`
+    // @ts-expect-error
+    await props.client.chat.postMessage({
+      channel: user,
+      text: `Your request to update *${app}*'s permissions to ${permissions} was rejected.`
+    })
   })
 })
 
-const approveOrDenyAppPerms = (
+slack.action('edit-specific-perms', async props => {
+  await execute(props, async props => {
+    // @ts-expect-error
+    const { id } = JSON.parse(props.action.value)
+    // @ts-expect-error
+    return await props.client.views.open({
+      // @ts-expect-error
+      trigger_id: props.body.trigger_id,
+      view: await editSpecificPermissions(
+        await prisma.app.findUnique({ where: { id } })
+      )
+    })
+  })
+})
+
+slack.view('request-specific-perms', async props => {
+  await execute(props, async props => {
+    const { id } = JSON.parse(props.view.private_metadata)
+
+    let fields: any = {}
+    for (let field of Object.values(props.view.state.values)) {
+      fields[Object.keys(field)[0]] = Object.values(
+        field
+      )[0].selected_options.map(option => option.value)
+    }
+
+    // Specific items
+    let specificItems = [
+      ...Object.keys(fields)
+        .filter(key => key.startsWith('items'))
+        .map(key => fields[key])
+    ].flat()
+
+    const app = await prisma.app.findUnique({ where: { id } })
+
+    await props.client.chat.postEphemeral({
+      channel: props.context.userId,
+      user: props.context.userId,
+      text: `Specific permission request made for *${app.name}*! You should get a response sometime in the next 24 hours if today is a weekday, and 72 hours otherwise!`
+    })
+
+    await props.client.chat.postMessage({
+      channel: channels.approvals,
+      blocks: await approveOrDenySpecific(props.context.userId, app, {
+        specificItems
+      })
+    })
+  })
+})
+
+slack.action('approve-specific-perms', async props => {
+  await execute(props, async props => {
+    // @ts-expect-error
+    let { id, user, options } = JSON.parse(props.action.value)
+
+    const updated = await prisma.app.update({
+      where: { id: id },
+      data: { ...options }
+    })
+
+    await props.respond(
+      `Specific permissions for app *${updated.name}* approved.`
+    )
+
+    // @ts-expect-error
+    await props.client.chat.postMessage({
+      channel: user,
+      text: `Your request to update *${updated.name}*'s ${updated.permissions} permissions was approved!`
+    })
+  })
+})
+
+slack.action('deny-specific-perms', async props => {
+  await execute(props, async props => {
+    // @ts-expect-error
+    let { app, user } = JSON.parse(props.action.value)
+
+    await props.respond(`Specific permissions for app *${app}* denied.`)
+
+    // @ts-expect-error
+    await props.client.chat.postMessage({
+      channel: user,
+      text: `Your request to update specific permissions for *${app}* was rejected.`
+    })
+  })
+})
+
+slack.action('delete-app-confirmation', async props => {
+  await execute(props, async props => {
+    // @ts-expect-error
+    const { id } = JSON.parse(props.action.value)
+    // @ts-expect-error
+    return await props.client.views.open({
+      // @ts-expect-error
+      trigger_id: props.body.trigger_id,
+      view: deleteApp(await prisma.app.findUnique({ where: { id } }))
+    })
+  })
+})
+
+slack.view('delete-app', async props => {
+  await execute(props, async props => {
+    const { id } = JSON.parse(props.view.private_metadata)
+    const key = Object.values(props.view.state.values)[0].key.value
+    const app = await prisma.app.delete({
+      where: { id, key }
+    })
+    if (!app)
+      return await props.client.chat.postEphemeral({
+        channel: props.context.userId,
+        user: props.context.userId,
+        text: `*${app.name}* couldn't be deleted because the wrong app key was given.`
+      })
+    return await props.client.chat.postEphemeral({
+      channel: props.context.userId,
+      user: props.context.userId,
+      text: `*${app.name}* deleted.`
+    })
+  })
+})
+
+slack.action('regenerate-token', async props => {
+  await execute(props, async props => {
+    // @ts-expect-error
+    const { id } = JSON.parse(props.action.value)
+    const updated = await prisma.app.update({
+      where: { id },
+      data: { key: uuid() }
+    })
+    // @ts-expect-error
+    return await props.client.chat.postMessage({
+      channel: props.body.user.id,
+      user: props.body.user.id,
+      blocks: privateApp(updated, 'token regenerated')
+    })
+  })
+})
+
+const deleteApp = (app: App): View => ({
+  callback_id: 'delete-app',
+  title: {
+    type: 'plain_text',
+    text: 'Delete app'
+  },
+  private_metadata: JSON.stringify({ id: app.id }),
+  submit: {
+    type: 'plain_text',
+    text: 'Confirm'
+  },
+  type: 'modal',
+  blocks: [
+    {
+      type: 'input',
+      element: {
+        type: 'plain_text_input',
+        action_id: 'key',
+        placeholder: {
+          type: 'plain_text',
+          text: 'App key'
+        }
+      },
+      label: {
+        type: 'plain_text',
+        text: 'Delete app'
+      },
+      hint: {
+        type: 'plain_text',
+        text: 'This will permanently delete your app, but not associated data, e.g. instances created! Please make sure this is what you want to do.'
+      }
+    }
+  ]
+})
+
+const approveOrDenySpecific = async (
+  user: string,
+  app: App,
+  options: {
+    specificItems: string[]
+  }
+): Promise<(Block | KnownBlock)[]> => {
+  const items = await Promise.all(
+    options.specificItems.map(async name => {
+      const item = await prisma.item.findUnique({ where: { name } })
+      return `${item.reaction} ${item.name}`
+    })
+  )
+  return [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `*${app.name}* (an app) just asked for ${
+          app.permissions
+        } permissions to the following:\n\nItems: ${items.join(
+          ', '
+        )}\n\nApprove or deny:`
+      }
+    },
+    {
+      type: 'actions',
+      elements: [
+        {
+          type: 'button',
+          style: 'primary',
+          text: {
+            type: 'plain_text',
+            text: 'Approve'
+          },
+          value: JSON.stringify({
+            user,
+            id: app.id,
+            options
+          }),
+          action_id: 'approve-specific-perms'
+        },
+        {
+          type: 'button',
+          style: 'danger',
+          text: {
+            type: 'plain_text',
+            text: 'Deny'
+          },
+          value: JSON.stringify({
+            user,
+            app: app.name
+          }),
+          action_id: 'deny-specific-perms'
+        }
+      ]
+    }
+  ]
+}
+
+const editSpecificPermissions = async (app: App): Promise<View> => {
+  // TODO: specificRecipes, way to give other apps permission to this app
+  const items = await prisma.item.findMany({ where: { public: true } })
+  return {
+    callback_id: 'request-specific-perms',
+    private_metadata: JSON.stringify({ id: app.id }),
+    title: {
+      type: 'plain_text',
+      text: 'Request permissions'
+    },
+    submit: {
+      type: 'plain_text',
+      text: 'Request'
+    },
+    type: 'modal',
+    blocks: [
+      ...views.splitDropdown(
+        items.map(item => ({
+          text: {
+            type: 'plain_text',
+            text: `${item.reaction} ${item.name}`
+          },
+          value: item.name
+        })),
+        items
+          .filter(item => app.specificItems.find(name => item.name === name))
+          .map(item => ({
+            text: {
+              type: 'plain_text',
+              text: `${item.reaction} ${item.name}`
+            },
+            value: item.name
+          })),
+        {
+          action_id: 'items',
+          type: 'multi_static_select',
+          placeholder: {
+            type: 'plain_text',
+            text: 'Request permissions to edit items'
+          }
+        },
+        {
+          label: { type: 'plain_text', text: 'Specific items' },
+          optional: true
+        }
+      )
+    ]
+  }
+}
+
+const approveOrDeny = (
   user: string,
   app: App,
   permissions: PermissionLevels
@@ -299,10 +513,10 @@ const approveOrDenyAppPerms = (
         },
         value: JSON.stringify({
           user,
-          app: app.id,
+          id: app.id,
           permissions
         }),
-        action_id: 'app-approve-perms'
+        action_id: 'approve-perms'
       },
       {
         type: 'button',
@@ -316,7 +530,7 @@ const approveOrDenyAppPerms = (
           app: app.name,
           permissions
         }),
-        action_id: 'app-deny-perms'
+        action_id: 'deny-perms'
       }
     ]
   }
@@ -324,9 +538,7 @@ const approveOrDenyAppPerms = (
 
 const editApp = (app: App): View => ({
   callback_id: 'edit-app',
-  private_metadata: JSON.stringify({
-    prevName: app.name
-  }),
+  private_metadata: JSON.stringify({ prevName: app.name }),
   title: {
     type: 'plain_text',
     text: 'Edit app'
@@ -350,8 +562,7 @@ const editApp = (app: App): View => ({
       },
       label: {
         type: 'plain_text',
-        text: 'App name',
-        emoji: true
+        text: 'App name'
       }
     },
     {
@@ -368,8 +579,7 @@ const editApp = (app: App): View => ({
       },
       label: {
         type: 'plain_text',
-        text: 'What does this do?',
-        emoji: true
+        text: 'What does this do?'
       }
     },
     {
@@ -412,8 +622,7 @@ const editApp = (app: App): View => ({
         type: 'static_select',
         placeholder: {
           type: 'plain_text',
-          text: 'Request permissions',
-          emoji: true
+          text: 'Request permissions'
         },
         options: cascadingPermissions as Array<PlainTextOption>,
         action_id: 'permissions',
@@ -423,28 +632,7 @@ const editApp = (app: App): View => ({
       },
       label: {
         type: 'plain_text',
-        text: 'Select a permission level',
-        emoji: true
-      }
-    },
-    {
-      type: 'input',
-      element: {
-        type: 'plain_text_input',
-        action_id: 'delete-app',
-        placeholder: {
-          type: 'plain_text',
-          text: 'App key'
-        }
-      },
-      label: {
-        type: 'plain_text',
-        text: 'Delete app'
-      },
-      optional: true,
-      hint: {
-        type: 'plain_text',
-        text: 'This will permanently delete your app, but not associated data, e.g. instances created! Please make sure this is what you want to do.'
+        text: 'Select a permission level'
       }
     }
   ]
@@ -463,11 +651,9 @@ const getApp = (app: App, user: Identity): (Block | KnownBlock)[] => {
 
   if (
     user.permissions === PermissionLevels.ADMIN ||
-    (mappedPermissionValues[user.permissions] >=
-      mappedPermissionValues.WRITE_SPECIFIC &&
-      user.specificApps.find(id => app.id === id))
-  )
-    blocks.push({
+    user.specificApps.find(id => app.id === id)
+  ) {
+    let actions: ActionsBlock = {
       type: 'actions',
       elements: [
         {
@@ -480,12 +666,49 @@ const getApp = (app: App, user: Identity): (Block | KnownBlock)[] => {
           value: JSON.stringify({ app: app.id })
         }
       ]
-    })
+    }
+    if (app.permissions === PermissionLevels.WRITE_SPECIFIC)
+      actions.elements.push({
+        type: 'button',
+        text: {
+          type: 'plain_text',
+          text: 'Request specific permissions'
+        },
+        action_id: 'edit-specific-perms',
+        value: JSON.stringify({ id: app.id })
+      })
+    actions.elements.push(
+      {
+        type: 'button',
+        text: {
+          type: 'plain_text',
+          text: 'Delete app'
+        },
+        style: 'danger',
+        action_id: 'delete-app-confirmation',
+        value: JSON.stringify({ id: app.id })
+      },
+      {
+        type: 'button',
+        text: {
+          type: 'plain_text',
+          text: 'Regenerate token'
+        },
+        style: 'danger',
+        action_id: 'regenerate-token',
+        value: JSON.stringify({ id: app.id })
+      }
+    )
+    blocks.push(actions)
+  }
 
   return blocks
 }
 
-const createdApp = (app: App): (Block | KnownBlock)[] => {
+const privateApp = (
+  app: App,
+  kind: string = 'created'
+): (Block | KnownBlock)[] => {
   const permissionDesc = {
     ADMIN:
       'do everything, including creating, reading, updating, and deleting everything.',
@@ -500,7 +723,7 @@ const createdApp = (app: App): (Block | KnownBlock)[] => {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `*${app.name}* created, your app ID is ${
+        text: `*${app.name}* ${kind}, your app ID is ${
           app.id
         } and your app token is \`${
           app.key
@@ -522,7 +745,7 @@ const createApp = (permission: PermissionLevels): View => ({
   },
   submit: {
     type: 'plain_text',
-    text: 'Create app'
+    text: 'Create'
   },
   type: 'modal',
   blocks: [
@@ -555,8 +778,7 @@ const createApp = (permission: PermissionLevels): View => ({
       },
       label: {
         type: 'plain_text',
-        text: 'Description',
-        emoji: true
+        text: 'Description'
       }
     },
     {

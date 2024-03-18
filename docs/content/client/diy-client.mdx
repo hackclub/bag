@@ -2,3 +2,88 @@
 title: Writing your own client
 order: 1
 ---
+
+You can write your own client! To write a client, all you need to do is grab the latest `.proto` file [here](https://github.com/hackclub/bag/blob/main/proto/bag.proto). This file contains descriptions of all the routes, but needs to be converted into actual server and client code. You do this by passing it into a GRPC protocol compiler.
+
+Here's an example of a client written in Ruby with just two routes. This is a pretty good example of how easy it is: grab `bag.proto` from the repo and place it in the folder of the client, run `grpc_tools_ruby_protoc --ruby_out=lib --grpc_out=lib ./bag.proto` in this case to generate `lib/bag_pb.rb` and `lib/bag_services_pb.rb` (the former contains the actual descriptions, and the latter just contains the available routes), make sure you have the required packages (`grpc`), and this works perfectly!
+
+```ruby
+# Load Ruby files from local directory
+this_dir = File.expand_path(File.dirname(__FILE__))
+lib_dir = File.join(this_dir, "lib")
+$LOAD_PATH.unshift(lib_dir) unless $LOAD_PATH.include?(lib_dir)
+
+require "grpc"
+require "json"
+require "bag_services_pb"
+
+PERMISSIONS = {
+  ADMIN: 4,
+  WRITE: 3,
+  WRITE_SPECIFIC: 2,
+  READ_PRIVATE: 1,
+  READ: 0,
+}
+
+class Client
+  attr_accessor :client
+  attr_accessor :request
+
+  def initialize(options)
+    if !options.has_key?(:app_id) or !options.has_key?(:key)
+      raise "Error: app_id and/or key not provided"
+    end
+
+    @request = { appId: options[:app_id], key: options[:key] }
+    stub = Bag::BagService::Stub.new(options[:host] || "bag-client.hackclub.com", :this_channel_is_insecure)
+    begin
+      verify = stub.verify_key(Bag::VerifyKeyRequest.new(@request))
+      if !verify.valid
+        raise "Error: app_id and/or key invalid"
+      end
+      @client = stub
+    rescue GRPC::BadStatus => e
+      abort "Error: #{e.message}"
+    end
+  end
+
+  def format(obj)
+    obj = obj.to_h 
+    if obj[:response].length != 0
+      raise obj[:response]
+    end
+    obj.each do |entry, value|
+      if entry == "metadata"
+        obj[entry] = JSON.parse(value)
+        if obj[entry].class == String
+          obj[entry] = JSON.parse(obj[entry])
+        end
+      elsif value == Object
+        obj[entry] = format(value)
+      end
+    end
+  end
+
+  def read_item(request)
+    begin
+      resp = @client.read_items(Bag::ReadItemRequest(@request.merge(request)))
+      return format(resp)
+    rescue GRPC::BadStatus => e
+      abort "Error: #{e.message}"
+    end
+  end
+
+  def read_items(request)
+    begin
+      resp = @client.read_items(Bag::ReadItemsRequest.new(@request.merge(request)))
+      return format(resp)
+    rescue GRPC::BadStatus => e
+      abort "Error: #{e.message}"
+    end
+  end
+end
+
+client = Client.new({ app_id: 1, key: "test", host: "localhost:3000" })
+hat = client.read_items({ query: { name: "Hat" }.to_json })[:items][0]
+p hat[:description]
+```

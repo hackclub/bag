@@ -10,16 +10,17 @@ service BagService {
   rpc CreateRecipe(CreateRecipeRequest) returns (CreateRecipeResponse) {}  // Should be able to create recipes that include items the app has access to
   rpc CreateAction(CreateActionRequest) returns (CreateActionResponse) {}
   rpc CreateTrade(CreateTradeRequest) returns (CreateTradeResponse) {}  // Should be able to initiate trades that include items
-  rpc ReadIdentity(ReadIdentityRequest) returns (ReadIdentityResponse) {}  // Should be able to read info about a Slack user
-  rpc ReadInventory(ReadInventoryRequest) returns (ReadInventoryResponse) {}  // Should be able to read inventory of a user, including access to private items the app has access to
-  rpc ReadItem(ReadItemRequest) returns (ReadItemResponse) {}  // Should be able to read item info, including access to private items the app has access to
-  rpc ReadItems(ReadItemsRequest) returns (ReadItemsResponse) {}
-  rpc ReadInstance(ReadInstanceRequest) returns (ReadInstanceResponse) {}  // Should be able to read instances
-  rpc ReadApp(ReadAppRequest) returns (ReadAppResponse) {}  // Should be able to read other public apps, as well as itself
-  rpc ReadTrade(ReadTradeRequest) returns (ReadTradeResponse) {} // Should be able to read public trades as well as trades the app has initiated
-  rpc ReadRecipes(ReadRecipesRequest) returns (ReadRecipesResponse) {}
-  rpc ReadRecipe(ReadRecipeRequest) returns (ReadRecipeResponse) {}  // Should be able to read recipes that include items the app has access to
-  rpc ReadAction(ReadActionRequest) returns (ReadActionResponse) {}
+  rpc GetIdentities(GetIdentitiesRequest) returns (GetIdentitiesResponse) {}
+  rpc GetIdentity(GetIdentityRequest) returns (GetIdentityResponse) {}  // Should be able to Get info about a Slack user
+  rpc GetInventory(GetInventoryRequest) returns (GetInventoryResponse) {}  // Should be able to Get inventory of a user, including access to private items the app has access to
+  rpc GetItem(GetItemRequest) returns (GetItemResponse) {}  // Should be able to Get item info, including access to private items the app has access to
+  rpc GetItems(GetItemsRequest) returns (GetItemsResponse) {}
+  rpc GetInstance(GetInstanceRequest) returns (GetInstanceResponse) {}  // Should be able to Get instances
+  rpc GetApp(GetAppRequest) returns (GetAppResponse) {}  // Should be able to Get other public apps, as well as itself
+  rpc GetTrade(GetTradeRequest) returns (GetTradeResponse) {} // Should be able to Get public trades as well as trades the app has initiated
+  rpc GetRecipes(GetRecipesRequest) returns (GetRecipesResponse) {}
+  rpc GetRecipe(GetRecipeRequest) returns (GetRecipeResponse) {}  // Should be able to Get recipes that include items the app has access to
+  rpc GetAction(GetActionRequest) returns (GetActionResponse) {}
   rpc UpdateIdentityMetadata(UpdateIdentityMetadataRequest) returns (UpdateIdentityMetadataResponse) {}  // Only things apps should be able to update - metadata 
   rpc UpdateInstance(UpdateInstanceRequest) returns (UpdateInstanceResponse) {}  // Should be able to update instances that are instances of items the app has access to
   rpc UpdateItem(UpdateItemRequest) returns (UpdateItemResponse) {}  // Should be able to update items the app has access to
@@ -221,113 +222,124 @@ message CreateActionResponse {
   optional Action action = 2;
 }
 
-message ReadIdentityRequest {
+message GetIdentitiesRequest {
+  int32 appId = 1;
+  string key = 2;
+  string query = 3;
+}
+
+message GetIdentitiesResponse {
+  optional string response = 1;
+  repeated Identity identities = 3;
+}
+
+message GetIdentityRequest {
   int32 appId = 1;
   string key = 2;
   string identityId = 3;
 }
 
-message ReadIdentityResponse {
+message GetIdentityResponse {
   optional string response = 1;
   optional Identity identity = 2;
 }
 
-message ReadInventoryRequest {
+message GetInventoryRequest {
   int32 appId = 1;
   string key = 2;
   string identityId = 3;
 }
 
-message ReadInventoryResponse {
+message GetInventoryResponse {
   optional string response = 1;
   repeated Instance inventory = 2;
 }
 
-message ReadItemRequest {
+message GetItemRequest {
   int32 appId = 1;
   string key = 2;
   string query = 3;
 }
 
-message ReadItemResponse {
+message GetItemResponse {
   optional string response = 1;
   Item item = 2;
 }
 
-message ReadItemsRequest {
+message GetItemsRequest {
   int32 appId = 1;
   string key = 2;
   string query = 3;
 }
 
-message ReadItemsResponse {
+message GetItemsResponse {
   optional string response = 1;
   repeated Item items = 2;
 }
 
-message ReadInstanceRequest {
+message GetInstanceRequest {
   int32 appId = 1;
   string key = 2;
   int32 instanceId = 3;
 }
 
-message ReadInstanceResponse {
+message GetInstanceResponse {
   optional string response = 1;
   optional Instance instance = 2;
 }
 
-message ReadAppRequest {
+message GetAppRequest {
   int32 appId = 1;
   string key = 2;
   int32 optAppId = 3;
 }
 
-message ReadAppResponse {
+message GetAppResponse {
   optional string response = 1;
   optional App app = 2;
 }
 
-message ReadTradeRequest {
+message GetTradeRequest {
   int32 appId = 1;
   string key = 2;
   int32 tradeId = 3;
 }
 
-message ReadTradeResponse {
+message GetTradeResponse {
   optional string response = 1;
   optional Trade trade = 2;
 }
 
-message ReadRecipesRequest {
+message GetRecipesRequest {
   int32 appId = 1;
   string key = 2;
   Recipe query = 3;
   optional bool inclusive = 4;  // Return recipes that include at least one input/output/tool/skill in query
 }
 
-message ReadRecipesResponse {
+message GetRecipesResponse {
   optional string response = 1;
   repeated Recipe recipes = 2;
 }
 
-message ReadRecipeRequest {
+message GetRecipeRequest {
   int32 appId = 1;
   string key = 2;
   Recipe query = 3;
 }
 
-message ReadRecipeResponse {
+message GetRecipeResponse {
   optional string response = 1;
   Recipe recipe = 2;
 }
 
-message ReadActionRequest {
+message GetActionRequest {
   int32 appId = 1;
   string key = 2;
   Action query = 3;
 }
 
-message ReadActionResponse {
+message GetActionResponse {
   optional string response = 1;
   repeated Action actions = 2;
 }

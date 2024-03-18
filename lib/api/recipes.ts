@@ -116,7 +116,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
-  router.rpc(BagService, BagService.methods.readRecipes, async req => {
+  router.rpc(BagService, BagService.methods.getRecipes, async req => {
     return await execute(req, async (req, app) => {
       let recipes = await prisma.recipe.findMany({
         include: {

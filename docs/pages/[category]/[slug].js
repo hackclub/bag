@@ -7,6 +7,7 @@ import { MDXRemote } from 'next-mdx-remote'
 import { serialize } from 'next-mdx-remote/serialize'
 import path from 'path'
 import { remark } from 'remark'
+import remarkGfm from 'remark-gfm'
 import remarkToc from 'remark-toc'
 import { Grid, Box } from 'theme-ui'
 
@@ -20,7 +21,7 @@ export default function Doc({ source, toc, title, menu, menuHeaders }) {
   return (
     <Grid
       sx={{ bg: 'snow', position: 'relative', alignItems: 'flex-start' }}
-      columns={['', '2fr 4fr', '2fr 4fr', '2fr 6fr 2fr']}>
+      columns={['', '2fr 4fr', '2fr 4fr', '2fr 6fr 1fr']}>
       {menu && menuHeaders && <Menu menu={menu} headers={menuHeaders} />}
       <Box
         sx={{
@@ -38,7 +39,6 @@ export default function Doc({ source, toc, title, menu, menuHeaders }) {
           {source && <MDXRemote {...source} />}
         </Content>
       </Box>
-      {toc && <MDXRemote {...toc} />}
     </Grid>
   )
 }
@@ -83,7 +83,10 @@ export async function getStaticProps({ params }) {
   }
   return {
     props: {
-      source: await serialize(res, { parseFrontmatter: true }),
+      source: await serialize(res, {
+        mdxOptions: { remarkGfm },
+        parseFrontmatter: true
+      }),
       title: pageTitle,
       toc: await serialize(await generateToc(res)),
       menu: gen,

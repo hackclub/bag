@@ -72,6 +72,7 @@ model Instance {
   public     Boolean         @default(true)
   trades     TradeInstance[]
   crafting   RecipeItem[]
+  test       Boolean         @default(false)
 }
 
 model Skill {
@@ -108,6 +109,7 @@ model Trade {
   closed              Boolean         @default(false)
   channel             String?
   ts                  String?
+  test                Boolean         @default(false)
 }
 
 model TradeInstance {

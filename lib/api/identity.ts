@@ -17,13 +17,17 @@ const getUser = async (slack: string, app: App) => {
 }
 
 export default (router: ConnectRouter) => {
-  router.rpc(BagService, BagService.methods.readIdentity, async req => {
+  router.rpc(BagService, BagService.methods.getIdentities, async req => {
+    return await execute(req, async (req, app) => {})
+  })
+
+  router.rpc(BagService, BagService.methods.getIdentity, async req => {
     return await execute(req, async (req, app) => {
       return { identity: await getUser(req.identityId, app) }
     })
   })
 
-  router.rpc(BagService, BagService.methods.readInventory, async req => {
+  router.rpc(BagService, BagService.methods.getInventory, async req => {
     return await execute(req, async (req, app) => {
       return { inventory: (await getUser(req.identityId, app)).inventory }
     })

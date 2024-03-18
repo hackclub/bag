@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CloseTradeRequest, CloseTradeResponse, CreateActionRequest, CreateActionResponse, CreateAppRequest, CreateAppResponse, CreateInstanceRequest, CreateInstanceResponse, CreateInstancesRequest, CreateInstancesResponse, CreateItemRequest, CreateItemResponse, CreateRecipeRequest, CreateRecipeResponse, CreateTradeRequest, CreateTradeResponse, DeleteAppRequest, DeleteAppResponse, DeleteInstanceRequest, DeleteInstanceResponse, ReadActionRequest, ReadActionResponse, ReadAppRequest, ReadAppResponse, ReadIdentityRequest, ReadIdentityResponse, ReadInstanceRequest, ReadInstanceResponse, ReadInventoryRequest, ReadInventoryResponse, ReadItemRequest, ReadItemResponse, ReadItemsRequest, ReadItemsResponse, ReadRecipeRequest, ReadRecipeResponse, ReadRecipesRequest, ReadRecipesResponse, ReadTradeRequest, ReadTradeResponse, UpdateActionRequest, UpdateActionResponse, UpdateAppRequest, UpdateAppResponse, UpdateIdentityMetadataRequest, UpdateIdentityMetadataResponse, UpdateInstanceRequest, UpdateInstanceResponse, UpdateItemRequest, UpdateItemResponse, UpdateRecipeRequest, UpdateRecipeResponse, UpdateTradeRequest, UpdateTradeResponse, VerifyKeyRequest, VerifyKeyResponse } from "./bag_pb.js";
+import { CloseTradeRequest, CloseTradeResponse, CreateActionRequest, CreateActionResponse, CreateAppRequest, CreateAppResponse, CreateInstanceRequest, CreateInstanceResponse, CreateInstancesRequest, CreateInstancesResponse, CreateItemRequest, CreateItemResponse, CreateRecipeRequest, CreateRecipeResponse, CreateTradeRequest, CreateTradeResponse, DeleteAppRequest, DeleteAppResponse, DeleteInstanceRequest, DeleteInstanceResponse, GetActionRequest, GetActionResponse, GetAppRequest, GetAppResponse, GetIdentitiesRequest, GetIdentitiesResponse, GetIdentityRequest, GetIdentityResponse, GetInstanceRequest, GetInstanceResponse, GetInventoryRequest, GetInventoryResponse, GetItemRequest, GetItemResponse, GetItemsRequest, GetItemsResponse, GetRecipeRequest, GetRecipeResponse, GetRecipesRequest, GetRecipesResponse, GetTradeRequest, GetTradeResponse, UpdateActionRequest, UpdateActionResponse, UpdateAppRequest, UpdateAppResponse, UpdateIdentityMetadataRequest, UpdateIdentityMetadataResponse, UpdateInstanceRequest, UpdateInstanceResponse, UpdateItemRequest, UpdateItemResponse, UpdateRecipeRequest, UpdateRecipeResponse, UpdateTradeRequest, UpdateTradeResponse, VerifyKeyRequest, VerifyKeyResponse } from "./bag_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -76,93 +76,102 @@ export const BagService = {
       kind: MethodKind.Unary,
     },
     /**
-     * @generated from rpc bag.BagService.ReadIdentity
+     * @generated from rpc bag.BagService.GetIdentities
      */
-    readIdentity: {
-      name: "ReadIdentity",
-      I: ReadIdentityRequest,
-      O: ReadIdentityResponse,
+    getIdentities: {
+      name: "GetIdentities",
+      I: GetIdentitiesRequest,
+      O: GetIdentitiesResponse,
       kind: MethodKind.Unary,
     },
     /**
-     * @generated from rpc bag.BagService.ReadInventory
+     * @generated from rpc bag.BagService.GetIdentity
      */
-    readInventory: {
-      name: "ReadInventory",
-      I: ReadInventoryRequest,
-      O: ReadInventoryResponse,
+    getIdentity: {
+      name: "GetIdentity",
+      I: GetIdentityRequest,
+      O: GetIdentityResponse,
       kind: MethodKind.Unary,
     },
     /**
-     * @generated from rpc bag.BagService.ReadItem
+     * @generated from rpc bag.BagService.GetInventory
      */
-    readItem: {
-      name: "ReadItem",
-      I: ReadItemRequest,
-      O: ReadItemResponse,
+    getInventory: {
+      name: "GetInventory",
+      I: GetInventoryRequest,
+      O: GetInventoryResponse,
       kind: MethodKind.Unary,
     },
     /**
-     * @generated from rpc bag.BagService.ReadItems
+     * @generated from rpc bag.BagService.GetItem
      */
-    readItems: {
-      name: "ReadItems",
-      I: ReadItemsRequest,
-      O: ReadItemsResponse,
+    getItem: {
+      name: "GetItem",
+      I: GetItemRequest,
+      O: GetItemResponse,
       kind: MethodKind.Unary,
     },
     /**
-     * @generated from rpc bag.BagService.ReadInstance
+     * @generated from rpc bag.BagService.GetItems
      */
-    readInstance: {
-      name: "ReadInstance",
-      I: ReadInstanceRequest,
-      O: ReadInstanceResponse,
+    getItems: {
+      name: "GetItems",
+      I: GetItemsRequest,
+      O: GetItemsResponse,
       kind: MethodKind.Unary,
     },
     /**
-     * @generated from rpc bag.BagService.ReadApp
+     * @generated from rpc bag.BagService.GetInstance
      */
-    readApp: {
-      name: "ReadApp",
-      I: ReadAppRequest,
-      O: ReadAppResponse,
+    getInstance: {
+      name: "GetInstance",
+      I: GetInstanceRequest,
+      O: GetInstanceResponse,
       kind: MethodKind.Unary,
     },
     /**
-     * @generated from rpc bag.BagService.ReadTrade
+     * @generated from rpc bag.BagService.GetApp
      */
-    readTrade: {
-      name: "ReadTrade",
-      I: ReadTradeRequest,
-      O: ReadTradeResponse,
+    getApp: {
+      name: "GetApp",
+      I: GetAppRequest,
+      O: GetAppResponse,
       kind: MethodKind.Unary,
     },
     /**
-     * @generated from rpc bag.BagService.ReadRecipes
+     * @generated from rpc bag.BagService.GetTrade
      */
-    readRecipes: {
-      name: "ReadRecipes",
-      I: ReadRecipesRequest,
-      O: ReadRecipesResponse,
+    getTrade: {
+      name: "GetTrade",
+      I: GetTradeRequest,
+      O: GetTradeResponse,
       kind: MethodKind.Unary,
     },
     /**
-     * @generated from rpc bag.BagService.ReadRecipe
+     * @generated from rpc bag.BagService.GetRecipes
      */
-    readRecipe: {
-      name: "ReadRecipe",
-      I: ReadRecipeRequest,
-      O: ReadRecipeResponse,
+    getRecipes: {
+      name: "GetRecipes",
+      I: GetRecipesRequest,
+      O: GetRecipesResponse,
       kind: MethodKind.Unary,
     },
     /**
-     * @generated from rpc bag.BagService.ReadAction
+     * @generated from rpc bag.BagService.GetRecipe
      */
-    readAction: {
-      name: "ReadAction",
-      I: ReadActionRequest,
-      O: ReadActionResponse,
+    getRecipe: {
+      name: "GetRecipe",
+      I: GetRecipeRequest,
+      O: GetRecipeResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc bag.BagService.GetAction
+     */
+    getAction: {
+      name: "GetAction",
+      I: GetActionRequest,
+      O: GetActionResponse,
       kind: MethodKind.Unary,
     },
     /**

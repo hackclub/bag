@@ -21,7 +21,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
-  router.rpc(BagService, BagService.methods.readItem, async req => {
+  router.rpc(BagService, BagService.methods.getItem, async req => {
     return await execute(req, async (req, app) => {
       const query = JSON.parse(req.query)
       let items = await prisma.item.findMany({ where: query })
@@ -34,7 +34,7 @@ export default (router: ConnectRouter) => {
     })
   })
 
-  router.rpc(BagService, BagService.methods.readItems, async req => {
+  router.rpc(BagService, BagService.methods.getItems, async req => {
     return await execute(req, async (req, app) => {
       const query = JSON.parse(req.query)
       let items = await prisma.item.findMany({ where: query })

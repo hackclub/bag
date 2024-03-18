@@ -73,7 +73,7 @@ export class App {
         ...this.request,
         ...request
       })
-    )
+    ).app
   }
 
   async createInstances(
@@ -84,7 +84,7 @@ export class App {
         ...this.request,
         ...request
       })
-    )
+    ).instances
   }
 
   async createInstance(
@@ -95,7 +95,7 @@ export class App {
         ...this.request,
         ...request
       })
-    )
+    ).instance
   }
 
   async createItem(request: RecursivePartial<methods.CreateItemRequest>) {
@@ -104,7 +104,7 @@ export class App {
         ...this.request,
         ...request
       })
-    )
+    ).item
   }
 
   async createRecipe(request: RecursivePartial<methods.CreateRecipeRequest>) {
@@ -113,7 +113,7 @@ export class App {
         ...this.request,
         ...request
       })
-    )
+    ).recipe
   }
 
   async createTrade(request: RecursivePartial<methods.CreateTradeRequest>) {
@@ -122,7 +122,7 @@ export class App {
         ...this.request,
         ...request
       })
-    )
+    ).trade
   }
 
   async createAction(request: RecursivePartial<methods.CreateActionRequest>) {
@@ -131,97 +131,97 @@ export class App {
         ...this.request,
         ...request
       })
-    )
+    ).action
   }
 
-  async readIdentity(request: RecursivePartial<methods.ReadIdentityRequest>) {
+  async getIdentity(request: RecursivePartial<methods.GetIdentityRequest>) {
     return App.format(
-      await this.client.readIdentity({
+      await this.client.getIdentity({
         ...this.request,
         ...request
       })
-    )
+    ).identity
   }
 
-  async readInventory(request: RecursivePartial<methods.ReadInventoryRequest>) {
+  async getInventory(request: RecursivePartial<methods.GetInventoryRequest>) {
     return App.format(
-      await this.client.readInventory({
+      await this.client.getInventory({
         ...this.request,
         ...request
       })
-    )
+    ).inventory
   }
 
-  async readItem(request: RecursivePartial<methods.ReadItemRequest>) {
+  async getItem(request: RecursivePartial<methods.GetItemRequest>) {
     return App.format(
-      await this.client.readItem({
+      await this.client.getItem({
         ...this.request,
         ...request
       })
-    )
+    ).item
   }
 
-  async readItems(request: RecursivePartial<methods.ReadItemsRequest>) {
+  async getItems(request: RecursivePartial<methods.GetItemsRequest>) {
     return App.format(
-      await this.client.readItems({
+      await this.client.getItems({
         ...this.request,
         ...request
       })
-    )
+    ).items
   }
 
-  async readInstance(request: RecursivePartial<methods.ReadInstanceRequest>) {
+  async getInstance(request: RecursivePartial<methods.GetInstanceRequest>) {
     return App.format(
-      await this.client.readInstance({
+      await this.client.getInstance({
         ...this.request,
         ...request
       })
-    )
+    ).instance
   }
 
-  async readApp(request: RecursivePartial<methods.ReadAppRequest> = {}) {
+  async getApp(request: RecursivePartial<methods.GetAppRequest> = {}) {
     return App.format(
-      await this.client.readApp({
+      await this.client.getApp({
         ...this.request,
         ...request
       })
-    )
+    ).app
   }
 
-  async readTrade(request: RecursivePartial<methods.ReadTradeRequest>) {
+  async getTrade(request: RecursivePartial<methods.GetTradeRequest>) {
     return App.format(
-      await this.client.readTrade({
+      await this.client.getTrade({
         ...this.request,
         ...request
       })
-    )
+    ).trade
   }
 
-  async readRecipes(request: RecursivePartial<methods.ReadRecipesRequest>) {
+  async getRecipes(request: RecursivePartial<methods.GetRecipesRequest>) {
     return App.format(
-      await this.client.readRecipes({
+      await this.client.getRecipes({
         ...this.request,
         ...request
       })
-    )
+    ).recipes
   }
 
-  async readRecipe(request: RecursivePartial<methods.ReadRecipeRequest>) {
+  async getRecipe(request: RecursivePartial<methods.GetRecipeRequest>) {
     return App.format(
-      await this.client.readRecipe({
+      await this.client.getRecipe({
         ...this.request,
         ...request
       })
-    )
+    ).recipe
   }
 
-  async readAction(request: RecursivePartial<methods.ReadActionRequest>) {
+  async getAction(request: RecursivePartial<methods.GetActionRequest>) {
     return App.format(
-      await this.client.readAction({
+      await this.client.getAction({
         ...this.request,
         ...request
       })
-    )
+    ).actions
   }
 
   async updateIdentityMetadata(
@@ -232,7 +232,7 @@ export class App {
         ...this.request,
         ...request
       })
-    )
+    ).identity
   }
 
   async updateInstance(
@@ -243,7 +243,7 @@ export class App {
         ...this.request,
         ...request
       })
-    )
+    ).instance
   }
 
   async updateItem(request: RecursivePartial<methods.UpdateItemRequest>) {
@@ -252,7 +252,7 @@ export class App {
         ...this.request,
         ...request
       })
-    )
+    ).item
   }
 
   async updateApp(request: RecursivePartial<methods.UpdateAppRequest>) {
@@ -261,7 +261,7 @@ export class App {
         ...this.request,
         ...request
       })
-    )
+    ).app
   }
 
   async updateTrade(request: RecursivePartial<methods.UpdateTradeRequest>) {
@@ -270,7 +270,7 @@ export class App {
         ...this.request,
         ...request
       })
-    )
+    ).trade
   }
 
   async updateRecipe(request: RecursivePartial<methods.UpdateRecipeRequest>) {
@@ -279,7 +279,7 @@ export class App {
         ...this.request,
         ...request
       })
-    )
+    ).recipe
   }
 
   async updateAction(request: RecursivePartial<methods.UpdateActionRequest>) {
@@ -288,7 +288,7 @@ export class App {
         ...this.request,
         ...request
       })
-    )
+    ).action
   }
 
   async deleteApp(request: RecursivePartial<methods.DeleteAppRequest>) {
@@ -297,7 +297,7 @@ export class App {
         ...this.request,
         ...request
       })
-    )
+    ).deletedApp
   }
 
   async deleteInstance(
@@ -308,7 +308,7 @@ export class App {
         ...this.request,
         ...request
       })
-    )
+    ).deletedInstance
   }
 
   async closeTrade(request: RecursivePartial<methods.CloseTradeRequest>) {
@@ -317,6 +317,6 @@ export class App {
         ...this.request,
         ...request
       })
-    )
+    ).trade
   }
 }

@@ -30,7 +30,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
-  router.rpc(BagService, BagService.methods.readApp, async req => {
+  router.rpc(BagService, BagService.methods.getApp, async req => {
     return await execute(req, async (req, app) => {
       const appSearch = await prisma.app.findUnique({
         where: {

@@ -1,10 +1,11 @@
 import { type IdentityWithInventory, prisma } from '../../db'
 import { mappedPermissionValues } from '../../permissions'
-import { inMaintainers, maintainers } from '../../utils'
-import slack, { execute, CommandMiddleware, cache } from '../slack'
+import { inMaintainers } from '../../utils'
+import slack, { execute, CommandMiddleware } from '../slack'
+import { ActionInstance } from '@prisma/client'
+import { Block, KnownBlock } from '@slack/bolt'
 
 const ACTION_TEST = ['action-test', 'test888']
-const LOADING = '\n:loading-dots:'
 
 const canBeUsed = async (
   user: IdentityWithInventory,
@@ -13,6 +14,7 @@ const canBeUsed = async (
   const userInstance = user.inventory.find(
     item => item.itemId.toLowerCase() === instance.itemId
   )
+  if (!userInstance) return false
   let quantityLeft = userInstance.quantity
 
   const otherTrades = await prisma.trade.findMany({
@@ -118,18 +120,14 @@ slack.command('/use', async props => {
                       }
                     }
                   })
-
               if (!ref) throw new Error(`Oops, couldn't find *${s.trim()}*.`)
-
-              let instance = user.inventory.find(
-                instance => instance.itemId === ref.name
+              if (
+                !test &&
+                !(await canBeUsed(user, { itemId: item, quantity: 1 }))
               )
-
-              if (!test && !instance)
                 throw new Error(
-                  `Oops, looks like you don't have ${ref.reaction} ${ref.name} in your inventory.`
+                  `Oops, looks like you you can't use ${ref.reaction} ${ref.name} right now. You could possibly be using ${ref.reaction} ${ref.name} somewhere else.`
                 )
-
               return ref.name.toLowerCase()
             })
         )
@@ -168,6 +166,7 @@ slack.command('/use', async props => {
       let trees = [
         new Results({
           ...possible,
+          action,
           test
         })
       ]
@@ -177,7 +176,6 @@ slack.command('/use', async props => {
 
       if (tag.length && trim(tag, '-').length) {
         // When the tag field is used for testing with a single-hyphen prefix the test should play out normally from the start
-        // This means we search for a direct route to the result
         trees = trees[0].search(trim(tag, '-'), Infinity)
         if (!trees.length) {
           await prisma.actionInstance.update({
@@ -192,7 +190,7 @@ slack.command('/use', async props => {
         ts = (
           await props.client.chat.postMessage({
             channel: props.body.channel_id,
-            text: description[0] + LOADING
+            blocks: showAction(action, description.slice(0, 1), { channel, ts })
           })
         ).ts
         for (let [i, node] of trees.entries()) {
@@ -203,14 +201,14 @@ slack.command('/use', async props => {
             trees.slice(0, i),
             description,
             summary,
-            tag.startsWith('--')
+            tag.startsWith('---')
           )
         }
       } else {
         ts = (
           await props.client.chat.postMessage({
             channel: props.body.channel_id,
-            text: description[0] + LOADING
+            blocks: showAction(action, description, { channel, ts })
           })
         ).ts
         trees[trees.length - 1].thread = { channel, ts }
@@ -226,6 +224,7 @@ slack.command('/use', async props => {
           else result = tree
 
           result.thread = tree.thread
+          result.action = tree.action
           if (!result.branches.length) result.delay = 0
 
           let results = await result.run(
@@ -239,6 +238,9 @@ slack.command('/use', async props => {
           if (result.terminate) break
         }
       } catch (error) {
+        if (error.code === 'slack_webapi_platform_error')
+          // Error triggered by running cancel-use action, so exit
+          return
         console.log(error)
       }
 
@@ -261,7 +263,7 @@ slack.command('/use', async props => {
       })
       await props.client.chat.update({
         ...trees[trees.length - 1].thread,
-        text: description.join('\n\n')
+        blocks: showAction(action, description, true)
       })
     },
     mappedPermissionValues.READ,
@@ -269,7 +271,30 @@ slack.command('/use', async props => {
   )
 })
 
+slack.action('cancel-use', async props => {
+  return await execute(props, async props => {
+    // @ts-expect-error
+    const { id, thread } = JSON.parse(props.action.value)
+
+    await prisma.actionInstance.update({
+      where: { id },
+      data: { done: true }
+    })
+
+    // @ts-expect-error
+    await props.client.chat.delete({ ...thread })
+
+    // @ts-expect-error
+    await props.client.chat.postEphemeral({
+      channel: props.body.channel.id,
+      user: props.body.user.id,
+      text: 'Action canceled.'
+    })
+  })
+})
+
 class Results {
+  action: ActionInstance
   tag?: string
   description?: string
   thread: { channel: string; ts: string }
@@ -295,6 +320,7 @@ class Results {
   losses: Array<string>
 
   constructor(obj: { [key: string]: any }) {
+    this.action = obj.action
     this.tag = obj.tag
     this.description = obj.description
     this.thread = obj.thread
@@ -314,6 +340,7 @@ class Results {
           new Results({
             ...sequence,
             thread: this.thread,
+            action: this.action,
             test: this.test
           })
       ) || []
@@ -327,15 +354,13 @@ class Results {
             defaultDelay: initial.defaultDelay,
             frequency: initial.frequency,
             thread: this.thread,
+            action: this.action,
             test: this.test
           })
         }
         return new Results({
           ...branch,
-          delay: branch.delay || obj.defaultDelay,
-          frequency: branch.frequency || this.frequency,
-          thread: this.thread,
-          test: this.test
+          delay: branch.delay || obj.defaultDelay
         })
       }) || []
 
@@ -472,13 +497,17 @@ class Results {
       try {
         await props.client.chat.update({
           ...this.thread,
-          text: description.join('\n\n') + LOADING
+          blocks: showAction(this.action, description, this.thread)
         })
       } catch {
         // Length too long? Start a new thread
         await props.client.chat.update({
           ...this.thread,
-          text: description.slice(0, description.length - 1).join('\n\n')
+          blocks: showAction(
+            this.action,
+            description.slice(0, description.length - 1),
+            this.thread
+          )
         })
         const { permalink } = await props.client.chat.getPermalink({
           channel: this.thread.channel,
@@ -494,7 +523,7 @@ class Results {
         description.splice(0, description.length - 3)
         const { channel, ts } = await props.client.chat.postMessage({
           channel: this.thread.channel,
-          text: description.join('\n\n') + LOADING,
+          blocks: showAction(this.action, description, this.thread),
           unfurl_links: false
         })
         this.thread = { channel, ts }
@@ -588,12 +617,12 @@ class Results {
     }
 
     if (this.goto) {
-      // When a node with a goto completes, this action will move to the node with a matching tag.
+      // When a node with a goto completes, this action will move to the node with a matching tag
       let newTree = prev[0].search(this.goto, Infinity)
       newTree[newTree.length - 1].thread = this.thread
       return newTree
     } else if (this.gotoChildren) {
-      // The gotoChildren field acts like goto, except it skips the contents of the tagged node and instead goes to its children. This is useful mostly whe we want to return not to a specific node, but to some randomly-selected branch directly beneath it.
+      // The gotoChildren fields acts like goto, except it skips the contents of the tagged node and instead goes to its children. This is useful most when we want to return not to a specific node, but to some randomly-selected branch directly beneath it.
       let newTree = prev[0].search(this.gotoChildren, Infinity)
       const tree = newTree[newTree.length - 1]
       tree.thread = this.thread
@@ -617,3 +646,42 @@ const random = (min: number, max: number) =>
 
 const sleep = async (seconds: number) =>
   new Promise(r => setTimeout(r, seconds * 1000))
+
+const showAction = (
+  action: ActionInstance,
+  description: string[],
+  done:
+    | boolean
+    | {
+        channel: string
+        ts: string
+      }
+): (Block | KnownBlock)[] => {
+  let blocks: (Block | KnownBlock)[] = [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text:
+          description.join('\n\n') + (done === true ? '' : '\n:loading-dots:')
+      }
+    }
+  ]
+  if (done !== true)
+    blocks.push({
+      type: 'actions',
+      elements: [
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: 'Cancel'
+          },
+          value: JSON.stringify({ id: action.id, thread: done }),
+          style: 'danger',
+          action_id: 'cancel-use'
+        }
+      ]
+    })
+  return blocks
+}

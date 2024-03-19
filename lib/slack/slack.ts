@@ -14,7 +14,8 @@ import {
   AllMiddlewareArgs,
   SlackEventMiddlewareArgs,
   SlackActionMiddlewareArgs,
-  HTTPReceiver
+  HTTPReceiver,
+  LogLevel
 } from '@slack/bolt'
 import { StringIndexed } from '@slack/bolt/dist/types/helpers'
 import { LRUCache } from 'lru-cache'
@@ -32,6 +33,7 @@ const slack = new App({
   token: config.SLACK_BOT_TOKEN,
   appToken: config.SLACK_APP_TOKEN,
   signingSecret: config.SLACK_SIGNING_SECRET,
+  logLevel: LogLevel.ERROR,
   receiver
 })
 
@@ -93,9 +95,9 @@ export async function execute(
       const curr = cache.get(props.context.userId)
       console.log('Cache', props.context.userId, curr)
       if (curr === undefined) cache.set(props.context.userId, 1)
-      else if (Number(curr) > 26)
+      else if (Number(curr) > config.SLACK_RATE_LIMIT + 1)
         return // Even sending messages can make the bot hit Slack API rate limits, so let's only do that one time
-      else if (Number(curr) > 5 && Number(curr !== 999)) {
+      else if (Number(curr) > config.SLACK_RATE_LIMIT && Number(curr !== 999)) {
         await props.client.chat.postEphemeral({
           channel: props.context.userId,
           user: props.context.userId,

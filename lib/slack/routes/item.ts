@@ -50,7 +50,7 @@ slack.command('/item', async props => {
 
       return await props.respond({
         response_type: 'ephemeral',
-        blocks: getItem(item, user)
+        blocks: await getItem(item, user)
       })
     } catch {
       if (!message.length)
@@ -65,8 +65,6 @@ slack.command('/item', async props => {
     }
   })
 })
-
-// TODO: Should allow existing items to give permissions to new items through some sort of visual interface.
 
 slack.view('create-item', async props => {
   await execute(props, async props => {
@@ -227,7 +225,10 @@ slack.view('edit-item', async props => {
   })
 })
 
-const getItem = (item: Item, user: Identity): (Block | KnownBlock)[] => {
+const getItem = async (
+  item: Item,
+  user: Identity
+): Promise<(Block | KnownBlock)[]> => {
   let blocks: (Block | KnownBlock)[] = [
     {
       type: 'section',
@@ -241,6 +242,50 @@ const getItem = (item: Item, user: Identity): (Block | KnownBlock)[] => {
       }
     }
   ]
+
+  // Get all recipes that lead to this item
+  const recipes = await prisma.recipe.findMany({
+    where: { outputs: { some: { recipeItemId: item.name, instanceId: null } } },
+    include: {
+      inputs: { include: { recipeItem: true } },
+      tools: { include: { recipeItem: true } },
+      outputs: { include: { recipeItem: true } }
+    }
+  })
+
+  if (recipes.length)
+    blocks.push({
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text:
+          `Ways to make this:\n\n` +
+          recipes
+            .map(recipe => {
+              let inputs = recipe.inputs
+                .map(input => input.recipeItem.reaction.repeat(input.quantity))
+                .join('')
+              let tools = recipe.tools
+                .map(tool => tool.recipeItem.reaction.repeat(tool.quantity))
+                .join('')
+              let outputs = recipe.outputs
+                .map(
+                  output =>
+                    `x${output.quantity} ${output.recipeItem.reaction} ${output.recipeItem.name}`
+                )
+                .join(', ')
+              return (
+                inputs +
+                (tools.length ? ' ~ ' + tools : '') +
+                ' *→* ' +
+                outputs +
+                '\n'
+              )
+            })
+            .join('\n')
+      }
+    })
+
   if (
     user.permissions === PermissionLevels.ADMIN ||
     (mappedPermissionValues[user.permissions] >=

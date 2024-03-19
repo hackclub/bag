@@ -90,11 +90,11 @@ export default (router: ConnectRouter) => {
             },
             { type: 'divider' }
           )
-        console.log(text)
-        await web.chat.postMessage({
-          channel: req.identityId,
-          blocks: text
-        })
+        if (text.length)
+          await web.chat.postMessage({
+            channel: req.identityId,
+            blocks: text
+          })
 
         return { instances: created }
       },
@@ -167,10 +167,11 @@ export default (router: ConnectRouter) => {
             },
             { type: 'divider' }
           )
-        await web.chat.postMessage({
-          channel: req.identityId,
-          blocks: text
-        })
+        if (text.length)
+          await web.chat.postMessage({
+            channel: req.identityId,
+            blocks: text
+          })
 
         return { instance }
       },
@@ -253,18 +254,19 @@ export default (router: ConnectRouter) => {
             },
             { type: 'divider' }
           )
-        await web.chat.postMessage({
-          channel: req.identityId,
-          blocks: [
-            {
-              type: 'section',
-              text: {
-                type: 'mrkdwn',
-                text: text.join('')
+        if (text.length)
+          await web.chat.postMessage({
+            channel: req.identityId,
+            blocks: [
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: text.join('')
+                }
               }
-            }
-          ]
-        })
+            ]
+          })
 
         return { instance }
       },

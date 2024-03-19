@@ -18,7 +18,28 @@ const getUser = async (slack: string, app: App) => {
 
 export default (router: ConnectRouter) => {
   router.rpc(BagService, BagService.methods.getIdentities, async req => {
-    return await execute(req, async (req, app) => {})
+    return await execute(req, async (req, app) => {
+      let identities = await prisma.identity.findMany({
+        where: JSON.parse(req.query) || {},
+        include: { inventory: true }
+      })
+      if (
+        mappedPermissionValues[app.permissions] < mappedPermissionValues.WRITE
+      )
+        identities = identities.map(identity => ({
+          ...identity,
+          inventory: identity.inventory.filter(
+            instance =>
+              app.specificItems.includes(instance.itemId) || instance.public
+          )
+        }))
+      if (app.permissions === PermissionLevels.READ)
+        identities = identities.map(identity => ({
+          ...identity,
+          inventory: identity.inventory.filter(instance => instance.public)
+        }))
+      return { identities }
+    })
   })
 
   router.rpc(BagService, BagService.methods.getIdentity, async req => {

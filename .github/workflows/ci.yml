@@ -33,7 +33,3 @@ jobs:
         run: |
           cp -r ./gen ./client
           cd client && npm run build && cd ..
-      # - name: Generate documentation
-      #   run: |
-      #     npm run gen
-      # TODO: Figure out how to generate documentation

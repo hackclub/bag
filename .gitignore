@@ -15,3 +15,6 @@ apps
 client/gen
 client/dist
 *.pem
+
+lib/api/slack/perms.ts
+lib/api/slack/recipe.ts

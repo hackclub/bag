@@ -1,6 +1,5 @@
 import { findOrCreateIdentity } from '../../db'
 import { prisma } from '../../db'
-import { log } from '../../logger'
 import { userRegex } from '../../utils'
 import slack, { execute } from '../slack'
 import views from '../views'

@@ -90,10 +90,17 @@ message Trade {
   optional int32 id = 1;
   optional string initiatorIdentityId = 2;
   optional string receiverIdentityId = 3;
-  repeated Instance initiatorTrades = 4;
-  repeated Instance receiverTrades = 5;
+  repeated TradeInstance initiatorTrades = 4;
+  repeated TradeInstance receiverTrades = 5;
   optional bool public = 6;
   optional bool closed = 7;
+}
+
+message TradeInstance {
+  optional int32 id = 1;
+  optional int32 instanceId = 2;
+  optional Instance instance = 3;
+  optional int32 quantity = 4;
 }
 
 message RecipeItem {

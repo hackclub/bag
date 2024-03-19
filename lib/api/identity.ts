@@ -58,24 +58,21 @@ export default (router: ConnectRouter) => {
     BagService,
     BagService.methods.updateIdentityMetadata,
     async req => {
-      return await execute(
-        req,
-        async (req, app) => {
-          const identity = await findOrCreateIdentity(req.identityId)
-          return {
-            identity: await prisma.identity.update({
-              where: { slack: req.identityId },
-              data: {
-                metadata: {
-                  ...(identity.metadata as object),
-                  ...JSON.parse(req.metadata)
-                }
+      return await execute(req, async (req, app) => {
+        const identity = await findOrCreateIdentity(req.identityId)
+        console.log(req.metadata)
+        return {
+          identity: await prisma.identity.update({
+            where: { slack: req.identityId },
+            data: {
+              metadata: {
+                ...(identity.metadata as object),
+                ...JSON.parse(req.metadata)
               }
-            })
-          }
-        },
-        mappedPermissionValues.WRITE_SPECIFIC
-      )
+            }
+          })
+        }
+      })
     }
   )
 }

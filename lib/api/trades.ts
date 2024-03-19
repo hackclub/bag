@@ -3,7 +3,7 @@ import { TradeWithTrades, prisma } from '../db'
 import { mappedPermissionValues } from '../permissions'
 import { execute } from './routing'
 import { ConnectRouter } from '@connectrpc/connect'
-import { PermissionLevels } from '@prisma/client'
+import { PermissionLevels, Trade } from '@prisma/client'
 
 export default (router: ConnectRouter) => {
   router.rpc(BagService, BagService.methods.createTrade, async req => {
@@ -34,13 +34,19 @@ export default (router: ConnectRouter) => {
       const trade = await prisma.trade.findUnique({
         where: { id: req.tradeId },
         include: {
-          initiatorTrades: true,
-          receiverTrades: true
+          initiatorTrades: {
+            include: {
+              instance: true
+            }
+          },
+          receiverTrades: {
+            include: {
+              instance: true
+            }
+          }
         }
       })
 
-      if (!trade.public && app.permissions === PermissionLevels.READ)
-        throw new Error('Trade not found')
       if (
         !trade.public &&
         mappedPermissionValues[app.permissions] <
@@ -57,10 +63,7 @@ export default (router: ConnectRouter) => {
     return await execute(req, async (req, app) => {
       let trade: TradeWithTrades = await prisma.trade.findUnique({
         where: { id: req.tradeId },
-        include: {
-          initiatorTrades: true,
-          receiverTrades: true
-        }
+        include: { initiatorTrades: true, receiverTrades: true }
       })
       if (
         mappedPermissionValues[app.permissions] <=
@@ -96,8 +99,6 @@ export default (router: ConnectRouter) => {
               await prisma.instance.update({
                 where: { id: receiverInstance.id },
                 data: {
-                  itemId: instance.itemId,
-                  identityId: receiver.slack,
                   quantity: trade.quantity + receiverInstance.quantity
                 }
               })
@@ -136,8 +137,6 @@ export default (router: ConnectRouter) => {
               await prisma.instance.update({
                 where: { id: initiatorInstance.id },
                 data: {
-                  itemId: instance.itemId,
-                  identityId: initiator.slack,
                   quantity: trade.quantity + initiatorInstance.quantity
                 }
               })
@@ -155,7 +154,7 @@ export default (router: ConnectRouter) => {
           else
             await prisma.instance.update({
               where: { id: instance.id },
-              data: { identityId: receiver.slack }
+              data: { identityId: initiator.slack }
             })
         })
       )
@@ -215,7 +214,7 @@ export default (router: ConnectRouter) => {
 
       for (let instance of req.add) {
         const search = trade[updateKey].find(
-          add => add.instanceId === instance.instanceId
+          add => add.instanceId === instance.id
         )
         const ref = await prisma.instance.findUnique({
           where: { id: instance.id },
@@ -245,7 +244,8 @@ export default (router: ConnectRouter) => {
                 receiverIdentityId: req.identityId,
                 receiverTrades: { some: { instanceId: instance.id } }
               }
-            ]
+            ],
+            NOT: [{ id: req.tradeId }]
           },
           include: {
             initiatorTrades: true,
@@ -266,10 +266,10 @@ export default (router: ConnectRouter) => {
               curr.trades.find(trade => trade.instanceId === instance.id)
                 .quantity
             )
-          }, instance.quantity)
-        console.log(otherOffers)
+          }, quantityLeft)
+        console.log('otherTrades', otherTrades)
 
-        if (quantityLeft - otherOffers >= 0) {
+        if (quantityLeft >= 0) {
           if (search) {
             await prisma.tradeInstance.update({
               where: { id: search.id },
@@ -281,11 +281,9 @@ export default (router: ConnectRouter) => {
                 instanceId: instance.id,
                 quantity: instance.quantity,
                 [updateKey]: {
-                  connect: {
-                    ...trade,
-                    initiatorTrades: undefined,
-                    receiverTrades: undefined
-                  }
+                  connect: await prisma.trade.findUnique({
+                    where: { id: req.tradeId }
+                  })
                 }
               }
             })

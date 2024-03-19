@@ -1,6 +1,6 @@
 {
   "name": "@hackclub/bag",
-  "version": "1.0.36",
+  "version": "1.0.37",
   "description": "Hack Club's custom inventory system for Slack!",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -9,7 +9,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup"
+    "build": "npx tsup"
   },
   "repository": {
     "type": "git",

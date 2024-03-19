@@ -7,7 +7,7 @@ import { App } from '@prisma/client'
 import { WebClient } from '@slack/web-api'
 import { LRUCache } from 'lru-cache'
 
-const maxRequests = 60
+const maxRequests = 100
 export const cache = new LRUCache({
   max: 100,
   ttl: 60000

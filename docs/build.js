@@ -94,7 +94,7 @@ ${
 
 Returns:
 
-\`\`\`
+\`\`\`gp
 ${methods[`${method}Request`].response
   .map(field => `${field.name}: ${field.type}${field.list ? '[]' : ''}`)
   .join('\n')}

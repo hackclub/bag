@@ -416,14 +416,14 @@ export class Trade extends Message<Trade> {
   receiverIdentityId?: string;
 
   /**
-   * @generated from field: repeated bag.Instance initiatorTrades = 4;
+   * @generated from field: repeated bag.TradeInstance initiatorTrades = 4;
    */
-  initiatorTrades: Instance[] = [];
+  initiatorTrades: TradeInstance[] = [];
 
   /**
-   * @generated from field: repeated bag.Instance receiverTrades = 5;
+   * @generated from field: repeated bag.TradeInstance receiverTrades = 5;
    */
-  receiverTrades: Instance[] = [];
+  receiverTrades: TradeInstance[] = [];
 
   /**
    * @generated from field: optional bool public = 6;
@@ -446,8 +446,8 @@ export class Trade extends Message<Trade> {
     { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
     { no: 2, name: "initiatorIdentityId", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 3, name: "receiverIdentityId", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 4, name: "initiatorTrades", kind: "message", T: Instance, repeated: true },
-    { no: 5, name: "receiverTrades", kind: "message", T: Instance, repeated: true },
+    { no: 4, name: "initiatorTrades", kind: "message", T: TradeInstance, repeated: true },
+    { no: 5, name: "receiverTrades", kind: "message", T: TradeInstance, repeated: true },
     { no: 6, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 7, name: "closed", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
@@ -466,6 +466,61 @@ export class Trade extends Message<Trade> {
 
   static equals(a: Trade | PlainMessage<Trade> | undefined, b: Trade | PlainMessage<Trade> | undefined): boolean {
     return proto3.util.equals(Trade, a, b);
+  }
+}
+
+/**
+ * @generated from message bag.TradeInstance
+ */
+export class TradeInstance extends Message<TradeInstance> {
+  /**
+   * @generated from field: optional int32 id = 1;
+   */
+  id?: number;
+
+  /**
+   * @generated from field: optional int32 instanceId = 2;
+   */
+  instanceId?: number;
+
+  /**
+   * @generated from field: optional bag.Instance instance = 3;
+   */
+  instance?: Instance;
+
+  /**
+   * @generated from field: optional int32 quantity = 4;
+   */
+  quantity?: number;
+
+  constructor(data?: PartialMessage<TradeInstance>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bag.TradeInstance";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 2, name: "instanceId", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 3, name: "instance", kind: "message", T: Instance, opt: true },
+    { no: 4, name: "quantity", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TradeInstance {
+    return new TradeInstance().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TradeInstance {
+    return new TradeInstance().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TradeInstance {
+    return new TradeInstance().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: TradeInstance | PlainMessage<TradeInstance> | undefined, b: TradeInstance | PlainMessage<TradeInstance> | undefined): boolean {
+    return proto3.util.equals(TradeInstance, a, b);
   }
 }
 

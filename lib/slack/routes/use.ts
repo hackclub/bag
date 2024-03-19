@@ -276,6 +276,16 @@ slack.action('cancel-use', async props => {
     // @ts-expect-error
     const { id, thread } = JSON.parse(props.action.value)
 
+    const action = await prisma.actionInstance.findUnique({
+      where: { id, done: false }
+    })
+
+    if (action.identityId !== props.body.user.id)
+      return await props.respond({
+        response_type: 'ephemeral',
+        text: "You're not the one doing that, are you?"
+      })
+
     await prisma.actionInstance.update({
       where: { id },
       data: { done: true }

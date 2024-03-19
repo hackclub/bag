@@ -61,11 +61,16 @@ export default (router: ConnectRouter) => {
       return await execute(
         req,
         async (req, app) => {
-          await findOrCreateIdentity(req.identityId)
+          const identity = await findOrCreateIdentity(req.identityId)
           return {
             identity: await prisma.identity.update({
               where: { slack: req.identityId },
-              data: { metadata: JSON.parse(req.metadata) }
+              data: {
+                metadata: {
+                  ...(identity.metadata as object),
+                  ...JSON.parse(req.metadata)
+                }
+              }
             })
           }
         },

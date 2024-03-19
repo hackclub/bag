@@ -30,7 +30,6 @@ const craft = async (slack: string, craftingId: number, recipeId: number) => {
     const instance = updated.inputs.find(
       instance => instance.recipeItemId === part.recipeItemId
     )
-    console.log(instance)
     if (part.quantity < instance.instance.quantity) {
       // Subtract from quantity
       await prisma.instance.update({
@@ -49,6 +48,7 @@ const craft = async (slack: string, craftingId: number, recipeId: number) => {
   }
 
   // Give user the output
+  console.log(updated.recipe.outputs)
   for (let output of updated.recipe.outputs) {
     // Check if user already has an instance and add to that instance
     const existing = await prisma.instance.findFirst({
@@ -57,7 +57,6 @@ const craft = async (slack: string, craftingId: number, recipeId: number) => {
         itemId: output.recipeItemId
       }
     })
-    console.log(output.quantity + existing.quantity)
 
     if (existing)
       await prisma.instance.update({

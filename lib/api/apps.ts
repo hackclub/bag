@@ -32,13 +32,13 @@ export default (router: ConnectRouter) => {
 
   router.rpc(BagService, BagService.methods.getApp, async req => {
     return await execute(req, async (req, app) => {
-      const appSearch = await prisma.app.findUnique({
-        where: {
-          id: req.optAppId ? req.optAppId : req.appId
-        }
-      })
-      if (!appSearch) throw new Error()
-      if (req.optAppId) {
+      if (req.optAppId > 0) {
+        const appSearch = await prisma.app.findUnique({
+          where: {
+            id: req.optAppId
+          }
+        })
+        if (!appSearch) throw new Error()
         if (!appSearch.public && app.permissions === PermissionLevels.READ)
           throw new Error('App not found')
         else if (
@@ -48,9 +48,9 @@ export default (router: ConnectRouter) => {
           !app.specificApps.find(appId => appSearch.id === appId)
         )
           throw new Error('App not found')
-      }
 
-      return { app: appSearch }
+        return { app: appSearch }
+      } else return { app }
     })
   })
 

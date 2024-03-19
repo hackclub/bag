@@ -134,6 +134,15 @@ export class App {
     ).action
   }
 
+  async getIdentities(request: RecursivePartial<methods.GetIdentitiesRequest>) {
+    return App.format(
+      await this.client.getIdentities({
+        ...this.request,
+        ...request
+      })
+    ).identities
+  }
+
   async getIdentity(request: RecursivePartial<methods.GetIdentityRequest>) {
     return App.format(
       await this.client.getIdentity({

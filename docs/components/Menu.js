@@ -1,5 +1,5 @@
-import { Box, Container, Flex, Link } from 'theme-ui'
 import Content from './Content'
+import { Box, Container, Flex, Link } from 'theme-ui'
 
 export default function Menu({ menu, headers }) {
   return (

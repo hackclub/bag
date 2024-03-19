@@ -5,123 +5,578 @@ order: 2
 
 ## Types
 
-TODO
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>App</code>**
+    
+Properties:
 
-## Methods 
+```
+id: number
+name: string
+description: string
+permissions: string
+public: boolean
+metadata: string
+```
 
-### `createInstances`
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>Item</code>**
+    
+Properties:
 
-Returns
+```
+name: string
+image: string
+description: string
+reaction: string
+commodity: boolean
+tradable: boolean
+public: boolean
+metadata: string
+```
 
-### `createInstance`
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>Skill</code>**
+    
+Properties:
 
-Returns
+```
+name: string
+maxLevel: number
+description: string
+reaction: string
+metadata: string
+```
 
-### `createApp`
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>Identity</code>**
+    
+Properties:
 
-Returns
+```
+slack: string
+inventory: Instance[]
+metadata: string
+```
 
-### `createItem`
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>Instance</code>**
+    
+Properties:
 
-Returns
+```
+id: number
+itemId: string
+identityId: string
+quantity: number
+metadata: string
+item: Item
+```
 
-### `createRecipe`
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>SkillInstance</code>**
+    
+Properties:
 
-Returns
+```
+id: number
+skillId: string
+identityId: string
+level: number
+metadata: string
+skill: Skill
+```
 
-### `createTrade`
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>Trade</code>**
+    
+Properties:
 
-Returns
+```
+id: number
+initiatorIdentityId: string
+receiverIdentityId: string
+initiatorTrades: Instance[]
+receiverTrades: Instance[]
+public: boolean
+closed: boolean
+```
 
-### `createAction`
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>RecipeItem</code>**
+    
+Properties:
 
-Returns
+```
+id: number
+recipeItemId: string
+recipeItem: Item
+quantity: number
+```
 
-### `getIdentities`
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>Recipe</code>**
+    
+Properties:
 
-Returns
+```
+id: number
+inputs: RecipeItem[]
+outputs: RecipeItem[]
+tools: RecipeItem[]
+skills: Skill[]
+public: boolean
+description: string
+```
 
-### `getIdentity`
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>Action</code>**
+    
+Properties:
 
-Returns
+```
+id: number
+locations: string[]
+tools: string[]
+branch: string
+```
 
-### `getInventory`
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>ActionInstance</code>**
+    
+Properties:
 
-Returns
+```
+id: number
+done: boolean
+identityId: string
+identity: Identity
+actionId: number
+action: Action
+```
 
-### `getItem`
 
-Returns
+## Methods
 
-### `getItems`
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>createInstances</code>**
 
-Returns
+Arguments:
 
-### `getInstance`
+```
+instances: Instance[]
+identityId: string
+show: boolean
+note: string
+```
 
-Returns
+Returns:
 
-### `getApp`
+```
+response: string
+instances: Instance[]
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>createInstance</code>**
 
-Returns
+Arguments:
 
-### `getTrade`
+```
+itemId: string
+identityId: string
+quantity: number
+metadata: string
+public: boolean
+show: boolean
+note: string
+```
 
-Returns
+Returns:
 
-### `getRecipes`
+```
+response: string
+instance: Instance
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>createApp</code>**
 
-Returns
+Arguments:
 
-### `getRecipe`
+```
+name: string
+description: string
+permissions: number
+public: boolean
+metadata: string
+```
 
-Returns
+Returns:
 
-### `getAction`
+```
+response: string
+app: App
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>createItem</code>**
 
-Returns
+Arguments:
 
-### `updateIdentityMetadata`
+```
+item: Item
+```
 
-Returns
+Returns:
 
-### `updateInstance`
+```
+response: string
+item: Item
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>createRecipe</code>**
 
-Returns
+Arguments:
 
-### `updateItem`
+```
+recipe: Recipe
+```
 
-Returns
+Returns:
 
-### `updateApp`
+```
+response: string
+recipe: Recipe
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>createTrade</code>**
 
-Returns
+Arguments:
 
-### `updateTrade`
+```
+initiator: string
+receiver: string
+public: boolean
+```
 
-Returns
+Returns:
 
-### `updateRecipe`
+```
+response: string
+trade: Trade
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>createAction</code>**
 
-Returns
+Arguments:
 
-### `updateAction`
+```
+action: Action
+```
 
-Returns
+Returns:
 
-### `deleteApp`
+```
+response: string
+action: Action
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>getIdentities</code>**
 
-Returns
+Arguments:
 
-### `deleteInstance`
+```
+query: string
+```
 
-Returns
+Returns:
 
-### `closeTrade`
+```
+response: string
+identities: Identity[]
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>getIdentity</code>**
 
-Returns
+Arguments:
 
-### `verifyKey`
+```
+identityId: string
+```
 
-Returns
+Returns:
 
+```
+response: string
+identity: Identity
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>getInventory</code>**
+
+Arguments:
+
+```
+identityId: string
+```
+
+Returns:
+
+```
+response: string
+inventory: Instance[]
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>getItem</code>**
+
+Arguments:
+
+```
+query: string
+```
+
+Returns:
+
+```
+response: string
+item: Item
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>getItems</code>**
+
+Arguments:
+
+```
+query: string
+```
+
+Returns:
+
+```
+response: string
+items: Item[]
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>getInstance</code>**
+
+Arguments:
+
+```
+instanceId: number
+```
+
+Returns:
+
+```
+response: string
+instance: Instance
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>getApp</code>**
+
+Arguments:
+
+```
+optAppId: number
+```
+
+Returns:
+
+```
+response: string
+app: App
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>getTrade</code>**
+
+Arguments:
+
+```
+tradeId: number
+```
+
+Returns:
+
+```
+response: string
+trade: Trade
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>getRecipes</code>**
+
+Arguments:
+
+```
+query: Recipe
+inclusive: boolean
+```
+
+Returns:
+
+```
+response: string
+recipes: Recipe[]
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>getRecipe</code>**
+
+Arguments:
+
+```
+query: Recipe
+```
+
+Returns:
+
+```
+response: string
+recipe: Recipe
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>getAction</code>**
+
+Arguments:
+
+```
+query: Action
+```
+
+Returns:
+
+```
+response: string
+actions: Action[]
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>updateIdentityMetadata</code>**
+
+Arguments:
+
+```
+identityId: string
+metadata: string
+```
+
+Returns:
+
+```
+response: string
+identity: Identity
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>updateInstance</code>**
+
+Arguments:
+
+```
+instanceId: number
+new: Instance
+show: boolean
+note: string
+```
+
+Returns:
+
+```
+response: string
+instance: Instance
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>updateItem</code>**
+
+Arguments:
+
+```
+itemId: string
+new: Item
+```
+
+Returns:
+
+```
+response: string
+item: Item
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>updateApp</code>**
+
+Arguments:
+
+```
+optAppId: number
+new: App
+```
+
+Returns:
+
+```
+response: string
+app: App
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>updateTrade</code>**
+
+Arguments:
+
+```
+tradeId: number
+identityId: string
+add: Instance[]
+```
+
+Returns:
+
+```
+response: string
+trade: Trade
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>updateRecipe</code>**
+
+Arguments:
+
+```
+recipeId: number
+new: Recipe
+```
+
+Returns:
+
+```
+response: string
+recipe: Recipe
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>updateAction</code>**
+
+Arguments:
+
+```
+actionId: number
+new: Action
+```
+
+Returns:
+
+```
+response: string
+action: Action
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>deleteApp</code>**
+
+Arguments:
+
+```
+deleteAppId: number
+```
+
+Returns:
+
+```
+response: string
+deletedApp: App
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>deleteInstance</code>**
+
+Arguments:
+
+```
+instanceId: number
+```
+
+Returns:
+
+```
+response: string
+deletedInstance: Instance
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>closeTrade</code>**
+
+Arguments:
+
+```
+tradeId: number
+```
+
+Returns:
+
+```
+response: string
+trade: Trade
+initiator: Identity
+receiver: Identity
+```
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>verifyKey</code>**
+
+Arguments:
+
+```
+No extra fields.
+```
+
+Returns:
+
+```
+valid: boolean
+```

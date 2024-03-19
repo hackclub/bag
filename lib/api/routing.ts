@@ -30,14 +30,12 @@ export async function execute(
   permission?: number
 ) {
   try {
-    console.log(req)
     let app = await prisma.app.findUnique({
       where: { id: req.appId, AND: [{ key: req.key }] }
     })
     if (!app) throw new Error('App not found or invalid app key')
 
     let rate = cache.get(app.id)
-    console.log('Rate: ', rate)
     if (!rate) cache.set(app.id, 1)
     else if (Number(rate) >= maxRequests) throw new Error('Rate limit reached')
     else cache.set(app.id, Number(rate) + 1)

@@ -27,7 +27,8 @@ export default (router: ConnectRouter) => {
       let items = await prisma.item.findMany({ where: query })
       do {
         let item = items[0]
-        if (app.specificItems.find(name => name === item.name)) return { item }
+        return { item }
+        // if (!item.public && app.permissions === )
         items.splice(0, 1)
       } while (items.length)
       throw new Error('Item not found')

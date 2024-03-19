@@ -10,7 +10,7 @@ service BagService {
   rpc CreateRecipe(CreateRecipeRequest) returns (CreateRecipeResponse) {}  // Should be able to create recipes that include items the app has access to
   rpc CreateAction(CreateActionRequest) returns (CreateActionResponse) {}
   rpc CreateTrade(CreateTradeRequest) returns (CreateTradeResponse) {}  // Should be able to initiate trades that include items
-  rpc GetIdentities(GetIdentitiesRequest) returns (GetIdentitiesRequest) {}
+  rpc GetIdentities(GetIdentitiesRequest) returns (GetIdentitiesResponse) {}
   rpc GetIdentity(GetIdentityRequest) returns (GetIdentityResponse) {}  // Should be able to Get info about a Slack user
   rpc GetInventory(GetInventoryRequest) returns (GetInventoryResponse) {}  // Should be able to Get inventory of a user, including access to private items the app has access to
   rpc GetItem(GetItemRequest) returns (GetItemResponse) {}  // Should be able to Get item info, including access to private items the app has access to

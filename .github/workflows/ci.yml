@@ -34,6 +34,11 @@ jobs:
       - name: Copy proto files
         run: |
           cp -r ./gen ./client
+      - name: Install dependencies for client
+        uses: borales/actions-yarn@v4
+        with:
+          cmd: install
+          dir: 'client'
       - name: Build client
         uses: borales/actions-yarn@v4
         with:

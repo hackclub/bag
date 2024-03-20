@@ -17,6 +17,7 @@ const getUser = async (slack: string, app: App) => {
 }
 
 export default (router: ConnectRouter) => {
+  // TODO: Test
   router.rpc(BagService, BagService.methods.getIdentities, async req => {
     return await execute(req, async (req, app) => {
       let identities = await prisma.identity.findMany({

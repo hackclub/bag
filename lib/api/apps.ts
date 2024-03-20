@@ -54,6 +54,7 @@ export default (router: ConnectRouter) => {
     })
   })
 
+  // TODO: Test, especially with metadata
   router.rpc(BagService, BagService.methods.updateApp, async req => {
     return await execute(req, async (req, app) => {
       if (

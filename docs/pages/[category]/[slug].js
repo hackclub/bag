@@ -6,6 +6,7 @@ import 'highlight.js/styles/xcode.css'
 import { MDXRemote } from 'next-mdx-remote'
 import { serialize } from 'next-mdx-remote/serialize'
 import path from 'path'
+import rehypeHighlight from 'rehype-highlight'
 import { remark } from 'remark'
 import remarkGfm from 'remark-gfm'
 import remarkToc from 'remark-toc'
@@ -84,7 +85,7 @@ export async function getStaticProps({ params }) {
   return {
     props: {
       source: await serialize(res, {
-        mdxOptions: { remarkGfm },
+        mdxOptions: { remarkGfm, rehypePlugins: [rehypeHighlight] },
         parseFrontmatter: true
       }),
       title: pageTitle,

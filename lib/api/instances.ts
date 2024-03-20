@@ -7,6 +7,7 @@ import { PermissionLevels } from '@prisma/client'
 import { Block, KnownBlock } from '@slack/bolt'
 
 export default (router: ConnectRouter) => {
+  // TODO: Test
   router.rpc(BagService, BagService.methods.createInstances, async req => {
     return await execute(
       req,
@@ -102,6 +103,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
+  // TODO: Test
   router.rpc(BagService, BagService.methods.createInstance, async req => {
     return await execute(
       req,
@@ -198,6 +200,7 @@ export default (router: ConnectRouter) => {
     })
   })
 
+  // TODO: Test
   router.rpc(BagService, BagService.methods.updateInstance, async req => {
     return await execute(
       req,
@@ -275,6 +278,7 @@ export default (router: ConnectRouter) => {
     )
   })
 
+  // TODO: Test
   router.rpc(BagService, BagService.methods.deleteInstance, async req => {
     return await execute(
       req,

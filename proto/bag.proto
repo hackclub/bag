@@ -255,6 +255,7 @@ message GetInventoryRequest {
   int32 appId = 1;
   string key = 2;
   string identityId = 3;
+  bool available = 4;
 }
 
 message GetInventoryResponse {
@@ -407,6 +408,7 @@ message UpdateTradeRequest {
   int32 tradeId = 3;
   string identityId = 4;
   repeated Instance add = 5;
+  repeated Instance remove = 6;
 }
 
 message UpdateTradeResponse {
@@ -464,6 +466,7 @@ message CloseTradeRequest {
   int32 appId = 1;
   string key = 2;
   int32 tradeId = 3;
+  bool cancel = 4;
 }
 
 message CloseTradeResponse {

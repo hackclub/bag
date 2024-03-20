@@ -90,7 +90,7 @@ export async function getStaticProps({ params }) {
       title: pageTitle,
       toc: await serialize(await generateToc(res)),
       menu: gen,
-      menuHeaders: ['Quickstart', 'Bot', 'Client']
+      menuHeaders: ['Quickstart', 'Client']
     }
   }
 }

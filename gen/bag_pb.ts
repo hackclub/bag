@@ -1717,6 +1717,11 @@ export class GetInventoryRequest extends Message<GetInventoryRequest> {
    */
   identityId = "";
 
+  /**
+   * @generated from field: bool available = 4;
+   */
+  available = false;
+
   constructor(data?: PartialMessage<GetInventoryRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1728,6 +1733,7 @@ export class GetInventoryRequest extends Message<GetInventoryRequest> {
     { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "identityId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "available", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetInventoryRequest {
@@ -2967,6 +2973,11 @@ export class UpdateTradeRequest extends Message<UpdateTradeRequest> {
    */
   add: Instance[] = [];
 
+  /**
+   * @generated from field: repeated bag.Instance remove = 6;
+   */
+  remove: Instance[] = [];
+
   constructor(data?: PartialMessage<UpdateTradeRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2980,6 +2991,7 @@ export class UpdateTradeRequest extends Message<UpdateTradeRequest> {
     { no: 3, name: "tradeId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 4, name: "identityId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "add", kind: "message", T: Instance, repeated: true },
+    { no: 6, name: "remove", kind: "message", T: Instance, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateTradeRequest {
@@ -3441,6 +3453,11 @@ export class CloseTradeRequest extends Message<CloseTradeRequest> {
    */
   tradeId = 0;
 
+  /**
+   * @generated from field: bool cancel = 4;
+   */
+  cancel = false;
+
   constructor(data?: PartialMessage<CloseTradeRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3452,6 +3469,7 @@ export class CloseTradeRequest extends Message<CloseTradeRequest> {
     { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "tradeId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 4, name: "cancel", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CloseTradeRequest {

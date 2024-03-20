@@ -50,7 +50,57 @@ export default (router: ConnectRouter) => {
 
   router.rpc(BagService, BagService.methods.getInventory, async req => {
     return await execute(req, async (req, app) => {
-      return { inventory: (await getUser(req.identityId, app)).inventory }
+      const user = await getUser(req.identityId, app)
+      let inventory = user.inventory
+      if (req.available) {
+        // Update quantities by available
+        for (let [i, instance] of inventory.entries()) {
+          let quantityLeft = instance.quantity
+
+          const otherTrades = await prisma.trade.findMany({
+            where: {
+              closed: false, // Not closed
+              OR: [
+                { initiatorTrades: { some: { instanceId: instance.id } } },
+                { receiverTrades: { some: { instanceId: instance.id } } }
+              ]
+            },
+            include: {
+              initiatorTrades: true,
+              receiverTrades: true
+            }
+          })
+          const otherOffers = otherTrades.map(offer => ({
+            ...offer,
+            trades: [...offer.initiatorTrades, ...offer.receiverTrades]
+          }))
+          quantityLeft -= otherOffers.reduce((acc, curr) => {
+            return (
+              acc +
+              curr.trades.find(trade => trade.instanceId === instance.id)
+                .quantity
+            )
+          }, 0)
+          if (quantityLeft <= 0) {
+            inventory.splice(i, 1)
+            continue
+          }
+
+          const crafting = await prisma.crafting.findFirst({
+            where: {
+              identityId: user.slack,
+              recipeId: null
+            },
+            include: { inputs: true }
+          })
+          const inCrafting =
+            crafting?.inputs.find(input => input.instanceId === instance.id)
+              ?.quantity || 0
+          if (quantityLeft - inCrafting <= 0) inventory.splice(i, 1)
+          else inventory[i].quantity = quantityLeft
+        }
+      }
+      return { inventory }
     })
   })
 

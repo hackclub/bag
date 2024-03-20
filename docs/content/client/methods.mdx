@@ -89,10 +89,21 @@ Properties:
 id: number
 initiatorIdentityId: string
 receiverIdentityId: string
-initiatorTrades: Instance[]
-receiverTrades: Instance[]
+initiatorTrades: TradeInstance[]
+receiverTrades: TradeInstance[]
 public: boolean
 closed: boolean
+```
+
+**<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>TradeInstance</code>**
+    
+Properties:
+
+```
+id: number
+instanceId: number
+instance: Instance
+quantity: number
 ```
 
 **<code style={{ margin: "1em 0", display: "block", width: "fit-content" }}>RecipeItem</code>**
@@ -160,7 +171,7 @@ note: string
 
 Returns:
 
-```
+```gp
 response: string
 instances: Instance[]
 ```
@@ -180,7 +191,7 @@ note: string
 
 Returns:
 
-```
+```gp
 response: string
 instance: Instance
 ```
@@ -198,7 +209,7 @@ metadata: string
 
 Returns:
 
-```
+```gp
 response: string
 app: App
 ```
@@ -212,7 +223,7 @@ item: Item
 
 Returns:
 
-```
+```gp
 response: string
 item: Item
 ```
@@ -226,7 +237,7 @@ recipe: Recipe
 
 Returns:
 
-```
+```gp
 response: string
 recipe: Recipe
 ```
@@ -242,7 +253,7 @@ public: boolean
 
 Returns:
 
-```
+```gp
 response: string
 trade: Trade
 ```
@@ -256,7 +267,7 @@ action: Action
 
 Returns:
 
-```
+```gp
 response: string
 action: Action
 ```
@@ -270,7 +281,7 @@ query: string
 
 Returns:
 
-```
+```gp
 response: string
 identities: Identity[]
 ```
@@ -284,7 +295,7 @@ identityId: string
 
 Returns:
 
-```
+```gp
 response: string
 identity: Identity
 ```
@@ -294,11 +305,12 @@ Arguments:
 
 ```
 identityId: string
+available: boolean
 ```
 
 Returns:
 
-```
+```gp
 response: string
 inventory: Instance[]
 ```
@@ -312,7 +324,7 @@ query: string
 
 Returns:
 
-```
+```gp
 response: string
 item: Item
 ```
@@ -326,7 +338,7 @@ query: string
 
 Returns:
 
-```
+```gp
 response: string
 items: Item[]
 ```
@@ -340,7 +352,7 @@ instanceId: number
 
 Returns:
 
-```
+```gp
 response: string
 instance: Instance
 ```
@@ -354,7 +366,7 @@ optAppId: number
 
 Returns:
 
-```
+```gp
 response: string
 app: App
 ```
@@ -368,7 +380,7 @@ tradeId: number
 
 Returns:
 
-```
+```gp
 response: string
 trade: Trade
 ```
@@ -383,7 +395,7 @@ inclusive: boolean
 
 Returns:
 
-```
+```gp
 response: string
 recipes: Recipe[]
 ```
@@ -397,7 +409,7 @@ query: Recipe
 
 Returns:
 
-```
+```gp
 response: string
 recipe: Recipe
 ```
@@ -411,7 +423,7 @@ query: Action
 
 Returns:
 
-```
+```gp
 response: string
 actions: Action[]
 ```
@@ -426,7 +438,7 @@ metadata: string
 
 Returns:
 
-```
+```gp
 response: string
 identity: Identity
 ```
@@ -443,7 +455,7 @@ note: string
 
 Returns:
 
-```
+```gp
 response: string
 instance: Instance
 ```
@@ -458,7 +470,7 @@ new: Item
 
 Returns:
 
-```
+```gp
 response: string
 item: Item
 ```
@@ -473,7 +485,7 @@ new: App
 
 Returns:
 
-```
+```gp
 response: string
 app: App
 ```
@@ -485,11 +497,12 @@ Arguments:
 tradeId: number
 identityId: string
 add: Instance[]
+remove: Instance[]
 ```
 
 Returns:
 
-```
+```gp
 response: string
 trade: Trade
 ```
@@ -504,7 +517,7 @@ new: Recipe
 
 Returns:
 
-```
+```gp
 response: string
 recipe: Recipe
 ```
@@ -519,7 +532,7 @@ new: Action
 
 Returns:
 
-```
+```gp
 response: string
 action: Action
 ```
@@ -533,7 +546,7 @@ deleteAppId: number
 
 Returns:
 
-```
+```gp
 response: string
 deletedApp: App
 ```
@@ -547,7 +560,7 @@ instanceId: number
 
 Returns:
 
-```
+```gp
 response: string
 deletedInstance: Instance
 ```
@@ -557,11 +570,12 @@ Arguments:
 
 ```
 tradeId: number
+cancel: boolean
 ```
 
 Returns:
 
-```
+```gp
 response: string
 trade: Trade
 initiator: Identity
@@ -577,6 +591,6 @@ No extra fields.
 
 Returns:
 
-```
+```gp
 valid: boolean
 ```

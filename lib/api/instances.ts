@@ -182,7 +182,8 @@ export default (router: ConnectRouter) => {
   router.rpc(BagService, BagService.methods.getInstance, async req => {
     return await execute(req, async (req, app) => {
       const instance = await prisma.instance.findUnique({
-        where: { id: req.instanceId }
+        where: { id: req.instanceId },
+        include: { item: true }
       })
 
       if (!instance.public && app.permissions === PermissionLevels.READ)

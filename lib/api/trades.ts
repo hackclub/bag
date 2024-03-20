@@ -3,7 +3,6 @@ import { TradeWithTrades, prisma } from '../db'
 import { mappedPermissionValues } from '../permissions'
 import { execute } from './routing'
 import { ConnectRouter } from '@connectrpc/connect'
-import { PermissionLevels, Trade } from '@prisma/client'
 
 export default (router: ConnectRouter) => {
   router.rpc(BagService, BagService.methods.createTrade, async req => {
@@ -81,6 +80,18 @@ export default (router: ConnectRouter) => {
         where: { slack: trade.receiverIdentityId },
         include: { inventory: true }
       })
+
+      if (req.cancel === true)
+        // Close trade without transferring
+        return {
+          trade: await prisma.trade.update({
+            where: { id: req.tradeId },
+            data: { closed: true },
+            include: { initiatorTrades: true, receiverTrades: true }
+          }),
+          initiator,
+          receiver
+        }
 
       await Promise.all(
         trade.initiatorTrades.map(async trade => {
@@ -183,7 +194,7 @@ export default (router: ConnectRouter) => {
       )
         throw new Error('Trade not found')
 
-      const trade = await prisma.trade.findUnique({
+      let trade = await prisma.trade.findUnique({
         where: { id: req.tradeId },
         include: {
           initiatorTrades: true,
@@ -292,6 +303,33 @@ export default (router: ConnectRouter) => {
           throw new Error(
             `Not enough ${ref.item.reaction} ${ref.item.name} to add to trade`
           )
+      }
+
+      trade = await prisma.trade.findUnique({
+        where: { id: req.tradeId },
+        include: {
+          initiatorTrades: true,
+          receiverTrades: true
+        }
+      })
+      for (let instance of req.remove) {
+        // Remove from trade
+        const search = trade[updateKey].find(
+          add => add.instanceId === instance.id
+        )
+        console.log(search)
+        if (instance.quantity < search.quantity) {
+          //Deduct from existing tradeInstance
+          await prisma.tradeInstance.update({
+            where: { id: search.id },
+            data: { quantity: search.quantity - instance.quantity }
+          })
+        } else {
+          // Completely remove trade
+          await prisma.tradeInstance.delete({
+            where: { id: search.id }
+          })
+        }
       }
 
       return {

@@ -1,7 +1,7 @@
 import '@/styles/globals.css'
-import '@hackclub/theme/fonts/reg-bold.css'
-import theme from '@hackclub/theme'
 import Meta from '@hackclub/meta'
+import theme from '@hackclub/theme'
+import '@hackclub/theme/fonts/reg-bold.css'
 import Head from 'next/head'
 import { ThemeUIProvider } from 'theme-ui'
 
@@ -21,6 +21,10 @@ export default function App({ Component, pageProps }) {
             borderRadius: 'small',
             mx: 1,
             px: 1
+          },
+          blockquote: {
+            borderLeft: '3px solid black',
+            px: 3
           }
         }
       }}>

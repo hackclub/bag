@@ -54,7 +54,6 @@ export default (router: ConnectRouter) => {
     })
   })
 
-  // TODO: Test, especially with metadata
   router.rpc(BagService, BagService.methods.updateApp, async req => {
     return await execute(req, async (req, app) => {
       if (
@@ -69,9 +68,10 @@ export default (router: ConnectRouter) => {
         !app.specificApps.find(appId => appId === req.optAppId)
       )
         throw new Error('Invalid permissions')
+      console.log(req)
       const old = await prisma.app.findUnique({
         where: {
-          id: req.optAppId ? req.optAppId : req.appId
+          id: req.optAppId > 0 ? req.optAppId : app.id
         }
       })
 
@@ -80,7 +80,7 @@ export default (router: ConnectRouter) => {
       return {
         app: await prisma.app.update({
           where: {
-            id: req.optAppId ? req.optAppId : req.appId
+            id: req.optAppId > 0 ? req.optAppId : app.id
           },
           data: Object.assign(old, req.new)
         })

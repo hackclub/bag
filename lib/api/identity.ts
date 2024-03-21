@@ -109,7 +109,7 @@ export default (router: ConnectRouter) => {
     BagService,
     BagService.methods.updateIdentityMetadata,
     async req => {
-      return await execute(req, async (req, app) => {
+      return await execute(req, async req => {
         const identity = await findOrCreateIdentity(req.identityId)
         console.log(req.metadata)
         return {

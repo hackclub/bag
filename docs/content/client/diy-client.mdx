@@ -3,9 +3,9 @@ title: Writing your own client
 order: 1
 ---
 
-You can write your own client! To write a client, all you need to do is grab the latest `.proto` file [here](https://github.com/hackclub/bag/blob/main/proto/bag.proto). This file contains descriptions of all the routes, but needs to be converted into actual server and client code. You do this by passing it into a GRPC protocol compiler.
+You can write your own client! This is pretty useful if you want to build something cool, but in another programming language. (You can also manually send requests over HTTP/2 plaintext if you're so inclined to.) To write a client, all you need to do is grab the latest `.proto` file [here](https://github.com/hackclub/bag/blob/main/proto/bag.proto). This file contains descriptions of all the routes, but needs to be converted into actual server and client code, which is specific for every programming language. You do this by passing it into a GRPC protocol compiler.
 
-Here's an example of a client written in Ruby with just two routes. This is a pretty good example of how easy it is: grab `bag.proto` from the repo and place it in the folder of the client, run `grpc_tools_ruby_protoc --ruby_out=lib --grpc_out=lib ./bag.proto` in this case to generate `lib/bag_pb.rb` and `lib/bag_services_pb.rb` (the former contains the actual descriptions, and the latter just contains the available routes), make sure you have the required packages (`grpc`), and this works perfectly!
+Here's an example of a client written in Ruby with just two routes. This is a pretty good example of how easy it is: grab `bag.proto` from [the repo](https://github.com/hackclub/bag) and place it in the folder of the client, install [`grpc_tools_ruby_protoco`](), run `grpc_tools_ruby_protoc --ruby_out=lib --grpc_out=lib ./bag.proto` in this case to generate `lib/bag_pb.rb` and `lib/bag_services_pb.rb` (the former contains the actual descriptions, and the latter just contains the available routes), make sure you have the required packages (`grpc`), and this works perfectly!
 
 ```ruby
 # Load Ruby files from local directory

@@ -27,7 +27,6 @@ model App {
   specificTrades  Int[]
   specificRecipes Int[]
   public          Boolean          @default(false)
-  testing         Boolean          @default(true)
   metadata        Json             @default("{}")
 }
 

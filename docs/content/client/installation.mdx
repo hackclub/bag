@@ -3,4 +3,82 @@ title: What's this? And installing
 order: 0
 ---
 
-This is a client library
+This is a library for interfacing with `bag` programmatically! This is useful if you want to build cool stuff with `bag`, not just in the Slack but outside of Slack too. No ideas? Here are some:
+
+* [Infinite Craft](https://neal.fun/infinite-craft/) but based on the `bag` universe
+* A dashboard for the universe
+* Hackagotchi, where you take care of a pet or something along those lines
+* Farmville, but in Slack
+* A gambling bot???
+
+Getting started is pretty easy! All you have to do is install [`@hackclub/bag`](https://www.npmjs.com/package/@hackclub/bag) and start playing around with it. For a good intro to building a Slack bot, but more generally how to get started, check out [Building a store bot](/quickstart/store.mdx) and the quick run through below.
+
+## A quick run through
+
+Go to the Hack Club Slack, and run `/app` to create a app. You'll get asked a few questions:
+
+<video controls>
+  <source src="https://cloud-9qvh8uwqs-hack-club-bot.vercel.app/0adobe_express_screen_recording_mar_21.mp4"/>
+</video>
+
+By default, your app only has READ permissions, which means it can read any data that's public. Here's a quick reference of all the permissions:
+
+* READ: Read any data that's public
+* READ_PRIVATE: Read any data, including private data you have permissions to
+* WRITE_SPECIFIC: Write any data you have permissions to. For example, if you have permissions to write data involving hats, then you can do anything you want to like giving somebody 1000 hats. (However, we'd have to revoke your app.)
+* WRITE: Write any data.
+* ADMIN: Do everything every other permission level can do, with a few extra powers: can programatically create items, apps, actions, etc.
+
+There are most likely gaps in this permission model, but if a creator is abusing apps, then we'll have to revoke their app token.
+
+After you create an app, you'll receive a message like this:
+
+> orpheus' store created, your app ID is 12 and your app token is 1ffdfdee-9c29-4893-b010-5927d2b940c4. (Don't share it with anyone unless they're also working on the app!) Your app can: read public inventory items.
+>
+> To edit your app/request a permission level, run /app orpheus' store.
+
+You'll need the app ID and token to be able to use your app.
+
+## Viewing and editing apps
+
+To view a app, simply run `/app <name>`. If you created the app, you'll also have access to some other options:
+
+![](https://cloud-1rm8p6tyq-hack-club-bot.vercel.app/0screenshot_2024-03-21_at_7.10.37___pm.png)
+
+To request a permission, click on *Edit* > *Select a permission level*, and you can request a permission level that we'll approve first. (It'll be fast, I promise!)
+
+## A template for getting started
+
+Create a folder and run the following inside:
+
+```bash
+npm init -y
+npm i @hackclub/bag dotenv
+```
+
+Create two files, `.env` and `index.js`. In `.env`:
+
+```
+BAG_APP_ID=<your app ID>
+BAG_APP_KEY=<your app key>
+```
+
+Here's some boilerplate `index.js` code:
+
+```javascript
+const { App } = require("@hackclub/bag")
+require("dotenv").config()
+
+async function main() {
+  const app = await App.connect({
+    appId: Number(process.env.BAG_APP_ID),
+    key: process.env.BAG_APP_TOKEN,
+  })
+
+  console.log(app)
+}
+
+main()
+```
+
+Have fun and be hacky!

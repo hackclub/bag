@@ -28,6 +28,7 @@ export default (router: ConnectRouter) => {
     })
   })
 
+  // TODO: Test
   router.rpc(BagService, BagService.methods.getTrade, async req => {
     return await execute(req, async (req, app) => {
       const trade = await prisma.trade.findUnique({
@@ -58,6 +59,7 @@ export default (router: ConnectRouter) => {
     })
   })
 
+  // TODO: Test repeatedly
   router.rpc(BagService, BagService.methods.closeTrade, async req => {
     return await execute(req, async (req, app) => {
       let trade: TradeWithTrades = await prisma.trade.findUnique({
@@ -185,6 +187,7 @@ export default (router: ConnectRouter) => {
     })
   })
 
+  // TODO: Test repeatedly
   router.rpc(BagService, BagService.methods.updateTrade, async req => {
     return await execute(req, async (req, app) => {
       if (

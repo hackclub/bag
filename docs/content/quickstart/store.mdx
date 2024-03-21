@@ -5,21 +5,23 @@ order: 1
 
 We're going to build a store for ourselves! It'll look something like this:
 
-DEMO TODO
+<video autoplay controls>
+  <source src="https://cloud-pq7zvzo0p-hack-club-bot.vercel.app/0adobe_express_screen_recording_mar_21__1_.mp4"/>
+</video>
 
-Along the way, we'll learn how to build a Slack app and integrate it with `@hackclub/bag`, our library for interacting with `bag` programmatically.
+Along the way, we'll learn how to build a Slack app and integrate it with `@hackclub/bag`, our library for interacting with `bag` programmatically. 
 
 Before we get started, let's make sure we have everything we need:
 
-- [Node.js](https://nodejs.org)
-- [NPM](https://npmjs.com)
-- A test Slack account: all the code here has to be run by a second Slack user because you can't trade with yourself, you know?
+* [Node.js](https://nodejs.org)
+* [NPM](https://npmjs.com)
+* A test Slack account: all the code here has to be run by a second Slack user because you can't trade with yourself, ya know?
 
 ## Setup
 
 The first thing we'll do is create a Slack app. Open your terminal and create a nice folder to work in:
 
-```
+```bash
 mkdir my-store
 cd my-store
 ```
@@ -32,27 +34,27 @@ npm init -y
 
 This gives us a starter boilerplate `package.json`, which is where information about our installed packages live.
 
-Let's install the packages we need:
+Let's install the packages we'll need:
 
-```
+```bash
 npm i @slack/bolt @hackclub/bag dotenv
 npm i -D nodemon
 ```
 
 `@slack/bolt` is what we'll need for our Slack app, `@hackclub/bag` is what we'll use to transfer gp for items, `dotenv` lets us get secrets from a file like `.env`, and `nodemon` just watches our file and reloads automatically every time we update it. Let's create that file now:
 
-```
+```bash
 touch .env
 ```
 
-Let's also create a `index.js` file where all our code is going to go. I'm also going to add a entry to the `scripts` section of our `package.json` to run our file:
+Let's also create a `index.js` file where all our code is going to go. I'm also going to add an entry to the `scripts` section of our `package.json` to run our file:
 
 ```json
 {
   // ...
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon index.js"
+    "start": "nodemon index.js"  // <- This line right here!
   },
   // ...
 }
@@ -65,49 +67,49 @@ Now every time we want to run our file and have it automatically rerun when we s
 Next, we'll head over to the Hack Club Slack and run `/app` to create a app. It'll ask us a couple of starter questions:
 
 <video controls>
-  <source src="https://cloud-6np90xvm6-hack-club-bot.vercel.app/0screenrecording2024-03-19at2.24.10pm-ezgif.com-video-cutter.mp4" />
+  <source src="https://cloud-9qvh8uwqs-hack-club-bot.vercel.app/0adobe_express_screen_recording_mar_21.mp4"/>
 </video>
 
 Once you create your app, `bag` will send you some useful info:
 
-> orpheus' store created, your app ID is 12 and your app token is `1ffdfdee-9c29-4893-b010-5927d2b940c4`. (Don't share it with anyone unless they're also working on the app!) Your app can: read public inventory items.
+> orpheus' store created, your app ID is 12 and your app token is 1ffdfdee-9c29-4893-b010-5927d2b940c4. (Don't share it with anyone unless they're also working on the app!) Your app can: read public inventory items.
 >
-> To edit your app/request a permission level, run `/app orpheus' store`.
+> To edit your app/request a permission level, run /app orpheus' store.
 
-Let's copy that down into `.env`:
+Let's copy that down into .env:
 
 ```
-BAG_APP_ID=
-BAG_APP_KEY=
+BAG_APP_ID=<your app ID>
+BAG_APP_KEY=<your app key>
 ```
 
 ### Set up our Slack app
 
-Let's go over to [api.slack.com](https://api.slack.com) and click on Your Apps > Create New App > From scratch.
+Let's go over to [api.slack.com](https://api.slack.com/) and click on Your Apps > Create New App > From scratch. 
 
-We need to grab three values. The first is the signing secret, `SLACK_SIGNING_SECRET`, which you can find by going to Basic info and scrolling down.
+We need to grab three values. The first is the signing secret, `SLACK_SIGNING_SECRET`, which you can find by going to *Basic info* and scrolling down.
 
-We also need a bot token, which we can grab by going to OAuth & Permissions, scrolling down to Scopes, and adding two scopes that we'll need: `app_mentions:read`, which will allow us to read messages where our store is mentioned, and `chat:write`, which will allow the store to send messages. When you add these, you can scroll back up and find the bot user OAuth token for `SLACK_BOT_TOKEN`.
+We also need a bot token, which we can grab by going to *OAuth & Permissions*, scrolling down to *Scopes*, and adding two scopes that we'll need: `app_mentions:read`, which will allow us to read messages where our store is mentioned, and `chat:write`, which will allow our store to send messages. When you add these, you can scroll back up and find the bot user OAuth token for `SLACK_BOT_TOKEN`.
 
-The last thing we need is an app token. We can grab that by going to Basic information and scrolling down to Generate app level token. You can name your token whatever you want.
+The last thing we need is an app token. We can grab that by going to *Basic information* and scrolling down to *Generate app level token*. You can name your token whatever you want.
 
 ```
-SLACK_SIGNING_SECRET=
-SLACK_BOT_TOKEN=
-SLACK_APP_TOKEN=
+SLACK_SIGNING_SECRET=<your signing secret>
+SLACK_BOT_TOKEN=<your bot token>
+SLACK_APP_TOKEN=<your app token>
 ```
 
 The last thing we need to do is add:
 
 ```
-ME=
+ME=<your Slack ID>
 ```
 
-This is your Slack member ID (click on your profile picture in the bottom left corner > Profile > More > Copy member ID) which will be used to transfer items from you to the customer (in exchange for some gp, of course.)
+This is your Slack member ID (click on your profile picture in the bottom left corner > *Profile* > *More* > *Copy member ID*) which will be used to transfer items from you to the customer (in exchange for some gp, of course.)
 
 ## Let's write some code!
 
-Let's start writing some code! First we'll set up the apps and make sure we can interact with our bot in Slack. Let's create a file called `index.js`:
+Let's start writing some code! First we'll set up the apps and make sure we can interact with our bot in Slack. In `index.js`:
 
 ```javascript
 const { App: SlackApp } = require("@slack/bolt")
@@ -131,12 +133,10 @@ app.event("app_mention", async props => {
   console.log(canSell)
 })
 
-// @prettier-ignore
 ;(async () => {
   bag = await Bag.connect({
     appId: Number(process.env.BAG_APP_ID),
-    key: process.env.BAG_APP_KEY,
-    baseUrl: 'https://8f34-71-235-174-134.ngrok-free.app'
+    key: process.env.BAG_APP_KEY
   })
 
   const port = process.env.PORT || 3000
@@ -144,8 +144,6 @@ app.event("app_mention", async props => {
   console.log(`⚡️ Bolt app is running on port ${port}!`)
 })()
 ```
-
-(**baseUrl is currently being used because I'm still trying to get HTTP/2 working on Google Cloud.**)
 
 Run `npm start`, and you should see this:
 
@@ -179,9 +177,9 @@ const showStore = async (slack, thread) => {
 
   let blocks = [
     {
-      type: 'section',
+      type: "section",
       text: {
-        type: 'mrkdwn',
+        type: "mrkdwn",
         text: `Hello <@${slack}>!\n\n>${app.description}\n\nHere's what's up for grabs right now:`
       }
     }
@@ -190,16 +188,14 @@ const showStore = async (slack, thread) => {
   return blocks
 }
 
-app.event('app_mention', async props => {
-  const user = await bag.getIdentity({
-    identityId: props.context.userId
-  })
+app.event("app_mention", async props => {
+  const app = await bag.getApp()
 
-  if (user.metadata.jcStoreCart !== null) {
+  if (app.metadata[props.context.userId] !== null) {
     try {
       // There's already a previous thread, delete that thread before creating a new one
       await props.client.chat.delete({
-        ...user.metadata.jcStoreCart.thread
+        ...app.metadata[props.context.userId].thread
       })
     } catch {}
   }
@@ -207,6 +203,17 @@ app.event('app_mention', async props => {
   const { channel, ts } = await props.client.chat.postMessage({
     channel: props.body.event.channel,
     blocks: await showStore(props.context.userId)
+  })
+
+  // Add channel and thread to our metadata
+  await bag.updateApp({
+    new: {
+      metadata: JSON.stringify({
+        [props.context.userId]: {
+          thread: { channel, ts }
+        }
+      })
+    }
   })
 
   await props.client.chat.update({
@@ -217,11 +224,13 @@ app.event('app_mention', async props => {
 })
 ```
 
-When our store gets mentioned (try it!), we post a message by running `showStore`, which returns a list of [blocks](https://api.slack.com/reference/block-kit/blocks). Eventually we're going to get this to show a nice little catalog of stuff, but for now it just says hello to us and gives us our app description. Notice that we use `bag.getApp` and `bag.getIdentity`! These are some of the methods we can use with `@hackclub/bag`.
+When our store gets mentioned (try it!), we post a message by running `showStore`, which returns a list of [blocks](https://api.slack.com/reference/block-kit/blocks) that describe how our text is going to look. Eventually we're going to get this to show a nice little catalog of stuff, but for now it just says hello to us and gives us our app description. 
+
+Notice that we use `bag.getApp()`, which is really useful for getting info about our own app. Specifically, the metadata of our app is almost like a little database for us - we can store whatever we want there. For our store, we want to store if a user has a cart open, and if so, info about that cart. If the user already has a message with the cart, we want to delete that message and repost a new message.
 
 ## Listing a catalog
 
-Now let's work at getting a catalog to show up. We're going to use `bag.getInventory` to get our inventory, and then filter so we'll only selling a certain subset of items we want to sell. Let's update `showStore` to do this:
+Now let's work on getting a catalog of stuff to show up! We're going to use `bag.getInventory()` to get our inventory, and then filter it so we're only selling a certain subset of items we want to sell. Let's update `showStore` to do this:
 
 ```javascript
 const showStore = async (slack, thread) => {
@@ -232,9 +241,9 @@ const showStore = async (slack, thread) => {
 
   let blocks = [
     {
-      type: 'section',
+      type: "section",
       text: {
-        type: 'mrkdwn',
+        type: "mrkdwn",
         text: `Hello <@${slack}>!\n\n>${app.description}\n\nHere's what's up for grabs right now:`
       }
     }
@@ -248,13 +257,13 @@ const showStore = async (slack, thread) => {
   ).filter(instance => Object.keys(canSell).includes(instance.itemId))
   if (!inventory.length) {
     blocks.push({
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: 'Nothing currently. Check back tomorrow for new fares!'
-        }
-      })
-      return blocks
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: 'Nothing currently. Check back later for new fares!'
+      }
+    })
+    return blocks
   } else {
     for (let instance of inventory) {
       const item = await bag.getItem({
@@ -300,7 +309,7 @@ const showStore = async (slack, thread) => {
 
 Now when we mention our store, we'll get something like this:
 
-![](https://cloud-dxpjjwm5m-hack-club-bot.vercel.app/0screenshot_2024-03-20_at_1.51.46___pm.png)
+![](https://cloud-mcs7pgr3l-hack-club-bot.vercel.app/0screenshot_2024-03-21_at_1.38.18___pm.png)
 
 Nice! How about we work on getting that button to work now?
 
@@ -315,6 +324,7 @@ app.action('add-cart', async props => {
   if (slack !== props.context.userId)
     return props.respond({
       response_type: 'ephemeral',
+      replace_original: false,
       text: 'Not your shopping cart, unfortunately.'
     })
 
@@ -354,14 +364,16 @@ app.action('add-cart', async props => {
 })
 ```
 
-![](https://cloud-c3z97zv17-hack-club-bot.vercel.app/0screenshot_2024-03-20_at_1.57.21___pm.png)
+![](https://cloud-4upkt3n7x-hack-club-bot.vercel.app/0screenshot_2024-03-21_at_1.52.46___pm.png)
 
 Now when you click on the button, you get a modal that lets you input a quantity to add to cart! Except when you click the "Add to cart" it doesn't quite work yet. Let's fix that.
 
-## Add to cart
+### Processing the form
+
+Notice that we attached a `action_id` to every button along with a JSON-stringified `value`. Our Slack bot should listen for actions that match `add-cart`, and run some code when the action gets triggered. In this case, let's open a popup that asks the user how much they want to add to their cart:
 
 ```javascript
-app.view('add-cart', async props => {
+app.view("add-cart", async props => {
   await props.ack()
   const { instance, thread, slack } = JSON.parse(props.view.private_metadata)
 
@@ -383,11 +395,11 @@ app.view('add-cart', async props => {
   gp = gp[0]
 
   // Check cart
-  const identity = await bag.getIdentity({ identityId: slack })
-  if (!identity.metadata.jcStoreCart.id) {
+  const app = await bag.getApp()
+  if (!app.metadata[props.context.userId].id) {
     // First item in cart
-    let cart = await bag.createTrade({
-      initiator: props.context.userId, // User is the one initiating it
+    const cart = await bag.createTrade({
+      initiator: props.context.userId,
       receiver: process.env.ME
     })
 
@@ -403,25 +415,26 @@ app.view('add-cart', async props => {
       add: [{ id: instance.id, quantity }]
     })
 
-    await bag.updateIdentityMetadata({
-      identityId: props.context.userId,
-      metadata: JSON.stringify({
-        jcStoreCart: {
-          ...identity.metadata.jcStoreCart,
-          id: cart.id
-        }
-      })
+    await bag.updateApp({
+      new: {
+        metadata: JSON.stringify({
+          [props.context.userId]: {
+            ...app.metadata[props.context.userId],
+            id: cart.id
+          }
+        })
+      }
     })
   } else {
     // Add item to cart
     await bag.updateTrade({
-      tradeId: identity.metadata.jcStoreCart.id,
+      tradeId: app.metadata[props.context.userId].id,
       identityId: props.context.userId,
       add: [{ id: gp.id, quantity: cost }]
     })
 
     await bag.updateTrade({
-      tradeId: identity.metadata.jcStoreCart.id,
+      tradeId: app.metadata[props.context.userId].id,
       identityId: process.env.ME,
       add: [{ id: instance.id, quantity }]
     })
@@ -434,23 +447,21 @@ app.view('add-cart', async props => {
 })
 ```
 
-We do a lot of fun stuff with trading here. First, we do the obvious - we check if the user has enough gp to actually buy the item. (*EDIT: We need to do this when the user finally checks out.*) Then, we check if the user has a cart already. It turs out, we're planning to store this in the user's metadata. (*EDIT: It might be better to store it in the app's metadata instead, especially since an app's metadata is kind of like its mini-db.*)
+We do a lot of fun stuff with trading here. First, we do the obvious - we check if the user has enough gp to actually buy the item. Then, we check if the user has a cart already. 
 
-If a cart (trade! a cart is ultimately a trade if you think about it) already exists, we're going to to add to that cart. Otherwise, we will create a new cart and add the items there, and also log the total cost.
+If a cart (trade! a cart is ultimately a trade if you think about it) already exists, we're going to add to that cart. Otherwise, we will create a new cart and add the items there, and also log the total cost.
 
 ## Making the cart show up
 
-Let's make that cart show up to the customer now. We're going to make a few tweaks to `showStore` now that are pretty important logic-wise: (EDIT: Make better)
+Let's make that cart show up to the customer now. We're going to make a few tweaks to `showStore` now that are pretty important logic-wise:
 
 ```javascript
 const showStore = async (slack, thread) => {
   const app = await bag.getApp()
-  const identity = await bag.getIdentity({ identityId: slack })
   let cart = undefined
-  if (identity.metadata.jcStoreCart && identity.metadata.jcStoreCart.id)
-    cart = await bag.getTrade({
-      tradeId: identity.metadata.jcStoreCart.id
-    })
+  if (app.metadata[slack] && app.metadata[slack].id) cart = await bag.getTrade({
+    tradeId: app.metadata[slack].id
+  })
 
   let blocks = [
     {
@@ -472,20 +483,20 @@ const showStore = async (slack, thread) => {
   if (!inventory.length) {
     if (!cart || !cart.receiverTrades.length) {
       blocks.push({
-        type: 'section',
+        type: "section",
         text: {
-          type: 'mrkdwn',
-          text: 'Nothing currently. Check back tomorrow for new fares!'
+          type: "mrkdwn",
+          text: "Nothing currently. Check back tomorrow for new fares!"
         }
       })
       return blocks
     }
     // User has a cart with items, but nothing is in stock
     blocks.push({
-      type: 'section',
+      type: "section",
       text: {
-        type: 'mrkdwn',
-        text: 'Nothing in stock currently.'
+        type: "mrkdwn",
+        text: "Nothing in stock currently."
       }
     })
   } else {
@@ -494,41 +505,40 @@ const showStore = async (slack, thread) => {
         query: JSON.stringify({ name: instance.itemId })
       })
       let info = {
-        type: 'section',
+        type: "section",
         text: {
-          type: 'mrkdwn',
-          text: `x1 ${item.reaction} ${instance.itemId} costs ${
+          type: "mrkdwn",
+           text: `x1 ${item.reaction} ${instance.itemId} costs ${
             canSell[instance.itemId]
           } :-gp: each and there ${instance.quantity === 1 ? 'is' : 'are'} x${
             instance.quantity
           } currently`
         }
       }
-      if (thread)
-        info.accessory = {
-          type: 'button',
-          text: {
-            type: 'plain_text',
-            text: 'Add to cart'
+      if (thread) info.accessory = {
+        type: "button",
+        text: {
+          type: "plain_text",
+          text: "Add to cart"
+        },
+        style: "primary",
+        value: JSON.stringify({
+          instance: {
+            name: item.name,
+            id: instance.id,
+            quantity: instance.quantity
           },
-          style: 'primary',
-          value: JSON.stringify({
-            instance: {
-              name: item.name,
-              id: instance.id,
-              quantity: instance.quantity
-            },
-            thread,
-            slack
-          }),
-          action_id: 'add-cart'
-        }
+          thread,
+          slack
+        }),
+        action_id: "add-cart"
+      }
       blocks.push(info)
     }
   }
 
   blocks.push({
-    type: 'divider'
+    type: "divider"
   })
 
   return blocks
@@ -635,16 +645,14 @@ const showStore = async (slack, thread) => {
 
 Now try adding another item to your cart, and you'll see something like this:
 
-![](https://cloud-5bdumjmv2-hack-club-bot.vercel.app/0screenshot_2024-03-20_at_2.31.11___pm.png)
+![](https://cloud-6v7bdnmo0-hack-club-bot.vercel.app/0screenshot_2024-03-21_at_4.47.38___pm.png)
 
-Pretty cool, I think.
-
-## Checkout
+## Checking out
 
 The last thing we're going to implement here is checking out:
 
 ```javascript
-app.action('checkout', async props => {
+app.action("checkout", async props => {
   await props.ack()
   const { thread, slack } = JSON.parse(props.action.value)
   if (slack !== props.context.userId)
@@ -654,15 +662,28 @@ app.action('checkout', async props => {
       text: 'Not your shopping cart, unfortunately.'
     })
 
-  const user = await bag.getIdentity({ identityId: slack })
+  const app = await bag.getApp()
 
-  const sale = await bag.closeTrade({
-    tradeId: user.metadata.jcStoreCart.id
+  // Check if user has enough gp
+  const cart = await bag.getTrade({
+    tradeId: app.metadata[props.context.userId].id
+  })
+  const gp = cart.initiatorTrades[0].quantity
+  const cost = cart.receiverTrades.reduce((acc, curr) => acc + canSell[curr.instance.itemId] * curr.quantity, 0)
+  if (gp < cost) return props.respond({
+    response_type: "ephemeral",
+    replace_original: false,
+    text: "Looks like you can't spare that kind of :-gp: yet... try taking a few items off."
   })
 
-  await bag.updateIdentityMetadata({
-    identityId: slack,
-    metadata: JSON.stringify({ jcStoreCart: { id: null } })
+  const sale = await bag.closeTrade({
+    tradeId: app.metadata[props.context.userId].id
+  })
+
+  await bag.updateApp({
+    new: JSON.stringify({
+      [props.context.userId]: null
+    })
   })
 
   let purchased = []
@@ -702,14 +723,93 @@ app.action('checkout', async props => {
 })
 ```
 
-Now you can checkout! Try checking out, and then running `/bag me` or something similar.
+And with that, checkout should work, and the items shall be transferred! Most of the work is already done for us by `bag.closeTrade`.
 
-To add: 
+![](https://cloud-6ked8vypz-hack-club-bot.vercel.app/0screenshot_2024-03-21_at_5.25.20___pm.png)
 
 ## Cancel checkout
 
+Let's make that Cancel checkout button work now. This is quite easy, because it turns out that `bag.closeTrade` also has a extra parameter you can can attach to it, `cancel`, that simply cancels the trade:
+
+```javascript
+app.action("cancel-checkout", async props => {
+  await props.ack()
+  const { thread, slack } = JSON.parse(props.action.value)
+  const app = await bag.getApp()
+
+  await bag.closeTrade({
+    tradeId: app.metadata[props.context.userId].id,
+    cancel: true
+  })
+
+  await bag.updateApp({
+    new: JSON.stringify({
+      [props.context.userId]: null
+    })
+  })
+
+  await props.client.chat.delete({
+    ...thread
+  })
+
+  await props.client.chat.postEphemeral({
+    channel: thread.channel,
+    user: props.context.userId,
+    text: 'Aww. Come by next time?'
+  })
+})
+```
+
 ## Removing from the cart
+
+What if we want to remove items from the cart rather than, canceling the own cart? We have those buttons after all. Let's tie an action in to listen for those button clicks and remove items.
+
+```javascript
+app.action("remove-cart", async props => {
+  await props.ack()
+  const { instance, thread, slack } = JSON.parse(props.action.value)
+   if (slack !== props.context.userId)
+    return props.respond({
+      response_type: 'ephemeral',
+      replace_original: false,
+      text: 'Not your shopping cart, unfortunately.'
+    })
+
+  // Remove from cart
+  const cart = await bag.updateTrade({
+    tradeId: app.metadata[props.context.userId].id,
+    identityId: process.env.ME,
+    remove: [{ id: instance.id, quantity: instance.quantity }]
+  })
+
+  // Update gp
+  await bag.updateTrade({
+    tradeId: app.metadata[props.context.userId].id,
+    identityId: props.context.userId,
+    remove: [
+      {
+        id: cart.initiatorTrades[0].instanceId,  // gp tradeInstance id
+        quantity: canSell[instance.name] * instance.quantity
+      }
+    ]
+  })
+
+  return await props.client.chat.update({
+    ...thread,
+    blocks: await showStore(slack, thread)
+  })
+})
+```
+
+Hopefully this is pretty self-explanatory by now :)
 
 ## Extending
 
+And that's it! There are plenty of ways to extend this! Things you can do:
+
 * Charge some tax hehe
+* Add discount/coupon functionality for friends
+
+In the meantime you can mention `@orpheus-store` in the Slack anywhere and buy some fancy pants or cakes. Or for a bigger selection of items, you could mention `@general-store` in [#general-store](https://app.slack.com/client/T0266FRGM/C06Q8G95TQU).
+
+The source code is [here](https://github.com/hackclub/bag-apps/blob/main/store/index.js).

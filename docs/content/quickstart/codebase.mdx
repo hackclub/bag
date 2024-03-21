@@ -3,6 +3,8 @@ title: Codebase
 order: 3
 ---
 
+If you're planning to work on the codebase, you'll find this useful!
+
 The entry point is in `index.ts`. You can have the Slack server and the GRPC server running at the same time when `NODE_ENV=development`, or you can set `NODE_ENV=production` and `SLACK_BOT=true|false` to run either service. The [documentation](https://bag-client.hackclub.com) is in `/docs` and is a Next.js static website that uses [`@hackclub/theme`](https://www.npmjs.com/package/@hackclub/theme).
 
 The codebase uses Prisma as the ORM for connecting to a Postgres database. The schema can be found in `prisma/schema.prisma`, and extra database utilities (including extra types) can be found in `db.ts`.
@@ -11,8 +13,8 @@ All of the Slack routes can be found in `lib/slack`. `lib/slack/slack.ts` contai
 
 The GRPC routes can be found in `/lib/api`; they're all imported by `router.ts`, which in turn is imported by the entry point. These routes also use a extra middleman function, `execute`, that does the same thing as the Slack middleman function of the same name. These routes are based on `proto/bag.proto`. The GRPC client can be found at `/client`. Every time you update `proto/bag.proto`, you need to run `yarn run rpc:gen` to regenerate the actual `.ts` files describing the layout of these routes. More info can be found at [https://grpc.io](https://grpc.io). You'll also need to run `yarn run build` in `/client` in order to re-transpile the client for it to be up-to-date with `proto/bag.proto`.
 
-There are a few extra YAML files. `api_config.yaml` is for deploying the GRPC service to [Google's Cloud Platform](https://cloud.withgoogle.come), so you can ignore it. `blacklist.yaml` is a list of channels, by name, that the Slack bot should not be allowed to run in. `buf.gen.yaml` is actually the configuration file used to generate output files from the GRPC proto file. `maintainers.yaml` contains a list of maintainers, and `manifest.yaml` is the Slack manifest file for the bot that you should replace with your own.
+There are a few extra YAML files. `api_config.yaml` and `gcp_update.sh` is for deploying the GRPC service to [Google's Cloud Platform](https://cloud.withgoogle.come), so you can ignore it. `blacklist.yaml` is a list of channels, by name, that the Slack bot should not be allowed to run in. `buf.gen.yaml` is actually the configuration file used to generate output files from the GRPC proto file. `maintainers.yaml` contains a list of maintainers, and `manifest.yaml` is the Slack manifest file for the bot that you should replace with your own.
 
-A few files haven't been covered by those are generally self-explanatory and/or aren't needed for the codebase to be run locally.
+A few files that haven't been covered are generally self-explanatory and/or aren't needed for the codebase to be run locally.
 
 If you have questions, ask in [#bag-dev](https://app.slack.com/client/T0266FRGM/C067FH4PHFH) in the Slack!

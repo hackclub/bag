@@ -1,3 +1,4 @@
+import { log } from '../../analytics'
 import { type IdentityWithInventory, prisma } from '../../db'
 import { mappedPermissionValues } from '../../permissions'
 import { inMaintainers } from '../../utils'
@@ -5,7 +6,7 @@ import slack, { execute, CommandMiddleware } from '../slack'
 import { ActionInstance } from '@prisma/client'
 import { Block, KnownBlock } from '@slack/bolt'
 
-const ACTION_TEST = ['action-test', 'test888']
+const ACTION_TEST = ['action-test']
 
 const canBeUsed = async (
   user: IdentityWithInventory,
@@ -61,6 +62,13 @@ slack.command('/use', async props => {
   await execute(
     props,
     async props => {
+      await log('slack-use', `${props.context.userId}-${Date.now()}`, {
+        channel: props.body.channel_id,
+        user: (await props.client.users.info({ user: props.context.userId }))
+          .user.profile.display_name,
+        command: `/use ${props.command.text}`
+      })
+
       const conversation = await props.client.conversations.info({
         channel: props.body.channel_id
       })

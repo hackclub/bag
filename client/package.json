@@ -1,6 +1,6 @@
 {
   "name": "@hackclub/bag",
-  "version": "1.0.41",
+  "version": "2.0.0",
   "description": "Hack Club's custom RPG system for Slack!",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

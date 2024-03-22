@@ -1,6 +1,5 @@
 import config from './config'
 import { prisma } from './lib/db'
-// @prettier-ignore
 import './lib/slack/routes/app'
 import './lib/slack/routes/craft'
 import './lib/slack/routes/give'
@@ -45,7 +44,7 @@ import { fastify } from 'fastify'
     await server.register(fastifyConnectPlugin, { routes })
     server.get('/', (_, reply) => {
       reply.type('text/plain')
-      reply.send('You found something...')
+      reply.send('Check out https://bag.hackclub.com!')
     })
     await server.listen({ host: '0.0.0.0', port: config.PORT })
     console.log(`GRPC server running on port ${config.PORT}!`)

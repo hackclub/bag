@@ -1,3 +1,4 @@
+import { log } from '../../analytics'
 import { prisma } from '../../db'
 import { mappedPermissionValues } from '../../permissions'
 import { channelBlacklist, channels, inMaintainers } from '../../utils'
@@ -48,7 +49,6 @@ const craft = async (slack: string, craftingId: number, recipeId: number) => {
   }
 
   // Give user the output
-  console.log(updated.recipe.outputs)
   for (let output of updated.recipe.outputs) {
     // Check if user already has an instance and add to that instance
     const existing = await prisma.instance.findFirst({
@@ -79,6 +79,13 @@ slack.command('/craft', async props => {
   return await execute(
     props,
     async props => {
+      const timestamp = Date.now()
+      await log('slack-craft', `${props.context.userId}-${timestamp}`, {
+        channel: props.body.channel_id,
+        user: (await props.client.users.info({ user: props.context.userId }))
+          .user.profile.display_name
+      })
+
       try {
         const conversation = await props.client.conversations.info({
           channel: props.body.channel_id

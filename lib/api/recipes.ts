@@ -7,7 +7,6 @@ import { PermissionLevels, RecipeItem, Skill } from '@prisma/client'
 import { PrismaClientExtends } from '@prisma/client/extension'
 
 export default (router: ConnectRouter) => {
-  // TODO: Test with lower permissions
   router.rpc(BagService, BagService.methods.createRecipe, async req => {
     return await execute(
       req,
@@ -117,7 +116,6 @@ export default (router: ConnectRouter) => {
     )
   })
 
-  // TODO: Test with lower permissions
   router.rpc(BagService, BagService.methods.getRecipes, async req => {
     return await execute(req, async (req, app) => {
       let recipes = await prisma.recipe.findMany({
@@ -214,7 +212,6 @@ export default (router: ConnectRouter) => {
     })
   })
 
-  // TODO: Test with lower permissions
   router.rpc(BagService, BagService.methods.updateRecipe, async req => {
     return await execute(
       req,

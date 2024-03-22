@@ -12,6 +12,8 @@ export interface Env {
   DATABASE_URL: string
   APP_ID: number
   APP_KEY: string
+  ELASTIC_NODE: string
+  ELASTIC_API_TOKEN: string
 }
 
 let env: Env = {
@@ -25,7 +27,9 @@ let env: Env = {
   DATABASE_URL: process.env.DATABASE_URL,
   APP_ID: Number(process.env.APP_ID),
   APP_KEY: process.env.APP_KEY,
-  SLACK_BOT: process.env.SLACK_BOT ? true : false
+  SLACK_BOT: process.env.SLACK_BOT ? true : false,
+  ELASTIC_NODE: process.env.ELASTIC_NODE,
+  ELASTIC_API_TOKEN: process.env.ELASTIC_API_TOKEN
 }
 
 if (Object.values(env).find(val => val === undefined))

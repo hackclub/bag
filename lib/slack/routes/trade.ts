@@ -1,3 +1,4 @@
+import { log } from '../../analytics'
 import { findOrCreateIdentity } from '../../db'
 import { prisma } from '../../db'
 import { channelBlacklist, userRegex, channels } from '../../utils'
@@ -7,6 +8,13 @@ import { Block, Button, KnownBlock, View } from '@slack/bolt'
 
 slack.command('/trade', async props => {
   await execute(props, async props => {
+    await log('slack-trade', `${props.context.userId}-${Date.now()}`, {
+      channel: props.body.channel_id,
+      user: (await props.client.users.info({ user: props.context.userId })).user
+        .profile.display_name,
+      command: `/trade ${props.command.text}`
+    })
+
     try {
       const conversation = await props.client.conversations.info({
         channel: props.body.channel_id
@@ -515,7 +523,6 @@ slack.action('accept-trade', async props => {
           receiver.inventory = receiver.inventory.filter(
             old => !(old.id === instance.id)
           )
-          console.log(receiver.inventory)
         } else
           await prisma.instance.update({
             where: { id: instance.id },

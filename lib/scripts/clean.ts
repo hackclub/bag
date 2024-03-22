@@ -1,4 +1,4 @@
-// TODO: Cleaning script
+// TODO: Set up script to regularly clean database
 // async function main() {
 //   const { inventory } = await prisma.identity.findFirst({
 //     where: { slack: 'U062KS2PK7Z' },

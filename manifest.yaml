@@ -20,24 +20,39 @@ features:
     always_online: true
   slash_commands:
     - command: /item
-      url: https://bag-client.hackclub.com/slack/events
+      url: https://bag-ec4ed680844a.herokuapp.com/slack/events
       description: View info about items!
       usage_hint: '[name]'
       should_escape: false
     - command: /bag
-      url: https://bag-client.hackclub.com/slack/events
+      url: https://bag-ec4ed680844a.herokuapp.com/slack/events
       description: View someone's inventory!
       usage_hint: '[mention]'
       should_escape: true
     - command: /trade
-      url: https://bag-client.hackclub.com/slack/events
+      url: https://bag-ec4ed680844a.herokuapp.com/slack/events
       description: Start a trade.
       usage_hint: '[mention]'
       should_escape: true
     - command: /give
-      url: https://bag-client.hackclub.com/slack/events
+      url: https://bag-ec4ed680844a.herokuapp.com/slack/events
       description: Give someone an item!
       usage_hint: '[mention]'
+      should_escape: true
+    - command: /use
+      url: https://bag-ec4ed680844a.herokuapp.com/slack/events
+      description: Use something from your inventory!
+      usage_hint: ':-item:'
+      should_escape: false
+    - command: /craft
+      url: https://bag-ec4ed680844a.herokuapp.com/slack/events
+      description: Combine items from your inventory!
+      usage_hint: ':-item: :-item:'
+      should_escape: false
+    - command: /app
+      url: https://bag-ec4ed680844a.herokuapp.com/slack/events
+      description: Create and edit apps for programatically controlling bag!
+      usage_hint: '[name]'
       should_escape: true
 oauth_config:
   scopes:
@@ -103,14 +118,14 @@ oauth_config:
       - files:write
 settings:
   event_subscriptions:
-    request_url: https://bag-client.hackclub.com/slack/events
+    request_url: https://bag-ec4ed680844a.herokuapp.com/slack/events
     bot_events:
       - app_mention
       - message.channels
       - message.groups
   interactivity:
     is_enabled: true
-    request_url: https://bag-client.hackclub.com/slack/events
+    request_url: https://bag-ec4ed680844a.herokuapp.com/slack/events
   org_deploy_enabled: false
   socket_mode_enabled: false
   token_rotation_enabled: false

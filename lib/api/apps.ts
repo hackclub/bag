@@ -1,6 +1,5 @@
 import { BagService } from '../../gen/bag_connect'
 import { prisma } from '../db'
-import { log } from '../logger'
 import { mappedPermissionValues } from '../permissions'
 import { getKeyByValue } from '../utils'
 import { execute } from './routing'
@@ -23,7 +22,7 @@ export default (router: ConnectRouter) => {
             key: uuid()
           }
         })
-        log('New app created: ', app.name)
+        console.log('New app created: ', app.name)
         return { app }
       },
       mappedPermissionValues.ADMIN
@@ -57,18 +56,17 @@ export default (router: ConnectRouter) => {
   router.rpc(BagService, BagService.methods.updateApp, async req => {
     return await execute(req, async (req, app) => {
       if (
-        req.optAppId &&
+        req.optAppId > 0 &&
         mappedPermissionValues[app.permissions] <
           mappedPermissionValues.WRITE_SPECIFIC
       )
         throw new Error('Invalid permissions')
       if (
-        req.optAppId &&
+        req.optAppId > 0 &&
         app.permissions === PermissionLevels.WRITE_SPECIFIC &&
         !app.specificApps.find(appId => appId === req.optAppId)
       )
         throw new Error('Invalid permissions')
-      console.log(req)
       const old = await prisma.app.findUnique({
         where: {
           id: req.optAppId > 0 ? req.optAppId : app.id

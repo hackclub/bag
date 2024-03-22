@@ -1,3 +1,4 @@
+import { log } from '../../analytics'
 import { findOrCreateIdentity } from '../../db'
 import { prisma } from '../../db'
 import { userRegex } from '../../utils'
@@ -7,6 +8,13 @@ import type { View } from '@slack/bolt'
 
 slack.command('/give', async props => {
   await execute(props, async props => {
+    const logId = `${props.context.userId}-${Date.now()}`
+    await log('slack-give', `${logId}`, {
+      channel: props.body.channel_id,
+      giver: (await props.client.users.info({ user: props.context.userId }))
+        .user.profile.display_name
+    })
+
     const message = props.command.text.trim()
     const receiverId = message.slice(2, message.indexOf('|'))
     const regex = new RegExp(userRegex)
@@ -41,6 +49,19 @@ slack.command('/give', async props => {
       })
 
     const receiver = await findOrCreateIdentity(receiverId)
+
+    // Update analytics with receiver
+    console.log(
+      await log(
+        'slack-give',
+        logId,
+        {
+          receiver: (await props.client.users.info({ user: receiver.slack }))
+            .user.profile.display_name
+        },
+        true
+      )
+    )
 
     await props.client.views.update({
       view_id: view.id,

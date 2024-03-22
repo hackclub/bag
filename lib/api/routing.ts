@@ -3,11 +3,11 @@ import config from '../../config'
 import { prisma } from '../db'
 import { log } from '../logger'
 import { mappedPermissionValues } from '../permissions'
-import { App } from '@prisma/client'
+import { App, PermissionLevels } from '@prisma/client'
 import { WebClient } from '@slack/web-api'
 import { LRUCache } from 'lru-cache'
 
-const maxRequests = 150
+const maxRequests = 200
 export const cache = new LRUCache({
   max: 100,
   ttl: 60000
@@ -37,7 +37,11 @@ export async function execute(
 
     let rate = cache.get(app.id)
     if (!rate) cache.set(app.id, 1)
-    else if (Number(rate) >= maxRequests) throw new Error('Rate limit reached')
+    else if (
+      Number(rate) >= maxRequests &&
+      app.permissions !== PermissionLevels.ADMIN
+    )
+      throw new Error('Rate limit reached')
     else cache.set(app.id, Number(rate) + 1)
 
     if (mappedPermissionValues[app.permissions] < permission)

@@ -24,7 +24,7 @@ export default (router: ConnectRouter) => {
   })
 
   router.rpc(BagService, BagService.methods.getAction, async req => {
-    return await execute(req, async req => {
+    return await execute(req, async (req, app) => {
       let actions = await prisma.action.findMany({
         where: {
           locations: { hasSome: req.query.locations },

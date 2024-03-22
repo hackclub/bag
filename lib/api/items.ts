@@ -21,7 +21,6 @@ export default (router: ConnectRouter) => {
     )
   })
 
-  // TODO: Fix
   router.rpc(BagService, BagService.methods.getItem, async req => {
     return await execute(req, async (req, app) => {
       const query = JSON.parse(req.query)
@@ -53,7 +52,6 @@ export default (router: ConnectRouter) => {
     })
   })
 
-  // TODO: Test
   router.rpc(BagService, BagService.methods.updateItem, async req => {
     return await execute(
       req,

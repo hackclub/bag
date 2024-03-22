@@ -1,3 +1,4 @@
+import { log } from '../../analytics'
 import { findOrCreateIdentity, prisma } from '../../db'
 import { mappedPermissionValues } from '../../permissions'
 import { channels, inMaintainers } from '../../utils'
@@ -14,17 +15,14 @@ import type {
 } from '@slack/bolt'
 import { v4 as uuid } from 'uuid'
 
-slack.command('/huh', async props => {
+slack.command('/app', async props => {
   await execute(props, async props => {
-    if (
-      !inMaintainers(props.context.userId) &&
-      props.context.userId != 'U062KS2PK7Z'
-    )
-      return props.client.chat.postEphemeral({
-        channel: props.body.channel_id,
-        user: props.context.userId,
-        text: "You found something, but it's not ready yet."
-      })
+    await log('slack-app', `${props.context.userId}-${Date.now()}`, {
+      channel: props.body.channel_id,
+      user: (await props.client.users.info({ user: props.context.userId }))
+        .user,
+      command: `/app ${props.command.text}`
+    })
 
     const message = props.command.text.trim()
     if (message.length) {

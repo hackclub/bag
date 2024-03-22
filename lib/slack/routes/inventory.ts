@@ -1,3 +1,4 @@
+import { log } from '../../analytics'
 import { findOrCreateIdentity, type IdentityWithInventory } from '../../db'
 import { prisma } from '../../db'
 import { mappedPermissionValues } from '../../permissions'
@@ -9,6 +10,13 @@ import { Block, KnownBlock } from '@slack/bolt'
 
 slack.command('/bag', async props => {
   await execute(props, async props => {
+    await log('slack-bag', `${props.context.userId}-${Date.now()}`, {
+      channel: props.body.channel_id,
+      user: (await props.client.users.info({ user: props.context.userId })).user
+        .profile.display_name,
+      command: `/bag ${props.command.text}`
+    })
+
     try {
       const conversation = await props.client.conversations.info({
         channel: props.body.channel_id

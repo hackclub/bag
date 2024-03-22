@@ -1,4 +1,5 @@
 import config from '../../config'
+import { elastic } from '../analytics'
 import { prisma } from '../db'
 import { err } from '../logger'
 import { mappedPermissionValues } from '../permissions'
@@ -25,16 +26,14 @@ export const cache = new LRUCache({
   ttl: 1000 * 60 * 60 * 24
 })
 
-export const receiver = new HTTPReceiver({
-  signingSecret: config.SLACK_SIGNING_SECRET
-})
-
 const slack = new App({
   token: config.SLACK_BOT_TOKEN,
   appToken: config.SLACK_APP_TOKEN,
   signingSecret: config.SLACK_SIGNING_SECRET,
   logLevel: LogLevel.ERROR,
-  receiver
+  receiver: new HTTPReceiver({
+    signingSecret: config.SLACK_SIGNING_SECRET
+  })
 })
 
 // A bunch of function overloads, I know
@@ -124,7 +123,6 @@ export async function execute(
             : undefined
         }
       })
-      console.log(user)
       // Newbies get nothing until they run /bag me, and that kicks off the old man, but they can only get common items (items with a rarity > 0.4)
       if (!inMaintainers(props.context.userId))
         await kickoff(props.context.userId)
@@ -140,7 +138,6 @@ export async function execute(
 
     await func(props, mappedPermissionValues[user.permissions])
   } catch (error) {
-    err(error)
     console.log(error.code, error)
     await props.client.chat.postMessage({
       channel: maintainers.jc,

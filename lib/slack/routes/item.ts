@@ -1,5 +1,5 @@
+import { log } from '../../analytics'
 import { prisma } from '../../db'
-import { log } from '../../logger'
 import { mappedPermissionValues } from '../../permissions'
 import { channels } from '../../utils'
 import slack, { execute } from '../slack'
@@ -9,6 +9,12 @@ import type { Block, KnownBlock, View } from '@slack/bolt'
 slack.command('/item', async props => {
   await execute(props, async props => {
     const message = props.command.text.trim()
+    await log('slack-item', `${props.context.userId}-${Date.now()}`, {
+      channel: props.body.channel_id,
+      user: (await props.client.users.info({ user: props.context.userId })).user
+        .profile.display_name,
+      command: `/item ${message}`
+    })
 
     const user = await prisma.identity.findUnique({
       where: { slack: props.context.userId }
@@ -126,7 +132,7 @@ slack.action('approve-item', async props => {
 
     // Create item, and add to user's lit of items they can access
     const item = await prisma.item.create({ data: fields })
-    log('New item created: ', item.name)
+    console.log('New item created: ', item.name)
 
     await prisma.identity.update({
       where: { slack: user },

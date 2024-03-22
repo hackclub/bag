@@ -1,9 +1,5 @@
 # Admins that are allowed to allow or deny certain requests, among other privileges
 jc:
   slack: U03MNFDRSGJ
-kara:
-  slack: U032A2PMSE9
 cwalker:
   slack: UDK5M9Y13
-msw:
-  slack: 

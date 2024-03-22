@@ -16,4 +16,4 @@ Once you have these, you'll need to `git clone` this repo, and then:
 2. Fill out `.env.sample` and rename it to `.env`.
 3. Add yourself to the the list of maintainers in `maintainers.yaml`.
 4. Run `yarn dev`!
-5. Start playing with the Slack bot! The first thing you should do is run `/app` and create a app, and then add `APP_ID` and `APP_KEY` variables to your `.env` file.
+5. Start playing with the Slack bot! The first thing you should do is run `/bot` and create a app, and then add `APP_ID` and `APP_KEY` variables to your `.env` file.

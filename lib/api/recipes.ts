@@ -9,6 +9,7 @@ import { PrismaClientExtends } from '@prisma/client/extension'
 export default (router: ConnectRouter) => {
   router.rpc(BagService, BagService.methods.createRecipe, async req => {
     return await execute(
+      'create-recipe',
       req,
       async (req, app) => {
         const sum = (inputs: RecipeItem[], tools: RecipeItem[]): number => {
@@ -117,7 +118,7 @@ export default (router: ConnectRouter) => {
   })
 
   router.rpc(BagService, BagService.methods.getRecipes, async req => {
-    return await execute(req, async (req, app) => {
+    return await execute('get-recipes', req, async (req, app) => {
       let recipes = await prisma.recipe.findMany({
         include: {
           inputs: true,
@@ -214,6 +215,7 @@ export default (router: ConnectRouter) => {
 
   router.rpc(BagService, BagService.methods.updateRecipe, async req => {
     return await execute(
+      'update-recipe',
       req,
       async (req, app) => {
         if (

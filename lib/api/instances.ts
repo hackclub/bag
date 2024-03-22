@@ -9,6 +9,7 @@ import { Block, KnownBlock } from '@slack/bolt'
 export default (router: ConnectRouter) => {
   router.rpc(BagService, BagService.methods.createInstances, async req => {
     return await execute(
+      'create-instances',
       req,
       async (req, app) => {
         let created = []
@@ -104,6 +105,7 @@ export default (router: ConnectRouter) => {
 
   router.rpc(BagService, BagService.methods.createInstance, async req => {
     return await execute(
+      'create-instance',
       req,
       async (req, app) => {
         if (
@@ -180,7 +182,7 @@ export default (router: ConnectRouter) => {
   })
 
   router.rpc(BagService, BagService.methods.getInstance, async req => {
-    return await execute(req, async (req, app) => {
+    return await execute('get-instance', req, async (req, app) => {
       const instance = await prisma.instance.findUnique({
         where: { id: req.instanceId },
         include: { item: true }
@@ -200,6 +202,7 @@ export default (router: ConnectRouter) => {
 
   router.rpc(BagService, BagService.methods.updateInstance, async req => {
     return await execute(
+      'update-instance',
       req,
       async (req, app) => {
         if (
@@ -278,6 +281,7 @@ export default (router: ConnectRouter) => {
   // : Test
   router.rpc(BagService, BagService.methods.deleteInstance, async req => {
     return await execute(
+      'delete-instance',
       req,
       async (req, app) => {
         const instance = await prisma.instance.findUnique({

@@ -49,9 +49,9 @@ features:
       description: Combine items from your inventory!
       usage_hint: ':-item: :-item:'
       should_escape: false
-    - command: /app
+    - command: /bot
       url: https://bag-ec4ed680844a.herokuapp.com/slack/events
-      description: Create and edit apps for programatically controlling bag!
+      description: Create and edit apps for programmatically controlling bag!
       usage_hint: '[name]'
       should_escape: true
 oauth_config:

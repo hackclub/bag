@@ -10,6 +10,7 @@ import { v4 as uuid } from 'uuid'
 export default (router: ConnectRouter) => {
   router.rpc(BagService, BagService.methods.createApp, async req => {
     return await execute(
+      'create-app',
       req,
       async req => {
         if (!req.name) throw new Error('Name of app not provided')
@@ -30,7 +31,7 @@ export default (router: ConnectRouter) => {
   })
 
   router.rpc(BagService, BagService.methods.getApp, async req => {
-    return await execute(req, async (req, app) => {
+    return await execute('get-app', req, async (req, app) => {
       if (req.optAppId > 0) {
         const appSearch = await prisma.app.findUnique({
           where: {
@@ -54,7 +55,7 @@ export default (router: ConnectRouter) => {
   })
 
   router.rpc(BagService, BagService.methods.updateApp, async req => {
-    return await execute(req, async (req, app) => {
+    return await execute('update-app', req, async (req, app) => {
       if (
         req.optAppId > 0 &&
         mappedPermissionValues[app.permissions] <

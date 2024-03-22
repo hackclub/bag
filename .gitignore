@@ -16,5 +16,5 @@ client/gen
 client/dist
 *.pem
 
-lib/api/slack/routes/perms.ts
-lib/api/slack/routes/recipe.ts
+lib/slack/routes/perms.ts
+lib/slack/routes/recipe.ts

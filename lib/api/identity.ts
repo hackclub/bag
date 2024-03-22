@@ -18,7 +18,7 @@ const getUser = async (slack: string, app: App) => {
 
 export default (router: ConnectRouter) => {
   router.rpc(BagService, BagService.methods.getIdentities, async req => {
-    return await execute(req, async (req, app) => {
+    return await execute('get-identities', req, async (req, app) => {
       let identities = await prisma.identity.findMany({
         where: JSON.parse(req.query) || {},
         include: { inventory: true }
@@ -43,13 +43,13 @@ export default (router: ConnectRouter) => {
   })
 
   router.rpc(BagService, BagService.methods.getIdentity, async req => {
-    return await execute(req, async (req, app) => {
+    return await execute('get-identity', req, async (req, app) => {
       return { identity: await getUser(req.identityId, app) }
     })
   })
 
   router.rpc(BagService, BagService.methods.getInventory, async req => {
-    return await execute(req, async (req, app) => {
+    return await execute('get-inventory', req, async (req, app) => {
       const user = await getUser(req.identityId, app)
       let inventory = user.inventory
       if (req.available) {
@@ -108,7 +108,7 @@ export default (router: ConnectRouter) => {
     BagService,
     BagService.methods.updateIdentityMetadata,
     async req => {
-      return await execute(req, async req => {
+      return await execute('update-identity-metadata', req, async req => {
         const identity = await findOrCreateIdentity(req.identityId)
         console.log(req.metadata)
         return {

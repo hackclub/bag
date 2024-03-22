@@ -7,6 +7,7 @@ import { ConnectRouter } from '@connectrpc/connect'
 export default (router: ConnectRouter) => {
   router.rpc(BagService, BagService.methods.createAction, async req => {
     return await execute(
+      'create-action',
       req,
       async req => {
         return {
@@ -24,7 +25,7 @@ export default (router: ConnectRouter) => {
   })
 
   router.rpc(BagService, BagService.methods.getAction, async req => {
-    return await execute(req, async (req, app) => {
+    return await execute('get-action', req, async (req, app) => {
       let actions = await prisma.action.findMany({
         where: {
           locations: { hasSome: req.query.locations },
@@ -40,6 +41,7 @@ export default (router: ConnectRouter) => {
 
   router.rpc(BagService, BagService.methods.updateAction, async req => {
     return await execute(
+      'update-action',
       req,
       async req => {
         return {

@@ -6,7 +6,7 @@ import { ConnectRouter } from '@connectrpc/connect'
 
 export default (router: ConnectRouter) => {
   router.rpc(BagService, BagService.methods.createTrade, async req => {
-    return await execute(req, async (req, app) => {
+    return await execute('create-trade', req, async (req, app) => {
       const trade = await prisma.trade.create({
         data: {
           initiatorIdentityId: req.initiator,
@@ -29,7 +29,7 @@ export default (router: ConnectRouter) => {
   })
 
   router.rpc(BagService, BagService.methods.getTrade, async req => {
-    return await execute(req, async (req, app) => {
+    return await execute('get-trade', req, async (req, app) => {
       const trade = await prisma.trade.findUnique({
         where: { id: req.tradeId },
         include: {
@@ -59,7 +59,7 @@ export default (router: ConnectRouter) => {
   })
 
   router.rpc(BagService, BagService.methods.closeTrade, async req => {
-    return await execute(req, async (req, app) => {
+    return await execute('close-trade', req, async (req, app) => {
       let trade: TradeWithTrades = await prisma.trade.findUnique({
         where: { id: req.tradeId },
         include: { initiatorTrades: true, receiverTrades: true }
@@ -186,7 +186,7 @@ export default (router: ConnectRouter) => {
   })
 
   router.rpc(BagService, BagService.methods.updateTrade, async req => {
-    return await execute(req, async (req, app) => {
+    return await execute('update-trade', req, async (req, app) => {
       if (
         mappedPermissionValues[app.permissions] <=
           mappedPermissionValues.WRITE_SPECIFIC &&

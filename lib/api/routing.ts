@@ -1,13 +1,13 @@
 // Utils for router requests
 import config from '../../config'
+import { log } from '../analytics'
 import { prisma } from '../db'
-import { log } from '../logger'
 import { mappedPermissionValues } from '../permissions'
 import { App, PermissionLevels } from '@prisma/client'
 import { WebClient } from '@slack/web-api'
 import { LRUCache } from 'lru-cache'
 
-const maxRequests = 200
+const maxRequests = 500
 export const cache = new LRUCache({
   max: 100,
   ttl: 60000
@@ -25,15 +25,22 @@ const format = obj => {
 }
 
 export async function execute(
+  route: string,
   req: any,
   func: (req: any, app: App) => any,
   permission?: number
 ) {
   try {
+    console.log(req)
     let app = await prisma.app.findUnique({
       where: { id: req.appId, AND: [{ key: req.key }] }
     })
     if (!app) throw new Error('App not found or invalid app key')
+
+    await log(`routes-${route}`, `${app.id}-${Date.now()}`, {
+      id: app.id,
+      name: app.name
+    })
 
     let rate = cache.get(app.id)
     if (!rate) cache.set(app.id, 1)
@@ -46,7 +53,7 @@ export async function execute(
 
     if (mappedPermissionValues[app.permissions] < permission)
       throw new Error(
-        'Invalid permissions. Request permissions in Slack with /app.'
+        'Invalid permissions. Request permissions in Slack with /bot.'
       )
 
     // Strip appId and key

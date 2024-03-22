@@ -9,6 +9,7 @@ import { Item, PermissionLevels } from '@prisma/client'
 export default (router: ConnectRouter) => {
   router.rpc(BagService, BagService.methods.createItem, async req => {
     return await execute(
+      'create-item',
       req,
       async req => {
         if (!req.item.name || !req.item.reaction)
@@ -22,21 +23,16 @@ export default (router: ConnectRouter) => {
   })
 
   router.rpc(BagService, BagService.methods.getItem, async req => {
-    return await execute(req, async (req, app) => {
+    return await execute('get-item', req, async (req, app) => {
       const query = JSON.parse(req.query)
       let items = await prisma.item.findMany({ where: query })
-      do {
-        let item = items[0]
-        return { item }
-        // if (!item.public && app.permissions === )
-        items.splice(0, 1)
-      } while (items.length)
-      throw new Error('Item not found')
+      if (!items.length) throw new Error('Item not found')
+      return { item: items[0] }
     })
   })
 
   router.rpc(BagService, BagService.methods.getItems, async req => {
-    return await execute(req, async (req, app) => {
+    return await execute('get-items', req, async (req, app) => {
       const query = JSON.parse(req.query)
       let items = await prisma.item.findMany({ where: query })
       if (
@@ -54,6 +50,7 @@ export default (router: ConnectRouter) => {
 
   router.rpc(BagService, BagService.methods.updateItem, async req => {
     return await execute(
+      'update-item',
       req,
       async (req, app) => {
         if (

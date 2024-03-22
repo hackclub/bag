@@ -15,13 +15,13 @@ import type {
 } from '@slack/bolt'
 import { v4 as uuid } from 'uuid'
 
-slack.command('/app', async props => {
+slack.command('/bot', async props => {
   await execute(props, async props => {
     await log('slack-app', `${props.context.userId}-${Date.now()}`, {
       channel: props.body.channel_id,
       user: (await props.client.users.info({ user: props.context.userId }))
         .user,
-      command: `/app ${props.command.text}`
+      command: `/bot ${props.command.text}`
     })
 
     const message = props.command.text.trim()
@@ -727,7 +727,7 @@ const privateApp = (
           app.key
         }\`. (Don't share it with anyone unless they're also working on the app!) Your app can: ${
           permissionDesc[app.permissions]
-        }\n\nTo edit your app/request a permission level, run \`/app ${
+        }\n\nTo edit your app/request a permission level, run \`/bot ${
           app.name
         }\`.`
       }

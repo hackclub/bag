@@ -681,6 +681,14 @@ app.action('checkout', async props => {
       text: "Looks like you can't spare that kind of :-gp: yet... try taking a few items off."
     })
 
+  let purchased = []
+  for (let purchase of cart.receiverTrades) {
+    const item = await bag.getItem({
+      query: JSON.stringify({ name: purchase.instance.itemId })
+    })
+    purchased.push(`x${purchase.quantity} ${item.reaction} ${item.name}`)
+  }
+
   const sale = await bag.closeTrade({
     tradeId: app.metadata[props.context.userId].id
   })
@@ -690,16 +698,6 @@ app.action('checkout', async props => {
       [props.context.userId]: null
     })
   })
-
-  let purchased = []
-  for (let purchase of sale.receiverTrades) {
-    const instance = await bag.getInstance({
-      instanceId: purchase.instanceId
-    })
-    purchased.push(
-      `x${purchase.quantity} ${instance.item.reaction} ${instance.item.name}`
-    )
-  }
 
   await props.client.chat.update({
     ...thread,

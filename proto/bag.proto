@@ -32,6 +32,8 @@ service BagService {
   rpc DeleteInstance(DeleteInstanceRequest) returns (DeleteInstanceResponse) {}  // Should be able to delete instances that the app has access to
   rpc CloseTrade(CloseTradeRequest) returns (CloseTradeResponse) {} // Should be able to close instances that the app has access to
   rpc VerifyKey(VerifyKeyRequest) returns (VerifyKeyResponse) {}
+  rpc RunGive(RunGiveRequest) returns (RunGiveResponse) {}
+  rpc RunCraft(RunCraftRequest) returns (RunCraftResponse) {}
 }
 
 message App {
@@ -479,8 +481,34 @@ message CloseTradeResponse {
 message VerifyKeyRequest {
   int32 appId = 1;
   string key = 2;
+  string 
 }
 
 message VerifyKeyResponse {
   bool valid = 1;
+}
+
+message RunGiveRequest {
+  int32 appId = 1;
+  string key = 2;
+  string giverId = 3;
+  string receiverId = 4;
+  repeated Instance instances = 5;
+}
+
+message RunGiveResponse {
+  optional string response = 1;
+  optional Instance instances = 2;
+}
+
+message RunCraftRequest {
+  int32 appId = 1;
+  string key = 2;
+  string identityId = 3;
+  int32 recipeId = 4;
+}
+
+message RunCraftResponse {
+  optional string response = 1;
+  optional Instance instance = 2;
 }

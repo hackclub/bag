@@ -57,6 +57,7 @@ model Item {
   instances   Instance[]
   public      Boolean      @default(false)
   metadata    Json         @default("{}")
+  durability  Int          @default(100)
   recipeItem  RecipeItem[]
 }
 

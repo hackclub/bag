@@ -3624,3 +3624,151 @@ export class VerifyKeyResponse extends Message<VerifyKeyResponse> {
   }
 }
 
+/**
+ * @generated from message bag.RunGiveRequest
+ */
+export class RunGiveRequest extends Message<RunGiveRequest> {
+  /**
+   * @generated from field: int32 appId = 1;
+   */
+  appId = 0;
+
+  /**
+   * @generated from field: string key = 2;
+   */
+  key = "";
+
+  constructor(data?: PartialMessage<RunGiveRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bag.RunGiveRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RunGiveRequest {
+    return new RunGiveRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RunGiveRequest {
+    return new RunGiveRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RunGiveRequest {
+    return new RunGiveRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RunGiveRequest | PlainMessage<RunGiveRequest> | undefined, b: RunGiveRequest | PlainMessage<RunGiveRequest> | undefined): boolean {
+    return proto3.util.equals(RunGiveRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message bag.RunGiveResponse
+ */
+export class RunGiveResponse extends Message<RunGiveResponse> {
+  constructor(data?: PartialMessage<RunGiveResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bag.RunGiveResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RunGiveResponse {
+    return new RunGiveResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RunGiveResponse {
+    return new RunGiveResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RunGiveResponse {
+    return new RunGiveResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RunGiveResponse | PlainMessage<RunGiveResponse> | undefined, b: RunGiveResponse | PlainMessage<RunGiveResponse> | undefined): boolean {
+    return proto3.util.equals(RunGiveResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message bag.RunCraftRequest
+ */
+export class RunCraftRequest extends Message<RunCraftRequest> {
+  /**
+   * @generated from field: int32 appId = 1;
+   */
+  appId = 0;
+
+  /**
+   * @generated from field: string key = 2;
+   */
+  key = "";
+
+  constructor(data?: PartialMessage<RunCraftRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bag.RunCraftRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RunCraftRequest {
+    return new RunCraftRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RunCraftRequest {
+    return new RunCraftRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RunCraftRequest {
+    return new RunCraftRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RunCraftRequest | PlainMessage<RunCraftRequest> | undefined, b: RunCraftRequest | PlainMessage<RunCraftRequest> | undefined): boolean {
+    return proto3.util.equals(RunCraftRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message bag.RunCraftResponse
+ */
+export class RunCraftResponse extends Message<RunCraftResponse> {
+  constructor(data?: PartialMessage<RunCraftResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bag.RunCraftResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RunCraftResponse {
+    return new RunCraftResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RunCraftResponse {
+    return new RunCraftResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RunCraftResponse {
+    return new RunCraftResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RunCraftResponse | PlainMessage<RunCraftResponse> | undefined, b: RunCraftResponse | PlainMessage<RunCraftResponse> | undefined): boolean {
+    return proto3.util.equals(RunCraftResponse, a, b);
+  }
+}
+

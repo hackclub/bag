@@ -122,7 +122,9 @@ export default (router: ConnectRouter) => {
       let recipes = await prisma.recipe.findMany({
         include: {
           inputs: true,
-          outputs: true,
+          outputs: {
+            include: { recipeItem: true }
+          },
           tools: true,
           skills: true
         }
@@ -162,7 +164,7 @@ export default (router: ConnectRouter) => {
           }
           return false
         })
-      } else {
+      } else if (query) {
         recipes = recipes.filter(recipe => {
           for (let input of query.inputs) {
             if (

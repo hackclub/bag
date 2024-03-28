@@ -299,10 +299,7 @@ export default (router: ConnectRouter) => {
               }
             })
           }
-        } else
-          throw new Error(
-            `Not enough ${ref.item.reaction} ${ref.item.name} to add to trade`
-          )
+        } else throw new Error(`Not enough ${ref.item.name} to add to trade`)
       }
 
       trade = await prisma.trade.findUnique({

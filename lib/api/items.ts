@@ -3,7 +3,7 @@ import { prisma } from '../db'
 import { log } from '../logger'
 import { mappedPermissionValues } from '../permissions'
 import { execute } from './routing'
-import { ConnectRouter } from '@connectrpc/connect'
+import { type ConnectRouter } from '@connectrpc/connect'
 import { Item, PermissionLevels } from '@prisma/client'
 
 export default (router: ConnectRouter) => {
@@ -59,12 +59,18 @@ export default (router: ConnectRouter) => {
         )
           throw new Error('Invalid permissions')
 
-        return {
-          item: await prisma.item.update({
-            where: { name: req.itemId },
-            data: req.new
-          })
-        }
+        const item = await prisma.item.update({
+          where: { name: req.itemId },
+          data: req.new
+        })
+
+        // Update instances if item's public status has also changed
+        await prisma.instance.updateMany({
+          where: { itemId: item.name },
+          data: { public: item.public }
+        })
+
+        return { item }
       },
       mappedPermissionValues.WRITE_SPECIFIC
     )

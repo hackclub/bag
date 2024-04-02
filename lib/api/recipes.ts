@@ -117,6 +117,79 @@ export default (router: ConnectRouter) => {
     )
   })
 
+  router.rpc(BagService, BagService.methods.getRecipe, async req => {
+    return await execute('get-recipe', req, async (req, app) => {
+      let recipes = await prisma.recipe.findMany({
+        include: {
+          inputs: true,
+          outputs: {
+            include: { recipeItem: true }
+          },
+          tools: true,
+          skills: true
+        }
+      })
+
+      const query = req.query
+
+      // Search through recipes
+      if (query) {
+        recipes = recipes.filter(recipe => {
+          let copy = structuredClone(query)
+          let incomplete = false
+          for (let item of recipe.inputs) {
+            const search = copy.inputs.findIndex(
+              input => input.recipeItemId === item.recipeItemId
+            )
+            if (search < 0) incomplete = true
+            copy.inputs.splice(search, 1)
+          }
+          for (let item of recipe.outputs) {
+            const search = copy.outputs.findIndex(
+              output => output.recipeItemId === item.recipeItemId
+            )
+            if (search < 0) incomplete = true
+            copy.outputs.splice(search, 1)
+          }
+          for (let item of recipe.tools) {
+            const search = copy.tools.findIndex(
+              tool => tool.recipeItemId === item.recipeItemId
+            )
+            if (search < 0) incomplete = true
+            copy.tools.splice(search, 1)
+          }
+          for (let recipeSkill of recipe.skills) {
+            const search = copy.skills.findIndex(
+              skill => skill.name === recipeSkill.name
+            )
+            if (search < 0) incomplete = true
+            copy.skills.splice(search, 1)
+          }
+          if (
+            copy.inputs.length ||
+            copy.outputs.length ||
+            copy.tools.length ||
+            copy.skills.length ||
+            incomplete
+          )
+            return false
+          return true
+        })
+      }
+
+      if (app.permissions === PermissionLevels.READ)
+        recipes = recipes.filter(recipe => recipe.public)
+      else if (
+        mappedPermissionValues[app.permissions] < mappedPermissionValues.WRITE
+      )
+        recipes = recipes.filter(
+          recipe =>
+            app.specificRecipes.find(id => recipe.id === id) || recipe.public
+        )
+      return { recipe: recipes[0] }
+    })
+  })
+
   router.rpc(BagService, BagService.methods.getRecipes, async req => {
     return await execute('get-recipes', req, async (req, app) => {
       let recipes = await prisma.recipe.findMany({
@@ -166,38 +239,44 @@ export default (router: ConnectRouter) => {
         })
       } else if (query) {
         recipes = recipes.filter(recipe => {
-          for (let input of query.inputs) {
-            if (
-              !recipe.inputs.find(
-                item => item.recipeItemId === input.recipeItemId
-              )
+          let copy = structuredClone(query)
+          let incomplete = false
+          for (let item of recipe.inputs) {
+            const search = copy.inputs.findIndex(
+              input => input.recipeItemId === item.recipeItemId
             )
-              return false
+            if (search < 0) incomplete = true
+            copy.inputs.splice(search, 1)
           }
-          for (let output of query.outputs) {
-            if (
-              !recipe.outputs.find(
-                item => item.recipeItemId === output.recipeItemId
-              )
+          for (let item of recipe.outputs) {
+            const search = copy.outputs.findIndex(
+              output => output.recipeItemId === item.recipeItemId
             )
-              return false
+            if (search < 0) incomplete = true
+            copy.outputs.splice(search, 1)
           }
-          for (let tool of query.tools) {
-            if (
-              !recipe.tools.find(
-                item => item.recipeItemId === tool.recipeItemId
-              )
+          for (let item of recipe.tools) {
+            const search = copy.tools.findIndex(
+              tool => tool.recipeItemId === item.recipeItemId
             )
-              return false
+            if (search < 0) incomplete = true
+            copy.tools.splice(search, 1)
           }
-          for (let skill of query.skills) {
-            if (
-              !recipe.skills.find(
-                recipeSkill => recipeSkill.name === skill.name
-              )
+          for (let recipeSkill of recipe.skills) {
+            const search = copy.skills.findIndex(
+              skill => skill.name === recipeSkill.name
             )
-              return false
+            if (search < 0) incomplete = true
+            copy.skills.splice(search, 1)
           }
+          if (
+            copy.inputs.length ||
+            copy.outputs.length ||
+            copy.tools.length ||
+            copy.skills.length ||
+            incomplete
+          )
+            return false
           return true
         })
       }

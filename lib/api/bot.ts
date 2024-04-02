@@ -7,11 +7,23 @@ import { PermissionLevels, type Instance } from '@prisma/client'
 
 export default (router: ConnectRouter) => {
   router.rpc(BagService, BagService.methods.runGive, async req => {
-    return await execute('run-give', req, async req => {
+    return await execute('run-give', req, async (req, app) => {
+      // Check if API has access to edit identity's items
+      const giver = await prisma.identity.findUnique({
+        where: {
+          slack: req.giverId,
+          specificApps: { has: app.id }
+        }
+      })
+      if (!giver && app.permissions !== PermissionLevels.ADMIN)
+        throw new Error(
+          'Invalid permissions. Request permissions in Slack with /bot <name>.'
+        )
+
       // Make sure all instances belong to giver
       const receiver = await findOrCreateIdentity(req.receiverId)
-      let instances = []
-      let given = []
+      let instances: [Instance, number][] = []
+      let given: Instance[] = []
 
       for (let [i, instance] of req.instances.entries()) {
         const ref = await prisma.instance.findUnique({
@@ -23,20 +35,20 @@ export default (router: ConnectRouter) => {
           )
         else if (ref.quantity < instance.quantity)
           throw new Error(`Not enough ${ref.itemId} to give away`)
-        instances.push([instance, i])
+        instances.push([ref, i])
       }
 
       // Transfer items over
       for (let [instance, i] of instances) {
         const give = req.instances[i]
+        const receiverInstance = receiver.inventory.find(
+          receiverInstance => receiverInstance.itemId === instance.itemId
+        )
         if (give.quantity < instance.quantity) {
           await prisma.instance.update({
             where: { id: instance.id },
             data: { quantity: instance.quantity - give.quantity }
           })
-          const receiverInstance = receiver.inventory.find(
-            receiverInstance => receiverInstance.itemId === instance.itemId
-          )
           if (receiverInstance)
             given.push(
               await prisma.instance.update({
@@ -57,15 +69,31 @@ export default (router: ConnectRouter) => {
                 }
               })
             )
-        }
-        // Transfer entire instance over
-        else
-          given.push(
+        } else {
+          // Transfer entire instance over
+          if (receiverInstance) {
+            given.push(
+              await prisma.instance.update({
+                where: { id: receiverInstance.id },
+                data: {
+                  quantity: receiverInstance.quantity + give.quantity
+                }
+              })
+            )
             await prisma.instance.update({
               where: { id: instance.id },
-              data: { identityId: receiver.slack }
+              data: {
+                identity: { disconnect: true }
+              }
             })
-          )
+          } else
+            given.push(
+              await prisma.instance.update({
+                where: { id: instance.id },
+                data: { identityId: receiver.slack }
+              })
+            )
+        }
       }
 
       return { instances: given }
@@ -75,7 +103,7 @@ export default (router: ConnectRouter) => {
   router.rpc(BagService, BagService.methods.runCraft, async req => {
     return await execute('run-craft', req, async (req, app) => {
       const recipe = await prisma.recipe.findUnique({
-        where: req.recipeId,
+        where: { id: req.recipeId },
         include: {
           inputs: true,
           tools: true,
@@ -91,7 +119,7 @@ export default (router: ConnectRouter) => {
 
       // Make sure identity has all the recipe items
       const identity = await findOrCreateIdentity(req.identityId)
-      const ingredients = [...recipe.inputs, ...recipe.outputs]
+      const ingredients = [...recipe.inputs, ...recipe.tools]
       let instances: Instance[] = []
       for (let ingredient of ingredients) {
         const search = identity.inventory.find(
@@ -127,7 +155,9 @@ export default (router: ConnectRouter) => {
         })
       }
 
-      await craft(identity.slack, crafting.id, req.recipeId)
+      return {
+        outputs: await craft(identity.slack, crafting.id, req.recipeId)
+      }
     })
   })
 }

@@ -374,6 +374,28 @@ export class App {
       })
     ).trade
   }
+
+  async runGive(
+    request: RecursivePartial<methods.RunGiveRequest>
+  ): Promise<methods.Instance[]> {
+    return App.format(
+      await this.client.runGive({
+        ...this.request,
+        ...request
+      })
+    ).instances
+  }
+
+  async runCraft(
+    request: RecursivePartial<methods.RunCraftRequest>
+  ): Promise<methods.Instance[]> {
+    return App.format(
+      await this.client.runCraft({
+        ...this.request,
+        ...request
+      })
+    ).outputs
+  }
 }
 
 export type {

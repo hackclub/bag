@@ -342,20 +342,12 @@ slack.action('accept-trade', async props => {
     })
 
     let initiator = await prisma.identity.findUnique({
-      where: {
-        slack: trade.initiatorIdentityId
-      },
-      include: {
-        inventory: true
-      }
+      where: { slack: trade.initiatorIdentityId },
+      include: { inventory: true }
     })
     let receiver = await prisma.identity.findUnique({
-      where: {
-        slack: trade.receiverIdentityId
-      },
-      include: {
-        inventory: true
-      }
+      where: { slack: trade.receiverIdentityId },
+      include: { inventory: true }
     })
 
     // @ts-expect-error
@@ -370,6 +362,12 @@ slack.action('accept-trade', async props => {
         true
       )
     })
+
+    // Do one last check to make sure the trade is allowed
+    for (let trade of closed.initiatorTrades) {
+    }
+    for (let trade of closed.receiverTrades) {
+    }
 
     // Now transfer items
     for (let offer of closed.initiatorTrades) {
@@ -443,20 +441,12 @@ slack.action('accept-trade', async props => {
     }
 
     initiator = await prisma.identity.findUnique({
-      where: {
-        slack: trade.initiatorIdentityId
-      },
-      include: {
-        inventory: true
-      }
+      where: { slack: trade.initiatorIdentityId },
+      include: { inventory: true }
     })
     receiver = await prisma.identity.findUnique({
-      where: {
-        slack: trade.receiverIdentityId
-      },
-      include: {
-        inventory: true
-      }
+      where: { slack: trade.receiverIdentityId },
+      include: { inventory: true }
     })
 
     for (let offer of closed.receiverTrades) {
@@ -473,7 +463,7 @@ slack.action('accept-trade', async props => {
           initiatorInstance => initiatorInstance.itemId === instance.itemId
         )
         if (existing !== undefined) {
-          //  Add to existing instance
+          // Add to existing instance
           await prisma.instance.update({
             where: { id: existing.id },
             data: {

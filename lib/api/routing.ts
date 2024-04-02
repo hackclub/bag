@@ -31,7 +31,6 @@ export async function execute(
   permission?: number
 ) {
   try {
-    console.log(req)
     let app = await prisma.app.findUnique({
       where: { id: req.appId, AND: [{ key: req.key }] }
     })
@@ -53,7 +52,7 @@ export async function execute(
 
     if (mappedPermissionValues[app.permissions] < permission)
       throw new Error(
-        'Invalid permissions. Request permissions in Slack with /bot.'
+        'Invalid permissions. Request permissions in Slack with /bot <name>.'
       )
 
     // Strip appId and key

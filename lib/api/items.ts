@@ -4,7 +4,7 @@ import { log } from '../logger'
 import { mappedPermissionValues } from '../permissions'
 import { execute } from './routing'
 import { type ConnectRouter } from '@connectrpc/connect'
-import { Item, PermissionLevels } from '@prisma/client'
+import { PermissionLevels } from '@prisma/client'
 
 export default (router: ConnectRouter) => {
   router.rpc(BagService, BagService.methods.createItem, async req => {

@@ -3638,6 +3638,21 @@ export class RunGiveRequest extends Message<RunGiveRequest> {
    */
   key = "";
 
+  /**
+   * @generated from field: string giverId = 3;
+   */
+  giverId = "";
+
+  /**
+   * @generated from field: string receiverId = 4;
+   */
+  receiverId = "";
+
+  /**
+   * @generated from field: repeated bag.Instance instances = 5;
+   */
+  instances: Instance[] = [];
+
   constructor(data?: PartialMessage<RunGiveRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3648,6 +3663,9 @@ export class RunGiveRequest extends Message<RunGiveRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "giverId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "receiverId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "instances", kind: "message", T: Instance, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RunGiveRequest {
@@ -3671,6 +3689,16 @@ export class RunGiveRequest extends Message<RunGiveRequest> {
  * @generated from message bag.RunGiveResponse
  */
 export class RunGiveResponse extends Message<RunGiveResponse> {
+  /**
+   * @generated from field: optional string response = 1;
+   */
+  response?: string;
+
+  /**
+   * @generated from field: repeated bag.Instance instances = 2;
+   */
+  instances: Instance[] = [];
+
   constructor(data?: PartialMessage<RunGiveResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3679,6 +3707,8 @@ export class RunGiveResponse extends Message<RunGiveResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "bag.RunGiveResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "instances", kind: "message", T: Instance, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RunGiveResponse {
@@ -3712,6 +3742,16 @@ export class RunCraftRequest extends Message<RunCraftRequest> {
    */
   key = "";
 
+  /**
+   * @generated from field: string identityId = 3;
+   */
+  identityId = "";
+
+  /**
+   * @generated from field: int32 recipeId = 4;
+   */
+  recipeId = 0;
+
   constructor(data?: PartialMessage<RunCraftRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3722,6 +3762,8 @@ export class RunCraftRequest extends Message<RunCraftRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "identityId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "recipeId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RunCraftRequest {
@@ -3745,6 +3787,16 @@ export class RunCraftRequest extends Message<RunCraftRequest> {
  * @generated from message bag.RunCraftResponse
  */
 export class RunCraftResponse extends Message<RunCraftResponse> {
+  /**
+   * @generated from field: optional string response = 1;
+   */
+  response?: string;
+
+  /**
+   * @generated from field: repeated bag.Instance outputs = 2;
+   */
+  outputs: Instance[] = [];
+
   constructor(data?: PartialMessage<RunCraftResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3753,6 +3805,8 @@ export class RunCraftResponse extends Message<RunCraftResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "bag.RunCraftResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "outputs", kind: "message", T: Instance, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RunCraftResponse {

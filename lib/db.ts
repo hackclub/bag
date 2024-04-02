@@ -1,5 +1,5 @@
 // Type helpers for Prisma
-import { Prisma, PrismaClient } from '@prisma/client'
+import { Instance, Prisma, PrismaClient } from '@prisma/client'
 
 const prismaClient = () => new PrismaClient()
 
@@ -58,7 +58,7 @@ export const craft = async (
   slack: string,
   craftingId: number,
   recipeId: number
-) => {
+): Promise<Instance[]> => {
   const crafting = await prisma.crafting.findUnique({
     where: { id: craftingId }
   })
@@ -99,6 +99,8 @@ export const craft = async (
       })
   }
 
+  let outputs: Instance[] = []
+
   // Give user the output
   for (let output of updated.recipe.outputs) {
     // Check if user already has an instance and add to that instance
@@ -110,18 +112,24 @@ export const craft = async (
     })
 
     if (existing)
-      await prisma.instance.update({
-        where: { id: existing.id },
-        data: { quantity: output.quantity + existing.quantity }
-      })
+      outputs.push(
+        await prisma.instance.update({
+          where: { id: existing.id },
+          data: { quantity: output.quantity + existing.quantity }
+        })
+      )
     else
-      await prisma.instance.create({
-        data: {
-          itemId: output.recipeItemId,
-          identityId: crafting.identityId,
-          quantity: output.quantity,
-          public: output.recipeItem.public
-        }
-      })
+      outputs.push(
+        await prisma.instance.create({
+          data: {
+            itemId: output.recipeItemId,
+            identityId: crafting.identityId,
+            quantity: output.quantity,
+            public: output.recipeItem.public
+          }
+        })
+      )
   }
+
+  return outputs
 }

@@ -44,3 +44,25 @@ jobs:
         with:
           cmd: build
           dir: 'client'
+  # deploy:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v3
+  #       with:
+  #         ref: ${{ github.head_ref }}
+  #     - name: Google auth
+  #       id: auth
+  #       uses: google-github-actions/auth@v1
+  #       with:
+  #         workload_identity_provider: '${{ secrets.WIF_PROVIDER }}'
+  #         service_account: '${{ secrets.WIF_SERVICE_ACCOUNT }}'
+  #     - name: Set up Cloud SDK
+  #       uses: google-github-actions/setup-gcloud@v1
+  #       with:
+  #         project_id: '${{ env.PROJECT_ID }}'
+  #     - name: Docker auth
+  #       run: |
+  #         gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev
+  #     - name: Build and push container
+  #       run: |

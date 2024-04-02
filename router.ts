@@ -1,6 +1,7 @@
 import { BagService } from './gen/bag_connect'
 import actionRoutes from './lib/api/actions'
 import appRoutes from './lib/api/apps'
+import botRoutes from './lib/api/bot'
 import identityRoutes from './lib/api/identity'
 import instanceRoutes from './lib/api/instances'
 import itemRoutes from './lib/api/items'
@@ -16,7 +17,8 @@ const routes = [
   instanceRoutes,
   itemRoutes,
   recipeRoutes,
-  tradeRoutes
+  tradeRoutes,
+  botRoutes
 ]
 
 export default (router: ConnectRouter) => {
@@ -26,7 +28,7 @@ export default (router: ConnectRouter) => {
   }
 
   router.rpc(BagService, BagService.methods.verifyKey, async (req, context) => {
-    return await execute(req, async (_, app) => {
+    return await execute('verify-key', req, async (_, app) => {
       if (!app) return { valid: false }
       return { valid: true }
     })

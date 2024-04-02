@@ -481,7 +481,6 @@ message CloseTradeResponse {
 message VerifyKeyRequest {
   int32 appId = 1;
   string key = 2;
-  string 
 }
 
 message VerifyKeyResponse {
@@ -498,7 +497,7 @@ message RunGiveRequest {
 
 message RunGiveResponse {
   optional string response = 1;
-  optional Instance instances = 2;
+  repeated Instance instances = 2;
 }
 
 message RunCraftRequest {
@@ -510,5 +509,5 @@ message RunCraftRequest {
 
 message RunCraftResponse {
   optional string response = 1;
-  optional Instance instance = 2;
+  repeated Instance outputs = 2;
 }

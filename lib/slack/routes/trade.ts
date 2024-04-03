@@ -363,12 +363,6 @@ slack.action('accept-trade', async props => {
       )
     })
 
-    // Do one last check to make sure the trade is allowed
-    for (let trade of closed.initiatorTrades) {
-    }
-    for (let trade of closed.receiverTrades) {
-    }
-
     // Now transfer items
     for (let offer of closed.initiatorTrades) {
       const instance = await prisma.instance.findUnique({
@@ -656,9 +650,7 @@ const tradeDialog = async (
     where: {
       slack: userId
     },
-    include: {
-      inventory: true
-    }
+    include: { inventory: true }
   })
 
   // Check if being used in crafting
@@ -673,9 +665,7 @@ const tradeDialog = async (
   })
 
   const trade = await prisma.trade.findUnique({
-    where: {
-      id: tradeId
-    },
+    where: { id: tradeId },
     include: {
       initiatorTrades: true,
       receiverTrades: true
@@ -685,107 +675,103 @@ const tradeDialog = async (
     trade.initiatorIdentityId === userId ? 'initiatorTrades' : 'receiverTrades'
   const currentTrades = trade[tradeKey]
 
-  let offering = []
+  let offers = []
   let alreadyOffering = []
   let notOffering = []
-  await Promise.all(
-    user.inventory.map(async instance => {
-      // Check if offering
-      const tradeInstance = currentTrades.find(
-        tradeInstance => tradeInstance.instanceId === instance.id
-      )
-      const ref = await prisma.item.findUnique({
-        where: { name: instance.itemId }
-      })
-      const otherTrades = await prisma.trade.findMany({
-        where: {
-          closed: false, // Not closed
-          OR: [
-            { initiatorTrades: { some: { instanceId: instance.id } } },
-            {
-              receiverTrades: { some: { instanceId: instance.id } }
-            }
-          ], // Either in initiatorTrades or receiverTrades
-          NOT: [{ id: tradeId }] // Not this trade
-        },
-        include: {
-          initiatorTrades: true,
-          receiverTrades: true
-        }
-      })
-      let otherOffers = otherTrades
-        .map(offer => ({
-          ...offer,
-          trades: [...offer.initiatorTrades, ...offer.receiverTrades]
-        }))
-        .filter(offer =>
-          offer.trades.find(trade => trade.instanceId === instance.id)
-        )
-      if (tradeInstance) {
-        alreadyOffering.push({
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `x${tradeInstance.quantity} ${ref.reaction} ${ref.name}`
-          },
-          accessory: {
-            type: 'button',
-            text: {
-              type: 'plain_text',
-              text: 'Remove'
-            },
-            value: JSON.stringify({
-              tradeInstanceId: tradeInstance.id,
-              tradeId,
-              ...thread
-            }),
-            action_id: 'remove-trade'
-          }
-        })
-      } else {
-        let quantityLeft = otherOffers.reduce((acc, curr) => {
-          return (
-            acc -
-            curr.trades.find(trade => trade.instanceId === instance.id).quantity
-          )
-        }, instance.quantity)
-        // Check if already using in crafting
-        const inCrafting = crafting?.inputs.find(
-          input => input.instanceId === instance.id
-        )
-        if (inCrafting) {
-          quantityLeft -= inCrafting.quantity
-          notOffering.push(
-            `x${inCrafting.quantity} ${ref.reaction} ${ref.name} being used for crafting `
-          )
-        }
+  for (let instance of user.inventory) {
+    // Check if offering
+    const item = await prisma.item.findUnique({
+      where: { name: instance.itemId }
+    })
 
-        if (quantityLeft)
-          offering.push({
-            text: {
-              type: 'plain_text',
-              text: `x${quantityLeft} ${ref.reaction} ${ref.name}`
-            },
-            value: JSON.stringify({
-              id: instance.id,
-              quantity: quantityLeft
-            })
-          })
-      }
-      for (let offer of otherOffers) {
-        notOffering.push(
-          `x${
-            offer.trades.find(trade => trade.instanceId === instance.id)
-              .quantity
-          } ${ref.reaction} ${ref.name} in trade with <@${
-            offer.initiatorIdentityId === userId
-              ? offer.receiverIdentityId
-              : offer.initiatorIdentityId
-          }>`
-        )
+    const tradeInstance = currentTrades.find(
+      tradeInstance => tradeInstance.instanceId === instance.id
+    )
+    if (tradeInstance) {
+      alreadyOffering.push({
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `x${tradeInstance.quantity} ${item.reaction} ${item.name}`
+        },
+        accessory: {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: 'Remove'
+          },
+          value: JSON.stringify({
+            tradeInstanceId: tradeInstance.id,
+            tradeId,
+            ...thread
+          }),
+          action_id: 'remove-trade'
+        }
+      })
+      continue
+    }
+
+    const trades = await prisma.trade.findMany({
+      where: {
+        closed: false,
+        OR: [
+          { initiatorTrades: { some: { instanceId: instance.id } } },
+          { receiverTrades: { some: { instanceId: instance.id } } }
+        ]
+      },
+      include: {
+        initiatorTrades: true,
+        receiverTrades: true
       }
     })
-  )
+    const otherOffers = trades
+      .map(offer => ({
+        ...offer,
+        trades: [...offer.initiatorTrades, ...offer.receiverTrades]
+      }))
+      .filter(offer =>
+        offer.trades.find(trade => trade.instanceId === instance.id)
+      )
+    let quantityLeft = otherOffers.reduce((acc, curr) => {
+      return (
+        acc -
+        curr.trades.find(trade => trade.instanceId === instance.id).quantity
+      )
+    }, instance.quantity)
+
+    // Check if already using crafting
+    const inCrafting = crafting?.inputs.find(
+      input => input.instanceId === instance.id
+    )
+    if (inCrafting) {
+      quantityLeft = inCrafting.quantity
+      notOffering.push(
+        `x${inCrafting.quantity} ${item.reaction} ${item.name} being used for crafting`
+      )
+    }
+
+    if (quantityLeft)
+      offers.push({
+        text: {
+          type: 'plain_text',
+          text: `x${quantityLeft} ${item.reaction} ${instance.itemId}`
+        },
+        value: JSON.stringify({
+          id: instance.id,
+          quantity: quantityLeft
+        })
+      })
+    for (let offer of otherOffers)
+      notOffering.push(
+        `x${
+          offer.trades.find(trade => trade.instanceId === instance.id).quantity
+        } ${item.reaction} ${item.name} in trade with <@${
+          offer.initiatorIdentityId === user.slack
+            ? offer.receiverIdentityId
+            : offer.initiatorIdentityId
+        }>`
+      )
+  }
 
   let view: View = {
     callback_id: 'add-trade',
@@ -832,7 +818,7 @@ const tradeDialog = async (
             type: 'plain_text',
             text: 'Add an item'
           },
-          options: views.sortDropdown(offering)
+          options: views.sortDropdown(offers)
         },
         label: {
           type: 'plain_text',
@@ -873,167 +859,6 @@ const tradeDialog = async (
       }
     )
   }
-
-  return view
-}
-
-const startTrade = async (
-  giverId: string,
-  receiverId: string,
-  channel: string
-): Promise<View> => {
-  const user = await prisma.identity.findUnique({
-    where: { slack: giverId },
-    include: { inventory: true }
-  })
-
-  // Check if being used in crafting
-  const crafting = await prisma.crafting.findFirst({
-    where: {
-      identityId: user.slack,
-      recipeId: null
-    },
-    include: {
-      inputs: true
-    }
-  })
-
-  let offers = []
-  let notOffering = []
-  await Promise.all(
-    user.inventory.map(async instance => {
-      // Check if already offering in some trade
-      const otherTrades = await prisma.trade.findMany({
-        where: {
-          closed: false, // Not closed
-          OR: [
-            { initiatorTrades: { some: { instanceId: instance.id } } },
-            { receiverTrades: { some: { instanceId: instance.id } } }
-          ] // Either in initiatorTrades or receiverTrades
-        },
-        include: {
-          initiatorTrades: true,
-          receiverTrades: true
-        }
-      })
-      const item = await prisma.item.findUnique({
-        where: { name: instance.itemId }
-      })
-      const otherOffers = otherTrades
-        .map(offer => ({
-          ...offer,
-          trades: [...offer.initiatorTrades, ...offer.receiverTrades]
-        }))
-        .filter(offer =>
-          offer.trades.find(trade => trade.instanceId === instance.id)
-        )
-
-      let quantityLeft = otherOffers.reduce((acc, curr) => {
-        return (
-          acc -
-          curr.trades.find(trade => trade.instanceId === instance.id).quantity
-        )
-      }, instance.quantity)
-      // Check if already using in crafting
-      const inCrafting = crafting?.inputs.find(
-        input => input.instanceId === instance.id
-      )
-      if (inCrafting) {
-        quantityLeft -= inCrafting.quantity
-        notOffering.push(
-          `x${inCrafting.quantity} ${item.reaction} ${item.name} being used for crafting`
-        )
-      }
-
-      if (quantityLeft)
-        offers.push({
-          text: {
-            type: 'plain_text',
-            text: `x${quantityLeft} ${item.reaction} ${instance.itemId}`,
-            emoji: true
-          },
-          value: JSON.stringify({
-            id: instance.id,
-            quantity: quantityLeft
-          })
-        })
-      for (let offer of otherOffers)
-        notOffering.push(
-          `x${
-            offer.trades.find(trade => trade.instanceId === instance.id)
-              .quantity
-          } ${item.reaction} ${item.name} in trade with <@${
-            offer.initiatorIdentityId === user.slack
-              ? offer.receiverIdentityId
-              : offer.initiatorIdentityId
-          }>`
-        )
-    })
-  )
-
-  let view: View = {
-    callback_id: 'start-trade',
-    title: {
-      type: 'plain_text',
-      text: 'Start trade'
-    },
-    submit: {
-      type: 'plain_text',
-      text: 'Start trade'
-    },
-    type: 'modal',
-    private_metadata: JSON.stringify({ receiverId, channel }),
-    blocks: [
-      {
-        type: 'input',
-        element: {
-          action_id: 'instance',
-          type: 'static_select',
-          placeholder: {
-            type: 'plain_text',
-            text: 'Choose a item'
-          },
-          options: views.sortDropdown(offers)
-        },
-        label: {
-          type: 'plain_text',
-          text: 'Choose an initial item'
-        }
-      },
-      {
-        type: 'input',
-        element: {
-          type: 'number_input',
-          is_decimal_allowed: false,
-          action_id: 'quantity',
-          min_value: '1',
-          initial_value: '1'
-        },
-        label: {
-          type: 'plain_text',
-          text: 'Quantity'
-        }
-      }
-    ]
-  }
-
-  if (notOffering.length)
-    view.blocks.push(
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: "Items you own that you're currently using somewhere else:"
-        }
-      },
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: notOffering.join('\n')
-        }
-      }
-    )
 
   return view
 }
@@ -1168,4 +993,161 @@ const showTrade = async (
       elements: actions
     })
   return blocks
+}
+
+const startTrade = async (
+  giverId: string,
+  receiverId: string,
+  channel: string
+): Promise<View> => {
+  const user = await prisma.identity.findUnique({
+    where: { slack: giverId },
+    include: { inventory: true }
+  })
+
+  // Check if being used in crafting
+  const crafting = await prisma.crafting.findFirst({
+    where: {
+      identityId: user.slack,
+      recipeId: null
+    },
+    include: {
+      inputs: true
+    }
+  })
+
+  let offers = []
+  let notOffering = []
+  for (let instance of user.inventory) {
+    const trades = await prisma.trade.findMany({
+      where: {
+        closed: false,
+        OR: [
+          { initiatorTrades: { some: { instanceId: instance.id } } },
+          { receiverTrades: { some: { instanceId: instance.id } } }
+        ]
+      },
+      include: {
+        initiatorTrades: true,
+        receiverTrades: true
+      }
+    })
+    const item = await prisma.item.findUnique({
+      where: { name: instance.itemId }
+    })
+    const otherOffers = trades
+      .map(offer => ({
+        ...offer,
+        trades: [...offer.initiatorTrades, ...offer.receiverTrades]
+      }))
+      .filter(offer =>
+        offer.trades.find(trade => trade.instanceId === instance.id)
+      )
+    let quantityLeft = otherOffers.reduce((acc, curr) => {
+      return (
+        acc -
+        curr.trades.find(trade => trade.instanceId === instance.id).quantity
+      )
+    }, instance.quantity)
+    // Check if already using in crafting
+    const inCrafting = crafting?.inputs.find(
+      input => input.instanceId === instance.id
+    )
+    if (inCrafting) {
+      quantityLeft -= inCrafting.quantity
+      notOffering.push(
+        `x${inCrafting.quantity} ${item.reaction} ${item.name} being used for crafting`
+      )
+    }
+
+    if (quantityLeft)
+      offers.push({
+        text: {
+          type: 'plain_text',
+          text: `x${quantityLeft} ${item.reaction} ${instance.itemId}`,
+          emoji: true
+        },
+        value: JSON.stringify({
+          id: instance.id,
+          quantity: quantityLeft
+        })
+      })
+    for (let offer of otherOffers) {
+      notOffering.push(
+        `x${
+          offer.trades.find(trade => trade.instanceId === instance.id).quantity
+        } ${item.reaction} ${item.name} in trade with <@${
+          offer.initiatorIdentityId === user.slack
+            ? offer.receiverIdentityId
+            : offer.initiatorIdentityId
+        }>`
+      )
+    }
+  }
+
+  let view: View = {
+    callback_id: 'start-trade',
+    title: {
+      type: 'plain_text',
+      text: 'Start trade'
+    },
+    submit: {
+      type: 'plain_text',
+      text: 'Start trade'
+    },
+    type: 'modal',
+    private_metadata: JSON.stringify({ receiverId, channel }),
+    blocks: [
+      {
+        type: 'input',
+        element: {
+          action_id: 'instance',
+          type: 'static_select',
+          placeholder: {
+            type: 'plain_text',
+            text: 'Choose a item'
+          },
+          options: views.sortDropdown(offers)
+        },
+        label: {
+          type: 'plain_text',
+          text: 'Choose an initial item'
+        }
+      },
+      {
+        type: 'input',
+        element: {
+          type: 'number_input',
+          is_decimal_allowed: false,
+          action_id: 'quantity',
+          min_value: '1',
+          initial_value: '1'
+        },
+        label: {
+          type: 'plain_text',
+          text: 'Quantity'
+        }
+      }
+    ]
+  }
+
+  if (notOffering.length)
+    view.blocks.push(
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: "Items you own that you're currently using somewhere else:"
+        }
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: notOffering.join('\n')
+        }
+      }
+    )
+
+  return view
 }

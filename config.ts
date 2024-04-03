@@ -14,6 +14,8 @@ export interface Env {
   APP_KEY: string
   ELASTIC_NODE: string
   ELASTIC_API_TOKEN: string
+  REDIS_PORT: number
+  REDIS_HOST: string
 }
 
 let env: Env = {
@@ -29,7 +31,9 @@ let env: Env = {
   APP_KEY: process.env.APP_KEY,
   SLACK_BOT: process.env.SLACK_BOT ? true : false,
   ELASTIC_NODE: process.env.ELASTIC_NODE,
-  ELASTIC_API_TOKEN: process.env.ELASTIC_API_TOKEN
+  ELASTIC_API_TOKEN: process.env.ELASTIC_API_TOKEN,
+  REDIS_PORT: Number(process.env.REDIS_PORT),
+  REDIS_HOST: process.env.REDIS_HOST
 }
 
 if (Object.values(env).find(val => val === undefined))

@@ -2,7 +2,7 @@ import config from '../../config'
 import { Redis } from 'ioredis'
 
 const redisClient = () => {
-  const redis = new Redis(Number(config.PORT), config.REDIS_HOST, {
+  const redis = new Redis(config.REDIS_PORT, config.REDIS_HOST, {
     maxRetriesPerRequest: 3
   })
 
@@ -45,11 +45,18 @@ declare global {
 
 export const redis = globalThis.redis ?? redisClient()
 
-export const Scheduler = (pollingIntervalInSec: number, taskHandler) => {
+export const ms = (h: number = 0, m: number = 0, s: number = 0) =>
+  (h * 60 * 60 + m * 60 + s) * 1000
+
+export const Scheduler = (
+  pollingInterval: number,
+  taskHandler,
+  cleanupHandler?
+) => {
   let isRunning = false
 
   return {
-    schedule: async (data, timestamp) => {
+    schedule: async (data: object, timestamp: number) => {
       const taskId = await redis.increaseCounter('taskCounter')
       console.log(
         `Scheduled new task with ID ${taskId} and timestamp ${timestamp}`
@@ -60,6 +67,40 @@ export const Scheduler = (pollingIntervalInSec: number, taskHandler) => {
     start: async () => {
       console.log('Started scheduler')
       isRunning = true
+
+      const findNextTask = async () => {
+        const isRedisConnected = await redis.isConnected()
+        if (isRunning && isRedisConnected) {
+          let taskId
+          do {
+            taskId = await redis.getFirstInSortedSet('sortedTasks')
+
+            if (taskId) {
+              console.log(`Found task ${taskId}`)
+              const taskData = JSON.parse(
+                await redis.getString(`task:${taskId}`)
+              )
+              try {
+                console.log(`Passing data for task ${taskId}`, taskData)
+                await taskHandler(taskData)
+              } catch (err) {
+                console.log(err)
+              }
+              await redis.removeString(`task:${taskId}`)
+              await redis.removeFromSortedSet('sortedTasks', taskId)
+              if (cleanupHandler) await cleanupHandler(taskData)
+            }
+          } while (taskId)
+
+          setTimeout(findNextTask, pollingInterval)
+        }
+      }
+
+      findNextTask()
+    },
+    stop: () => {
+      isRunning = false
+      console.log('Stopped scheduler')
     }
   }
 }

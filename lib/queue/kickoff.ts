@@ -3,6 +3,7 @@ import { Scheduler, ms } from './queue'
 import { App } from '@hackclub/bag'
 
 export const scheduler = Scheduler(
+  'kickoff',
   ms(1),
   async ({ slack, day }: { slack: string; day: number }) => {
     const app = await App.connect({

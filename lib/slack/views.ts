@@ -1,3 +1,4 @@
+import { prisma } from '../db'
 import type {
   Block,
   KnownBlock,
@@ -203,6 +204,228 @@ const readFields = (values: {
       fields[Object.keys(field)[0]] = false
   }
   return fields
+}
+
+export const showCrafting = async (
+  userId: string,
+  craftingId: number,
+  thread?: { channel: string; ts: string }
+): Promise<(Block | KnownBlock)[]> => {
+  const crafting = await prisma.crafting.findUnique({
+    where: { id: craftingId },
+    include: {
+      inputs: true,
+      recipe: {
+        include: {
+          inputs: { include: { recipeItem: true } },
+          tools: { include: { recipeItem: true } },
+          outputs: { include: { recipeItem: true } }
+        }
+      }
+    }
+  })
+
+  // find all recipes that includes the inputs as either an input or a tool
+  let blocks: (Block | KnownBlock)[] = []
+  if (crafting.done) {
+    const { recipe } = crafting
+    const outputsFormatted = recipe.outputs
+      .map(
+        output =>
+          `x${output.quantity} ${output.recipeItem.reaction} ${output.recipeItem.name}`
+      )
+      .join(', ')
+    blocks.push({
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `<@${userId}> just crafted ${outputsFormatted}.\n>${crafting.recipe.description}`
+      }
+    })
+  } else {
+    let canMake = []
+    const qualify = (inputs, tools): boolean => {
+      for (let part of [...inputs, ...tools]) {
+        const query = crafting.inputs.find(input => {
+          return (
+            input.recipeItemId === part.recipeItemId &&
+            input.quantity >= part.quantity
+          )
+        })
+        if (!query) return false
+      }
+      return true
+    }
+
+    const inputs = await Promise.all(
+      crafting.inputs.map(async input => {
+        const item = await prisma.item.findUnique({
+          where: { name: input.recipeItemId }
+        })
+
+        let partOf = await prisma.recipe.findMany({
+          where: {
+            OR: [
+              {
+                inputs: { some: { recipeItemId: item.name, instanceId: null } }
+              },
+              { tools: { some: { recipeItemId: item.name, instanceId: null } } }
+            ] // Either in inputs or tools and not being used in crafting,
+          },
+          include: {
+            inputs: { include: { recipeItem: true } },
+            tools: { include: { recipeItem: true } },
+            outputs: { include: { recipeItem: true } }
+          }
+        })
+        partOf = partOf.filter(recipe => {
+          // Exact inputs and tools
+          const inputs = [...recipe.inputs, ...recipe.tools]
+          let covered = []
+          for (let input of inputs) {
+            const index = crafting.inputs.findIndex(
+              instance => instance.recipeItemId === input.recipeItemId
+            )
+            if (index < 0) return false
+            covered.push(index)
+          }
+          if (covered.length !== crafting.inputs.length) return false
+          return true
+        })
+
+        canMake.push(
+          ...partOf.map(recipe => {
+            let inputs = recipe.inputs
+              .map(input => input.recipeItem.reaction.repeat(input.quantity))
+              .join('')
+            let tools = recipe.tools
+              .map(tool => tool.recipeItem.reaction.repeat(tool.quantity))
+              .join('')
+            let outputs = recipe.outputs
+              .map(
+                output =>
+                  `x${output.quantity} ${output.recipeItem.reaction} ${output.recipeItem.name}`
+              )
+              .join(', ')
+            let formatted =
+              inputs +
+              (tools.length ? ' ~ ' + tools : '') +
+              ' *→* ' +
+              outputs +
+              '\n'
+            let block: Block | KnownBlock = {
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text: formatted
+              }
+            }
+            if (qualify(recipe.inputs, recipe.tools))
+              // Check if we have all the inputs and tools, and add craft button
+              block.accessory = {
+                type: 'button',
+                text: {
+                  type: 'plain_text',
+                  text: 'Craft'
+                },
+                value: JSON.stringify({
+                  craftingId,
+                  recipeId: recipe.id,
+                  ...thread
+                }),
+                action_id: 'complete-crafting'
+              }
+            return block
+          })
+        )
+
+        return `x${input.quantity} ${item.reaction} ${item.name}`
+      })
+    )
+
+    blocks.push(
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `<@${userId}> is trying to craft something.`
+        }
+      },
+      inputs.length
+        ? {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text:
+                inputs.length === 1
+                  ? inputs[0]
+                  : inputs.slice(0, inputs.length - 1).join(', ') +
+                    (inputs.length > 2 ? ',' : '') +
+                    ' and ' +
+                    inputs[inputs.length - 1]
+            }
+          }
+        : {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: '_Add something from your inventory to see what you can make with it._'
+            }
+          },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: 'Looks like you can make:'
+        }
+      },
+      ...(canMake.length
+        ? canMake.filter((block, i) => {
+            const index = canMake.findIndex(
+              j => j.text.text === block.text.text
+            )
+            if (index === i) return true
+            return false
+          })
+        : [
+            {
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text: "_You can't make anything with those ingredients._"
+              }
+            } as Block
+          ])
+    )
+  }
+
+  if (!crafting.done)
+    blocks.push({
+      type: 'actions',
+      elements: [
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: 'Edit'
+          },
+          value: JSON.stringify({ craftingId, ...thread }),
+          style: 'primary',
+          action_id: 'edit-crafting'
+        },
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: 'Cancel'
+          },
+          value: JSON.stringify({ craftingId, ...thread }),
+          style: 'danger',
+          action_id: 'cancel-crafting'
+        }
+      ]
+    })
+  return blocks
 }
 
 export default {

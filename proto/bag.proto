@@ -30,10 +30,12 @@ service BagService {
   rpc UpdateAction (UpdateActionRequest) returns (UpdateActionResponse) {}
   rpc DeleteApp(DeleteAppRequest) returns (DeleteAppResponse) {} // Should be able to delete apps as a admin
   rpc DeleteInstance(DeleteInstanceRequest) returns (DeleteInstanceResponse) {}  // Should be able to delete instances that the app has access to
+  rpc DeleteTrade(DeleteTradeRequest) returns (DeleteTradeResponse) {}
   rpc CloseTrade(CloseTradeRequest) returns (CloseTradeResponse) {} // Should be able to close instances that the app has access to
   rpc VerifyKey(VerifyKeyRequest) returns (VerifyKeyResponse) {}
   rpc RunGive(RunGiveRequest) returns (RunGiveResponse) {}
   rpc RunCraft(RunCraftRequest) returns (RunCraftResponse) {}
+  rpc GetCraftStatus(GetCraftStatusRequest) returns (GetCraftStatusResponse) {}
 }
 
 message App {
@@ -120,6 +122,7 @@ message Recipe {
   repeated Skill skills = 5;
   optional bool public = 6;
   optional string description = 7;
+  optional int32 time = 8;
 }
 
 message Action {
@@ -464,6 +467,17 @@ message DeleteInstanceResponse {
   optional Instance deletedInstance = 2;
 }
 
+message DeleteTradeRequest {
+  int32 appId = 1;
+  string key = 2;
+  int32 tradeId = 3;
+}
+
+message DeleteTradeResponse {
+  optional string response = 1;
+  optional Trade deletedTrade = 2;
+}
+
 message CloseTradeRequest {
   int32 appId = 1;
   string key = 2;
@@ -505,9 +519,21 @@ message RunCraftRequest {
   string key = 2;
   string identityId = 3;
   int32 recipeId = 4;
+  optional string callbackUrl = 5;
 }
 
 message RunCraftResponse {
   optional string response = 1;
-  repeated Instance outputs = 2;
+  optional int32 time = 2;
+}
+
+message GetCraftStatusRequest {
+  int32 appId = 1;
+  string key = 2;
+  string identityId = 3;
+}
+
+message GetCraftStatusResponse {
+  optional string response = 1;
+  optional bool crafting = 2;
 }

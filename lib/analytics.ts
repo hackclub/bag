@@ -20,22 +20,26 @@ export const log = async (
   document: object,
   update = false
 ) => {
-  if (!(await elastic.indices.exists({ index })))
-    await elastic.indices.create({ index })
-  if (update)
-    return await elastic.update({
-      index,
+  try {
+    if (!(await elastic.indices.exists({ index })))
+      await elastic.indices.create({ index })
+    if (update)
+      return await elastic.update({
+        index: `bag-${index}`,
+        id,
+        doc_as_upsert: true,
+        doc: document
+      })
+    return await elastic.index({
+      index: `bag-${index}`,
       id,
-      doc_as_upsert: true,
-      doc: document
+      document: {
+        ...document,
+        date: dayjs(Date.now()).format('MM-DD-YYYY'),
+        timestamp: dayjs(Date.now()).format('MM-DD-YYYY HH:mm:ss')
+      }
     })
-  return await elastic.index({
-    index,
-    id,
-    document: {
-      ...document,
-      date: dayjs(Date.now()).format('MM-DD-YYYY'),
-      timestamp: dayjs(Date.now()).format('MM-DD-YYYY HH:mm:ss')
-    }
-  })
+  } catch (error) {
+    console.log('Analytics error:', error.toString())
+  }
 }

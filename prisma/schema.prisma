@@ -130,6 +130,7 @@ model Crafting {
   recipe     Recipe?      @relation(fields: [recipeId], references: [id])
   channel    String?
   ts         String?
+  done       Boolean      @default(false)
 }
 
 model RecipeItem {
@@ -154,6 +155,7 @@ model Recipe {
   public      Boolean      @default(true)
   crafted     Crafting[]
   description String?
+  time        Int          @default(1800000)
 }
 
 model Action {

@@ -225,9 +225,12 @@ slack.view('request-specific-perms', async props => {
 
     let fields: any = {}
     for (let field of Object.values(props.view.state.values)) {
-      fields[Object.keys(field)[0]] = Object.values(
-        field
-      )[0].selected_options.map(option => option.value)
+      if (Object.keys(field).includes('users'))
+        fields.users = field.users.selected_users
+      else
+        fields[Object.keys(field)[0]] = Object.values(
+          field
+        )[0].selected_options.map(option => option.value)
     }
 
     // Specific items
@@ -248,7 +251,8 @@ slack.view('request-specific-perms', async props => {
     await props.client.chat.postMessage({
       channel: channels.approvals,
       blocks: await approveOrDenySpecific(props.context.userId, app, {
-        specificItems
+        specificItems,
+        specificUsers: fields.users
       })
     })
   })
@@ -261,8 +265,29 @@ slack.action('approve-specific-perms', async props => {
 
     const updated = await prisma.app.update({
       where: { id: id },
-      data: { ...options }
+      data: { specificItems: options.specificItems }
     })
+
+    const users = await prisma.identity.findMany({
+      where: { specificApps: { has: id } }
+    })
+
+    if (options.specificUsers)
+      for (let user of options.specificUsers) {
+        const search = users.findIndex(prev => prev.slack === user)
+        if (search < 0)
+          await prisma.identity.update({
+            where: { slack: user },
+            data: { specificApps: { push: id } }
+          })
+        else users.splice(search, 1)
+      }
+
+    for (let remove of users)
+      await prisma.identity.update({
+        where: { slack: remove.slack },
+        data: { specificApps: remove.specificApps.filter(app => app !== id) }
+      })
 
     await props.respond(
       `Specific permissions for app *${updated.name}* approved.`
@@ -382,6 +407,7 @@ const approveOrDenySpecific = async (
   app: App,
   options: {
     specificItems: string[]
+    specificUsers: string[]
   }
 ): Promise<(Block | KnownBlock)[]> => {
   const items = await Promise.all(
@@ -390,6 +416,7 @@ const approveOrDenySpecific = async (
       return `${item.reaction} ${item.name}`
     })
   )
+  const users = options.specificUsers.map(user => `<@${user}>`)
   return [
     {
       type: 'section',
@@ -397,9 +424,9 @@ const approveOrDenySpecific = async (
         type: 'mrkdwn',
         text: `*${app.name}* (an app) just asked for ${
           app.permissions
-        } permissions to the following:\n\nItems: ${items.join(
+        } permissions to the following:\n\n*Items*: ${items.join(
           ', '
-        )}\n\nApprove or deny:`
+        )}\n\n*Users*: ${users.join(', ')}\n\nApprove or deny:`
       }
     },
     {
@@ -440,6 +467,13 @@ const approveOrDenySpecific = async (
 const editSpecificPermissions = async (app: App): Promise<View> => {
   // TODO: specificRecipes, way to give other apps permission to this app
   const items = await prisma.item.findMany({ where: { public: true } })
+  const users = (
+    await prisma.identity.findMany({
+      where: {
+        specificApps: { has: app.id }
+      }
+    })
+  ).map(user => user.slack)
   return {
     callback_id: 'request-specific-perms',
     private_metadata: JSON.stringify({ id: app.id }),
@@ -482,7 +516,29 @@ const editSpecificPermissions = async (app: App): Promise<View> => {
           label: { type: 'plain_text', text: 'Specific items' },
           optional: true
         }
-      )
+      ),
+      {
+        type: 'input',
+        element: {
+          type: 'multi_users_select',
+          placeholder: {
+            type: 'plain_text',
+            text: 'Specific users'
+          },
+          action_id: 'users',
+          initial_users: users
+        },
+        optional: true,
+        label: {
+          type: 'plain_text',
+          text: 'Specific users',
+          emoji: true
+        },
+        hint: {
+          type: 'plain_text',
+          text: 'These are users you have permissions to run /give for.'
+        }
+      }
     ]
   }
 }

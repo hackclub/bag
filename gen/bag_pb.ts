@@ -618,6 +618,11 @@ export class Recipe extends Message<Recipe> {
    */
   description?: string;
 
+  /**
+   * @generated from field: optional int32 time = 8;
+   */
+  time?: number;
+
   constructor(data?: PartialMessage<Recipe>) {
     super();
     proto3.util.initPartial(data, this);
@@ -633,6 +638,7 @@ export class Recipe extends Message<Recipe> {
     { no: 5, name: "skills", kind: "message", T: Skill, repeated: true },
     { no: 6, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 7, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 8, name: "time", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Recipe {
@@ -3435,6 +3441,98 @@ export class DeleteInstanceResponse extends Message<DeleteInstanceResponse> {
 }
 
 /**
+ * @generated from message bag.DeleteTradeRequest
+ */
+export class DeleteTradeRequest extends Message<DeleteTradeRequest> {
+  /**
+   * @generated from field: int32 appId = 1;
+   */
+  appId = 0;
+
+  /**
+   * @generated from field: string key = 2;
+   */
+  key = "";
+
+  /**
+   * @generated from field: int32 tradeId = 3;
+   */
+  tradeId = 0;
+
+  constructor(data?: PartialMessage<DeleteTradeRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bag.DeleteTradeRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "tradeId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteTradeRequest {
+    return new DeleteTradeRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteTradeRequest {
+    return new DeleteTradeRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteTradeRequest {
+    return new DeleteTradeRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteTradeRequest | PlainMessage<DeleteTradeRequest> | undefined, b: DeleteTradeRequest | PlainMessage<DeleteTradeRequest> | undefined): boolean {
+    return proto3.util.equals(DeleteTradeRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message bag.DeleteTradeResponse
+ */
+export class DeleteTradeResponse extends Message<DeleteTradeResponse> {
+  /**
+   * @generated from field: optional string response = 1;
+   */
+  response?: string;
+
+  /**
+   * @generated from field: optional bag.Trade deletedTrade = 2;
+   */
+  deletedTrade?: Trade;
+
+  constructor(data?: PartialMessage<DeleteTradeResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bag.DeleteTradeResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "deletedTrade", kind: "message", T: Trade, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteTradeResponse {
+    return new DeleteTradeResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteTradeResponse {
+    return new DeleteTradeResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteTradeResponse {
+    return new DeleteTradeResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteTradeResponse | PlainMessage<DeleteTradeResponse> | undefined, b: DeleteTradeResponse | PlainMessage<DeleteTradeResponse> | undefined): boolean {
+    return proto3.util.equals(DeleteTradeResponse, a, b);
+  }
+}
+
+/**
  * @generated from message bag.CloseTradeRequest
  */
 export class CloseTradeRequest extends Message<CloseTradeRequest> {
@@ -3752,6 +3850,11 @@ export class RunCraftRequest extends Message<RunCraftRequest> {
    */
   recipeId = 0;
 
+  /**
+   * @generated from field: optional string callbackUrl = 5;
+   */
+  callbackUrl?: string;
+
   constructor(data?: PartialMessage<RunCraftRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3764,6 +3867,7 @@ export class RunCraftRequest extends Message<RunCraftRequest> {
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "identityId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "recipeId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 5, name: "callbackUrl", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RunCraftRequest {
@@ -3793,9 +3897,9 @@ export class RunCraftResponse extends Message<RunCraftResponse> {
   response?: string;
 
   /**
-   * @generated from field: repeated bag.Instance outputs = 2;
+   * @generated from field: optional int32 time = 2;
    */
-  outputs: Instance[] = [];
+  time?: number;
 
   constructor(data?: PartialMessage<RunCraftResponse>) {
     super();
@@ -3806,7 +3910,7 @@ export class RunCraftResponse extends Message<RunCraftResponse> {
   static readonly typeName = "bag.RunCraftResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 2, name: "outputs", kind: "message", T: Instance, repeated: true },
+    { no: 2, name: "time", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RunCraftResponse {
@@ -3823,6 +3927,98 @@ export class RunCraftResponse extends Message<RunCraftResponse> {
 
   static equals(a: RunCraftResponse | PlainMessage<RunCraftResponse> | undefined, b: RunCraftResponse | PlainMessage<RunCraftResponse> | undefined): boolean {
     return proto3.util.equals(RunCraftResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message bag.GetCraftStatusRequest
+ */
+export class GetCraftStatusRequest extends Message<GetCraftStatusRequest> {
+  /**
+   * @generated from field: int32 appId = 1;
+   */
+  appId = 0;
+
+  /**
+   * @generated from field: string key = 2;
+   */
+  key = "";
+
+  /**
+   * @generated from field: string identityId = 3;
+   */
+  identityId = "";
+
+  constructor(data?: PartialMessage<GetCraftStatusRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bag.GetCraftStatusRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "identityId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetCraftStatusRequest {
+    return new GetCraftStatusRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetCraftStatusRequest {
+    return new GetCraftStatusRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetCraftStatusRequest {
+    return new GetCraftStatusRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetCraftStatusRequest | PlainMessage<GetCraftStatusRequest> | undefined, b: GetCraftStatusRequest | PlainMessage<GetCraftStatusRequest> | undefined): boolean {
+    return proto3.util.equals(GetCraftStatusRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message bag.GetCraftStatusResponse
+ */
+export class GetCraftStatusResponse extends Message<GetCraftStatusResponse> {
+  /**
+   * @generated from field: optional string response = 1;
+   */
+  response?: string;
+
+  /**
+   * @generated from field: optional bool crafting = 2;
+   */
+  crafting?: boolean;
+
+  constructor(data?: PartialMessage<GetCraftStatusResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bag.GetCraftStatusResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "crafting", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetCraftStatusResponse {
+    return new GetCraftStatusResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetCraftStatusResponse {
+    return new GetCraftStatusResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetCraftStatusResponse {
+    return new GetCraftStatusResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetCraftStatusResponse | PlainMessage<GetCraftStatusResponse> | undefined, b: GetCraftStatusResponse | PlainMessage<GetCraftStatusResponse> | undefined): boolean {
+    return proto3.util.equals(GetCraftStatusResponse, a, b);
   }
 }
 

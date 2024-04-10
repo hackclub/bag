@@ -49,6 +49,7 @@ export const ms = (h: number = 0, m: number = 0, s: number = 0) =>
   (h * 60 * 60 + m * 60 + s) * 1000
 
 export const Scheduler = (
+  id: string,
   pollingInterval: number,
   taskHandler,
   cleanupHandler?
@@ -61,8 +62,8 @@ export const Scheduler = (
       console.log(
         `Scheduled new task with ID ${taskId} and timestamp ${timestamp}`
       )
-      await redis.setString(`task:${taskId}`, JSON.stringify(data))
-      await redis.addToSortedSet('sortedTasks', taskId, timestamp)
+      await redis.setString(taskId, JSON.stringify(data))
+      await redis.addToSortedSet(id, taskId, timestamp)
     },
     start: async () => {
       console.log('Started scheduler')
@@ -73,22 +74,26 @@ export const Scheduler = (
         if (isRunning && isRedisConnected) {
           let taskId
           do {
-            taskId = await redis.getFirstInSortedSet('sortedTasks')
+            taskId = await redis.getFirstInSortedSet(id)
 
             if (taskId) {
               console.log(`Found task ${taskId}`)
-              const taskData = JSON.parse(
-                await redis.getString(`task:${taskId}`)
-              )
+              const taskData = JSON.parse(await redis.getString(taskId))
               try {
                 console.log(`Passing data for task ${taskId}`, taskData)
-                await taskHandler(taskData)
+                await taskHandler(taskData, taskId)
               } catch (err) {
                 console.log(err)
               }
-              await redis.removeString(`task:${taskId}`)
-              await redis.removeFromSortedSet('sortedTasks', taskId)
-              if (cleanupHandler) await cleanupHandler(taskData)
+              await redis.removeString(taskId)
+              await redis.removeFromSortedSet(id, taskId)
+              if (cleanupHandler) {
+                try {
+                  await cleanupHandler(taskData, taskId)
+                } catch (err) {
+                  console.log('cleanupHandler error: ', err)
+                }
+              }
             }
           } while (taskId)
 

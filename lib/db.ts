@@ -65,7 +65,7 @@ export const craft = async (
 
   const updated = await prisma.crafting.update({
     where: { id: craftingId },
-    data: { recipeId },
+    data: { recipeId, done: true },
     include: {
       recipe: {
         include: {

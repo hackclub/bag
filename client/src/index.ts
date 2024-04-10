@@ -364,6 +364,17 @@ export class App {
     ).deletedInstance
   }
 
+  async deleteTrade(
+    request: RecursivePartial<methods.DeleteTradeResponse>
+  ): Promise<methods.Trade> {
+    return App.format(
+      await this.client.deleteTrade({
+        ...this.request,
+        ...request
+      })
+    ).deletedTrade
+  }
+
   async closeTrade(
     request: RecursivePartial<methods.CloseTradeRequest>
   ): Promise<methods.Trade> {
@@ -388,13 +399,24 @@ export class App {
 
   async runCraft(
     request: RecursivePartial<methods.RunCraftRequest>
-  ): Promise<methods.Instance[]> {
+  ): Promise<number> {
     return App.format(
       await this.client.runCraft({
         ...this.request,
         ...request
       })
-    ).outputs
+    ).time
+  }
+
+  async getCraftStatus(
+    request: RecursivePartial<methods.GetCraftStatusRequest>
+  ): Promise<boolean> {
+    return App.format(
+      await this.client.getCraftStatus({
+        ...this.request,
+        ...request
+      })
+    ).done
   }
 }
 

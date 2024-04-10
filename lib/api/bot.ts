@@ -1,6 +1,6 @@
-// Extra routes intended to replace humans
 import { BagService } from '../../gen/bag_connect'
 import { craft, findOrCreateIdentity, prisma } from '../db'
+import { scheduler } from '../queue/craft'
 import { execute } from './routing'
 import { type ConnectRouter } from '@connectrpc/connect'
 import { PermissionLevels, type Instance } from '@prisma/client'
@@ -9,13 +9,11 @@ export default (router: ConnectRouter) => {
   router.rpc(BagService, BagService.methods.runGive, async req => {
     return await execute('run-give', req, async (req, app) => {
       // Check if API has access to edit identity's items
-      const giver = await prisma.identity.findUnique({
-        where: {
-          slack: req.giverId,
-          specificApps: { has: app.id }
-        }
-      })
-      if (!giver && app.permissions !== PermissionLevels.ADMIN)
+      const giver = await findOrCreateIdentity(req.giverId)
+      if (
+        !giver.specificApps.find(id => id === app.id) &&
+        app.permissions !== PermissionLevels.ADMIN
+      )
         throw new Error(
           'Invalid permissions. Request permissions in Slack with /bot <name>.'
         )
@@ -155,8 +153,31 @@ export default (router: ConnectRouter) => {
         })
       }
 
+      scheduler.schedule(
+        {
+          slack: identity.slack,
+          craftingId: crafting.id,
+          callbackUrl: req.callbackUrl,
+          time: recipe.time
+        },
+        new Date().getTime()
+      )
+
+      return { time: recipe.time }
+    })
+  })
+
+  router.rpc(BagService, BagService.methods.getCraftStatus, async req => {
+    return await execute('run-craft', req, async req => {
       return {
-        outputs: await craft(identity.slack, crafting.id, req.recipeId)
+        crafting: (await prisma.crafting.findFirst({
+          where: {
+            identityId: req.identityId,
+            done: false
+          }
+        }))
+          ? true
+          : false
       }
     })
   })

@@ -517,6 +517,104 @@ slack.action('accept-trade', async props => {
   })
 })
 
+slack.action('accept-trade', async props => {
+  await execute(props, async props => {
+    // Close trade, transfer items between users
+    // @ts-expect-error
+    let { tradeId, channel, ts } = JSON.parse(props.action.value)
+    let trade = await prisma.trade.findUnique({
+      where: { id: Number(tradeId) }
+    })
+
+    if (
+      ![trade.initiatorIdentityId, trade.receiverIdentityId].includes(
+        props.body.user.id
+      )
+    )
+      return await props.respond({
+        response_type: 'ephemeral',
+        replace_original: false,
+        text: "Woah woah woah! You're not a party to that trade."
+      })
+
+    const tradeKey =
+      props.body.user.id === trade.initiatorIdentityId
+        ? 'initiatorAgreed'
+        : 'receiverAgreed'
+    trade = await prisma.trade.update({
+      where: { id: tradeId },
+      data: {
+        [tradeKey]: true
+      }
+    })
+
+    // Make sure both sides have agreed
+    if (!trade.initiatorAgreed || !trade.receiverAgreed) {
+      await props.respond({
+        response_type: 'ephemeral',
+        replace_original: false,
+        text: `Cool! Waiting for <@${
+          props.body.user.id === trade.initiatorIdentityId
+            ? trade.receiverIdentityId
+            : trade.initiatorIdentityId
+        }> to confirm.`
+      })
+      try {
+        // @ts-expect-error
+        await props.client.chat.postEphemeral({
+          channel,
+          ts,
+          user:
+            props.body.user.id === trade.initiatorIdentityId
+              ? trade.receiverIdentityId
+              : trade.initiatorIdentityId,
+          text: `<@${props.body.user.id}> just confirmed the trade and is waiting for you to confirm or decline.`
+        })
+      } catch {}
+      // @ts-expect-error
+      return await props.client.chat.update({
+        channel,
+        ts,
+        blocks: await showTrade(
+          trade.initiatorIdentityId,
+          trade.receiverIdentityId,
+          trade.id,
+          { channel, ts }
+        )
+      })
+    }
+
+    // If both sides have agreed, close the trade
+    const closed = await prisma.trade.update({
+      where: { id: tradeId },
+      data: { closed: true },
+      include: { initiatorTrades: true, receiverTrades: true }
+    })
+
+    let initiator = await prisma.identity.findUnique({
+      where: { slack: trade.initiatorIdentityId },
+      include: { inventory: true }
+    })
+    let receiver = await prisma.identity.findUnique({
+      where: { slack: trade.receiverIdentityId },
+      include: { inventory: true }
+    })
+
+    // @ts-expect-error
+    await props.client.chat.update({
+      channel,
+      ts,
+      blocks: await showTrade(
+        initiator.slack,
+        receiver.slack,
+        trade.id,
+        { channel, ts },
+        true
+      )
+    })
+  })
+})
+
 slack.action('remove-trade', async props => {
   return await execute(props, async props => {
     // Remove from the trade

@@ -130,7 +130,7 @@ export class App {
         ...this.request,
         ...request
       })
-    ).trade
+    )
   }
 
   async createAction(
@@ -232,6 +232,17 @@ export class App {
     ).trade
   }
 
+  async getTrades(
+    request: RecursivePartial<methods.GetTradesRequest>
+  ): Promise<methods.Trade[]> {
+    return App.format(
+      await this.client.getTrades({
+        ...this.request,
+        ...request
+      })
+    ).trades
+  }
+
   async getRecipes(
     request: RecursivePartial<methods.GetRecipesRequest>
   ): Promise<methods.Recipe[]> {
@@ -317,7 +328,7 @@ export class App {
         ...this.request,
         ...request
       })
-    ).trade
+    ).initiated
   }
 
   async updateRecipe(
@@ -383,7 +394,7 @@ export class App {
         ...this.request,
         ...request
       })
-    ).trade
+    ).initiated
   }
 
   async runGive(

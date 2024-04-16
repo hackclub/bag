@@ -52,6 +52,8 @@ export const scheduler = Scheduler(
         break
       }
     }
+
+    return true
   },
   async ({ slack, day }: { slack: string; day: number }) => {
     if (day !== 5) {

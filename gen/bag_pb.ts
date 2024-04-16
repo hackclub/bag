@@ -1349,7 +1349,12 @@ export class CreateTradeRequest extends Message<CreateTradeRequest> {
   receiver = "";
 
   /**
-   * @generated from field: optional bool public = 5;
+   * @generated from field: optional string callbackUrl = 5;
+   */
+  callbackUrl?: string;
+
+  /**
+   * @generated from field: optional bool public = 6;
    */
   public?: boolean;
 
@@ -1365,7 +1370,8 @@ export class CreateTradeRequest extends Message<CreateTradeRequest> {
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "initiator", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "receiver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 5, name: "callbackUrl", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 6, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateTradeRequest {
@@ -1395,9 +1401,9 @@ export class CreateTradeResponse extends Message<CreateTradeResponse> {
   response?: string;
 
   /**
-   * @generated from field: optional bag.Trade trade = 2;
+   * @generated from field: optional bool initiated = 2;
    */
-  trade?: Trade;
+  initiated?: boolean;
 
   constructor(data?: PartialMessage<CreateTradeResponse>) {
     super();
@@ -1408,7 +1414,7 @@ export class CreateTradeResponse extends Message<CreateTradeResponse> {
   static readonly typeName = "bag.CreateTradeResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 2, name: "trade", kind: "message", T: Trade, opt: true },
+    { no: 2, name: "initiated", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateTradeResponse {
@@ -2185,9 +2191,9 @@ export class GetTradeRequest extends Message<GetTradeRequest> {
   key = "";
 
   /**
-   * @generated from field: int32 tradeId = 3;
+   * @generated from field: bag.Trade query = 3;
    */
-  tradeId = 0;
+  query?: Trade;
 
   constructor(data?: PartialMessage<GetTradeRequest>) {
     super();
@@ -2199,7 +2205,7 @@ export class GetTradeRequest extends Message<GetTradeRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "tradeId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 3, name: "query", kind: "message", T: Trade },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetTradeRequest {
@@ -2259,6 +2265,98 @@ export class GetTradeResponse extends Message<GetTradeResponse> {
 
   static equals(a: GetTradeResponse | PlainMessage<GetTradeResponse> | undefined, b: GetTradeResponse | PlainMessage<GetTradeResponse> | undefined): boolean {
     return proto3.util.equals(GetTradeResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message bag.GetTradesRequest
+ */
+export class GetTradesRequest extends Message<GetTradesRequest> {
+  /**
+   * @generated from field: int32 appId = 1;
+   */
+  appId = 0;
+
+  /**
+   * @generated from field: string key = 2;
+   */
+  key = "";
+
+  /**
+   * @generated from field: bag.Trade query = 3;
+   */
+  query?: Trade;
+
+  constructor(data?: PartialMessage<GetTradesRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bag.GetTradesRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "query", kind: "message", T: Trade },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetTradesRequest {
+    return new GetTradesRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetTradesRequest {
+    return new GetTradesRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetTradesRequest {
+    return new GetTradesRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetTradesRequest | PlainMessage<GetTradesRequest> | undefined, b: GetTradesRequest | PlainMessage<GetTradesRequest> | undefined): boolean {
+    return proto3.util.equals(GetTradesRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message bag.GetTradesResponse
+ */
+export class GetTradesResponse extends Message<GetTradesResponse> {
+  /**
+   * @generated from field: optional string response = 1;
+   */
+  response?: string;
+
+  /**
+   * @generated from field: repeated bag.Trade trades = 2;
+   */
+  trades: Trade[] = [];
+
+  constructor(data?: PartialMessage<GetTradesResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bag.GetTradesResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "trades", kind: "message", T: Trade, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetTradesResponse {
+    return new GetTradesResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetTradesResponse {
+    return new GetTradesResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetTradesResponse {
+    return new GetTradesResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetTradesResponse | PlainMessage<GetTradesResponse> | undefined, b: GetTradesResponse | PlainMessage<GetTradesResponse> | undefined): boolean {
+    return proto3.util.equals(GetTradesResponse, a, b);
   }
 }
 
@@ -2984,6 +3082,11 @@ export class UpdateTradeRequest extends Message<UpdateTradeRequest> {
    */
   remove: Instance[] = [];
 
+  /**
+   * @generated from field: optional string callbackUrl = 7;
+   */
+  callbackUrl?: string;
+
   constructor(data?: PartialMessage<UpdateTradeRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2998,6 +3101,7 @@ export class UpdateTradeRequest extends Message<UpdateTradeRequest> {
     { no: 4, name: "identityId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "add", kind: "message", T: Instance, repeated: true },
     { no: 6, name: "remove", kind: "message", T: Instance, repeated: true },
+    { no: 7, name: "callbackUrl", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateTradeRequest {
@@ -3027,9 +3131,9 @@ export class UpdateTradeResponse extends Message<UpdateTradeResponse> {
   response?: string;
 
   /**
-   * @generated from field: optional bag.Trade trade = 2;
+   * @generated from field: optional bool initiated = 2;
    */
-  trade?: Trade;
+  initiated?: boolean;
 
   constructor(data?: PartialMessage<UpdateTradeResponse>) {
     super();
@@ -3040,7 +3144,7 @@ export class UpdateTradeResponse extends Message<UpdateTradeResponse> {
   static readonly typeName = "bag.UpdateTradeResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 2, name: "trade", kind: "message", T: Trade, opt: true },
+    { no: 2, name: "initiated", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateTradeResponse {
@@ -3552,9 +3656,14 @@ export class CloseTradeRequest extends Message<CloseTradeRequest> {
   tradeId = 0;
 
   /**
-   * @generated from field: bool cancel = 4;
+   * @generated from field: optional bool cancel = 4;
    */
-  cancel = false;
+  cancel?: boolean;
+
+  /**
+   * @generated from field: optional string callbackUrl = 5;
+   */
+  callbackUrl?: string;
 
   constructor(data?: PartialMessage<CloseTradeRequest>) {
     super();
@@ -3567,7 +3676,8 @@ export class CloseTradeRequest extends Message<CloseTradeRequest> {
     { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "tradeId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 4, name: "cancel", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "cancel", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 5, name: "callbackUrl", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CloseTradeRequest {
@@ -3597,19 +3707,9 @@ export class CloseTradeResponse extends Message<CloseTradeResponse> {
   response?: string;
 
   /**
-   * @generated from field: optional bag.Trade trade = 2;
+   * @generated from field: optional bool initiated = 2;
    */
-  trade?: Trade;
-
-  /**
-   * @generated from field: optional bag.Identity initiator = 3;
-   */
-  initiator?: Identity;
-
-  /**
-   * @generated from field: optional bag.Identity receiver = 4;
-   */
-  receiver?: Identity;
+  initiated?: boolean;
 
   constructor(data?: PartialMessage<CloseTradeResponse>) {
     super();
@@ -3620,9 +3720,7 @@ export class CloseTradeResponse extends Message<CloseTradeResponse> {
   static readonly typeName = "bag.CloseTradeResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 2, name: "trade", kind: "message", T: Trade, opt: true },
-    { no: 3, name: "initiator", kind: "message", T: Identity, opt: true },
-    { no: 4, name: "receiver", kind: "message", T: Identity, opt: true },
+    { no: 2, name: "initiated", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CloseTradeResponse {

@@ -76,18 +76,19 @@ export const Scheduler = (
           do {
             taskId = await redis.getFirstInSortedSet(id)
 
+            let cleanup = false
             if (taskId) {
               console.log(`Found task ${taskId}`)
               const taskData = JSON.parse(await redis.getString(taskId))
               try {
                 console.log(`Passing data for task ${taskId}`, taskData)
-                await taskHandler(taskData, taskId)
+                cleanup = await taskHandler(taskData, taskId)
               } catch (err) {
                 console.log(err)
               }
               await redis.removeString(taskId)
               await redis.removeFromSortedSet(id, taskId)
-              if (cleanupHandler) {
+              if (cleanup && cleanupHandler) {
                 try {
                   await cleanupHandler(taskData, taskId)
                 } catch (err) {

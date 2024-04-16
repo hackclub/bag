@@ -51,7 +51,7 @@ export const scheduler = Scheduler(
       }
     })
 
-    if (!crafting) return
+    if (!crafting) return false
 
     if (current >= time) {
       // Time's up! Craft the item and notify the user
@@ -61,11 +61,12 @@ export const scheduler = Scheduler(
           ...thread,
           blocks: await showCrafting(slack, craftingId, thread)
         })
-        return web.client.chat.postEphemeral({
+        web.client.chat.postEphemeral({
           ...thread,
           user: slack,
           text: `<@${slack}> crafting completed!`
         })
+        return false
       } else if (callbackUrl) {
         // Fetch callback
         try {
@@ -101,7 +102,7 @@ export const scheduler = Scheduler(
         )
         .join(', ')
 
-      return await web.client.chat.update({
+      await web.client.chat.update({
         ...thread,
         blocks: [
           {
@@ -140,6 +141,7 @@ export const scheduler = Scheduler(
           }
         ]
       })
+      return true
     }
   },
   async (craft: {

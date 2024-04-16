@@ -1,10 +1,12 @@
 import { log } from '../../analytics'
-import { findOrCreateIdentity } from '../../db'
+import { TradeWithTrades, findOrCreateIdentity } from '../../db'
 import { prisma } from '../../db'
+import { mappedPermissionValues } from '../../permissions'
 import { channelBlacklist, userRegex, channels } from '../../utils'
 import slack, { execute } from '../slack'
 import views from '../views'
 import { Block, Button, KnownBlock, View } from '@slack/bolt'
+import { exec } from 'child_process'
 
 slack.command('/trade', async props => {
   await execute(props, async props => {
@@ -736,6 +738,553 @@ slack.view('add-trade', async props => {
         { channel, ts }
       )
     })
+  })
+})
+
+// Bot routes
+slack.action('bot-decline-trade', async props => {
+  await execute(props, async props => {
+    // @ts-expect-error
+    const { req, id, thread } = JSON.parse(props.action.value)
+
+    await props.say('Trade declined.')
+
+    // @ts-expect-error
+    await props.client.chat.delete({
+      ...thread
+    })
+
+    if (req.callbackUrl)
+      await fetch(req.callbackUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ error: 'Trade declined' })
+      })
+  })
+})
+
+slack.action('bot-decline-update-trade', async props => {
+  await execute(props, async props => {
+    // @ts-expect-error
+    const { req, id } = JSON.parse(props.action.value)
+
+    if (req.callbackUrl)
+      await fetch(req.callbackUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ error: 'Trade update declined' })
+      })
+  })
+})
+
+slack.action('bot-create-trade', async props => {
+  await execute(props, async props => {
+    // @ts-expect-error
+    const { req, id } = JSON.parse(props.action.value)
+
+    // Search for a trade first
+    let trade = await prisma.trade.findFirst({
+      where: {
+        initiatorIdentityId: req.initator,
+        receiverIdentityId: req.receiver,
+        approved: false
+      }
+    })
+
+    if (trade) {
+      // Already exists - approve trade!
+      await prisma.trade.update({
+        where: { id: trade.id },
+        data: {
+          approved: true
+        }
+      })
+    } else {
+      await props.say('Awesome!')
+      return await prisma.trade.create({
+        data: {
+          initiatorIdentityId: req.initiator,
+          receiverIdentityId: req.receiver,
+          public: req.public ? req.public : false,
+          approved: false
+        }
+      })
+    }
+
+    const app = await prisma.app.findUnique({
+      where: { id }
+    })
+
+    if (
+      mappedPermissionValues[app.permissions] <=
+      mappedPermissionValues.WRITE_SPECIFIC
+    )
+      await prisma.app.update({
+        where: { id: app.id },
+        data: { specificTrades: { push: trade.id } }
+      })
+
+    if (req.callbackUrl) {
+      try {
+        await fetch(req.callbackUrl, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ trade })
+        })
+      } catch {}
+    }
+  })
+})
+
+slack.action('bot-close-trade', async props => {
+  await execute(props, async props => {
+    // @ts-expect-error
+    const { req, id } = JSON.parse(props.action.value)
+
+    const app = await prisma.app.findUnique({
+      where: { id }
+    })
+
+    let trade: TradeWithTrades = await prisma.trade.findUnique({
+      where: { id: req.tradeId },
+      include: { initiatorTrades: true, receiverTrades: true }
+    })
+    if (
+      mappedPermissionValues[app.permissions] <=
+        mappedPermissionValues.WRITE_SPECIFIC &&
+      !app.specificTrades.find(tradeId => tradeId === trade.id)
+    ) {
+      if (req.callbackUrl) {
+        // Throw error to callbackUrl
+        try {
+          await fetch(req.callbackUrl, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ error: 'Trade not found' })
+          })
+        } catch {}
+      }
+      return
+    }
+
+    // Make sure both sides have approved
+    trade = await prisma.trade.update({
+      where: { id: trade.id },
+      data: {
+        [props.body.user.id === trade.initiatorIdentityId
+          ? 'initiatorAgreed'
+          : 'receiverAgreed']: true
+      },
+      include: { initiatorTrades: true, receiverTrades: true }
+    })
+
+    console.log('updated trade: ', trade)
+
+    if (!trade.initiatorAgreed || !trade.receiverAgreed)
+      return await props.respond(
+        'Awesome! Waiting for the other side to accept.'
+      )
+
+    // Transfer betweeen users
+    const initiator = await prisma.identity.findUnique({
+      where: { slack: trade.initiatorIdentityId },
+      include: { inventory: true }
+    })
+    const receiver = await prisma.identity.findUnique({
+      where: { slack: trade.receiverIdentityId },
+      include: { inventory: true }
+    })
+
+    let initiatorTrades = []
+    let receiverTrades = []
+
+    await Promise.all(
+      trade.initiatorTrades.map(async trade => {
+        const instance = await prisma.instance.findUnique({
+          where: { id: trade.instanceId },
+          include: { item: true }
+        })
+        initiatorTrades.push(
+          `x${trade.quantity} ${instance.item.reaction} ${instance.item.name}`
+        )
+        if (trade.quantity < instance.quantity) {
+          await prisma.instance.update({
+            where: { id: instance.id },
+            data: { quantity: instance.quantity - trade.quantity }
+          })
+          const receiverInstance = receiver.inventory.find(
+            receiverInstance => receiverInstance.itemId === instance.itemId
+          )
+          if (receiverInstance)
+            await prisma.instance.update({
+              where: { id: receiverInstance.id },
+              data: {
+                quantity: trade.quantity + receiverInstance.quantity
+              }
+            })
+          else
+            await prisma.instance.create({
+              data: {
+                itemId: instance.itemId,
+                identityId: receiver.slack,
+                quantity: trade.quantity,
+                public: instance.public
+              }
+            })
+        }
+        // Transfer entire instance over
+        else
+          await prisma.instance.update({
+            where: { id: instance.id },
+            data: { identityId: receiver.slack }
+          })
+      })
+    )
+    await Promise.all(
+      trade.receiverTrades.map(async trade => {
+        const instance = await prisma.instance.findUnique({
+          where: { id: trade.instanceId },
+          include: { item: true }
+        })
+        receiverTrades.push(
+          `x${trade.quantity} ${instance.item.reaction} ${instance.item.name}`
+        )
+        if (trade.quantity < instance.quantity) {
+          await prisma.instance.update({
+            where: { id: instance.id },
+            data: { quantity: instance.quantity - trade.quantity }
+          })
+          const initiatorInstance = initiator.inventory.find(
+            initiatorInstance => initiatorInstance.itemId === instance.itemId
+          )
+          if (initiatorInstance)
+            await prisma.instance.update({
+              where: { id: initiatorInstance.id },
+              data: {
+                quantity: trade.quantity + initiatorInstance.quantity
+              }
+            })
+          else
+            await prisma.instance.create({
+              data: {
+                itemId: instance.itemId,
+                identityId: initiator.slack,
+                quantity: trade.quantity,
+                public: instance.public
+              }
+            })
+        }
+        // Transfer entire instance over
+        else
+          await prisma.instance.update({
+            where: { id: instance.id },
+            data: { identityId: initiator.slack }
+          })
+      })
+    )
+
+    let closed = await prisma.trade.update({
+      where: { id: req.tradeId },
+      data: { closed: true },
+      include: { initiatorTrades: true, receiverTrades: true }
+    })
+
+    const yourTrades =
+      props.body.user.id === trade.initiatorIdentityId
+        ? initiatorTrades
+        : receiverTrades
+    const theirTrades =
+      props.body.user.id === trade.receiverIdentityId
+        ? receiverTrades
+        : initiatorTrades
+    await props.respond(
+      `Trade closed between you and ${
+        props.body.user.id === trade.initiatorIdentityId
+          ? trade.receiverIdentityId
+          : trade.initiatorIdentityId
+      }. Here's what you traded:\n\n${
+        yourTrades.length ? yourTrades.join('\n') : '_Nothing._'
+      }Here's what ${
+        props.body.user.id === trade.initiatorIdentityId
+          ? trade.receiverIdentityId
+          : trade.initiatorIdentityId
+      } traded:\n\n${
+        theirTrades.length ? theirTrades.join('\n') : '_Nothing._'
+      }`
+    )
+
+    if (req.callbackUrl)
+      return await fetch(req.callbackUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ trade: closed, initiator, receiver })
+      })
+  })
+})
+
+slack.action('bot-decline-close-trade', async props => {
+  await execute(props, async props => {
+    // @ts-expect-error
+    const { req, id } = await JSON.parse(props.action.value)
+
+    const trade = await prisma.trade.update({
+      where: {
+        id: req.tradeId
+      },
+      data: {
+        closed: true
+      }
+    })
+
+    if (req.callbackUrl)
+      await fetch(req.callbackUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ error: 'Trade declined' })
+      })
+  })
+})
+
+slack.action('bot-update-trade', async props => {
+  await execute(props, async props => {
+    // @ts-expect-error
+    const { req, id } = JSON.parse(props.action.value)
+
+    const app = await prisma.app.findUnique({
+      where: { id }
+    })
+
+    if (
+      mappedPermissionValues[app.permissions] <=
+        mappedPermissionValues.WRITE_SPECIFIC &&
+      !app.specificTrades.find(tradeId => tradeId === req.tradeId)
+    )
+      throw new Error('Trade not found')
+
+    let trade = await prisma.trade.findUnique({
+      where: { id: req.tradeId },
+      include: {
+        initiatorTrades: true,
+        receiverTrades: true
+      }
+    })
+    if (!trade) {
+      if (req.callbackUrl)
+        await fetch(req.callbackUrl, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ error: 'Trade not found' })
+        })
+      return
+    }
+    if (
+      ![trade.initiatorIdentityId, trade.receiverIdentityId].includes(
+        req.identityId
+      )
+    ) {
+      if (req.callbackUrl)
+        await fetch(req.callbackUrl, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ error: 'Identity not allowed to edit trade' })
+        })
+      return
+    }
+
+    const updateKey =
+      trade.initiatorIdentityId === req.identityId
+        ? 'initiatorTrades'
+        : 'receiverTrades'
+
+    // Add to trades, merging with ones that have already been added
+    const crafting = await prisma.crafting.findFirst({
+      where: {
+        identityId: req.identityId,
+        recipeId: null
+      },
+      include: { inputs: true }
+    })
+
+    let additions = []
+    let removals = []
+
+    for (let instance of req.add) {
+      const search = trade[updateKey].find(
+        add => add.instanceId === instance.id
+      )
+      const ref = await prisma.instance.findUnique({
+        where: { id: instance.id },
+        include: { item: true }
+      })
+
+      let quantityLeft = ref.quantity - instance.quantity
+
+      // Deduct from crafting
+      if (crafting) {
+        const inCrafting = crafting.inputs.find(
+          input => input.instanceId === instance.id
+        )
+        if (inCrafting) quantityLeft -= inCrafting.quantity
+      }
+
+      // Deduct from other trades
+      const otherTrades = await prisma.trade.findMany({
+        where: {
+          closed: false, // Not closed
+          OR: [
+            {
+              initiatorIdentityId: req.identityId,
+              initiatorTrades: { some: { instanceId: instance.id } }
+            },
+            {
+              receiverIdentityId: req.identityId,
+              receiverTrades: { some: { instanceId: instance.id } }
+            }
+          ],
+          NOT: [{ id: req.tradeId }]
+        },
+        include: {
+          initiatorTrades: true,
+          receiverTrades: true
+        }
+      })
+      otherTrades
+        .map(offer => ({
+          ...offer,
+          trades: [...offer.initiatorTrades, ...offer.receiverTrades]
+        }))
+        .filter(offer =>
+          offer.trades.find(trade => trade.instanceId === instance.id)
+        )
+        .reduce((acc, curr) => {
+          return (
+            acc -
+            curr.trades.find(trade => trade.instanceId === instance.id).quantity
+          )
+        }, quantityLeft)
+
+      if (quantityLeft >= 0) {
+        additions.push(
+          `x${instance.quantity} ${ref.item.reaction} ${ref.item.name}`
+        )
+        if (search)
+          await prisma.tradeInstance.update({
+            where: { id: search.id },
+            data: { quantity: search.quantity + instance.quantity }
+          })
+        else
+          await prisma.tradeInstance.create({
+            data: {
+              instanceId: instance.id,
+              quantity: instance.quantity,
+              [updateKey]: {
+                connect: await prisma.trade.findUnique({
+                  where: { id: req.tradeId }
+                })
+              }
+            }
+          })
+      } else {
+        if (req.callbackUrl)
+          await fetch(req.callbackUrl, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              error: `Not enough ${ref.item.name} to add to trade`
+            })
+          })
+        return
+      }
+    }
+
+    trade = await prisma.trade.findUnique({
+      where: { id: req.tradeId },
+      include: {
+        initiatorTrades: true,
+        receiverTrades: true
+      }
+    })
+    for (let instance of req.remove) {
+      // Remove from trade
+      const search = trade[updateKey].find(
+        add => add.instanceId === instance.id
+      )
+      const ref = await prisma.instance.findUnique({
+        where: { id: instance.id },
+        include: { item: true }
+      })
+      removals.push(
+        `x${instance.quantity} ${ref.item.reaction} ${ref.item.name}`
+      )
+      if (instance.quantity < search.quantity) {
+        // Deduct from existing tradeInstance
+        await prisma.tradeInstance.update({
+          where: { id: search.id },
+          data: { quantity: search.quantity - instance.quantity }
+        })
+      }
+      // Completely remove trade
+      else
+        await prisma.tradeInstance.delete({
+          where: { id: search.id }
+        })
+    }
+
+    await props.say(
+      `Approved ${
+        app.name
+      }'s request to add and remove the following from your trade with <@${
+        props.body.user.id === trade.initiatorIdentityId
+          ? trade.receiverIdentityId
+          : trade.initiatorIdentityId
+      }>:\n\nAdditions: ${
+        additions.length ? '\n' + additions.join('\n') : '_Nothing._'
+      }\n\nRemovals: ${
+        removals.length ? '\n' + removals.join('\n') : '_Nothing._'
+      }`
+    )
+
+    if (req.callbackUrl)
+      return await fetch(req.callbackUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          trade: await prisma.trade.findUnique({
+            where: { id: req.tradeId },
+            include: { initiatorTrades: true, receiverTrades: true }
+          })
+        })
+      })
   })
 })
 

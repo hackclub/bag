@@ -18,6 +18,7 @@ service BagService {
   rpc GetInstance(GetInstanceRequest) returns (GetInstanceResponse) {}  // Should be able to Get instances
   rpc GetApp(GetAppRequest) returns (GetAppResponse) {}  // Should be able to Get other public apps, as well as itself
   rpc GetTrade(GetTradeRequest) returns (GetTradeResponse) {} // Should be able to Get public trades as well as trades the app has initiated
+  rpc GetTrades(GetTradesRequest) returns (GetTradesResponse) {} 
   rpc GetRecipes(GetRecipesRequest) returns (GetRecipesResponse) {}
   rpc GetRecipe(GetRecipeRequest) returns (GetRecipeResponse) {}  // Should be able to Get recipes that include items the app has access to
   rpc GetAction(GetActionRequest) returns (GetActionResponse) {}
@@ -215,12 +216,13 @@ message CreateTradeRequest {
   string key = 2;
   string initiator = 3;
   string receiver = 4;
-  optional bool public = 5;
+  optional string callbackUrl = 5;
+  optional bool public = 6;
 }
 
 message CreateTradeResponse {
   optional string response = 1;
-  optional Trade trade = 2;
+  optional bool initiated = 2;
 }
 
 message CreateActionRequest {
@@ -315,12 +317,23 @@ message GetAppResponse {
 message GetTradeRequest {
   int32 appId = 1;
   string key = 2;
-  int32 tradeId = 3;
+  Trade query = 3;
 }
 
 message GetTradeResponse {
   optional string response = 1;
   optional Trade trade = 2;
+}
+
+message GetTradesRequest {
+  int32 appId = 1;
+  string key = 2;
+  Trade query = 3;
+}
+
+message GetTradesResponse {
+  optional string response = 1;
+  repeated Trade trades = 2;
 }
 
 message GetRecipesRequest {
@@ -414,11 +427,12 @@ message UpdateTradeRequest {
   string identityId = 4;
   repeated Instance add = 5;
   repeated Instance remove = 6;
+  optional string callbackUrl = 7;
 }
 
 message UpdateTradeResponse {
   optional string response = 1;
-  optional Trade trade = 2;
+  optional bool initiated = 2;
 }
 
 message UpdateRecipeRequest {
@@ -482,14 +496,13 @@ message CloseTradeRequest {
   int32 appId = 1;
   string key = 2;
   int32 tradeId = 3;
-  bool cancel = 4;
+  optional bool cancel = 4;
+  optional string callbackUrl = 5;
 }
 
 message CloseTradeResponse {
   optional string response = 1;
-  optional Trade trade = 2;
-  optional Identity initiator = 3;
-  optional Identity receiver = 4;
+  optional bool initiated = 2;
 }
 
 message VerifyKeyRequest {

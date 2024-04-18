@@ -1,17 +1,14 @@
 import { log } from '../../analytics'
 import { type IdentityWithInventory, prisma } from '../../db'
 import { mappedPermissionValues } from '../../permissions'
-import {
-  scheduler,
-  random,
-  Results,
-  showAction,
-  runNode
-} from '../../queue/use'
+import { scheduler, random, Results, showAction } from '../../queue/use'
 import { inMaintainers } from '../../utils'
 import slack, { execute, CommandMiddleware } from '../slack'
 
 const ACTION_TEST = ['action-test', 'test888']
+
+const sleep = async (seconds: number) =>
+  new Promise(r => setTimeout(r, seconds * 1000))
 
 const canBeUsed = async (
   user: IdentityWithInventory,
@@ -212,18 +209,40 @@ slack.command('/use', async props => {
           node.action = action
           node.user = props.body.user_id
           if (i === trees.length) node.delay = 0
-          let timestamp = new Date().getTime()
-          if (node.await)
-            timestamp += Array.isArray(node.await)
-              ? random(...node.await)
-              : node.await
-          if (i > 0 && trees[i - 1].delay) {
-            const prev = trees[i - 1]
-            timestamp += Array.isArray(prev.delay)
-              ? random(...prev.delay)
-              : prev.delay
-          }
+          if (!tag.startsWith('--'))
+            await sleep(
+              Array.isArray(node.await) ? random(...node.await) : node.await
+            )
           await node.run(slack, trees.slice(0, i), description, summary)
+          if (!tag.startsWith('--'))
+            await sleep(
+              Array.isArray(node.delay) ? random(...node.delay) : node.delay
+            )
+        }
+
+        // Stop if last branch
+        if (!trees[trees.length - 1].branch.length) {
+          if (summary.outputs.length)
+            description.push(
+              `\n*What you got*: ${summary.outputs
+                .map(output => `x${output[0]} ${output[1]}`)
+                .join(', ')}`
+            )
+          if (summary.losses.length)
+            description.push(
+              `\n*What you lost*: ${summary.losses
+                .map(loss => `x${loss[0]} ${loss[1]}`)
+                .join(', ')}`
+            )
+
+          await prisma.actionInstance.update({
+            where: { id: action.id },
+            data: { done: true }
+          })
+          return await props.client.chat.update({
+            ...trees[trees.length - 1].thread,
+            blocks: showAction(action, description, true)
+          })
         }
       } else {
         ts = (

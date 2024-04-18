@@ -366,6 +366,7 @@ export class Results {
       if (node.break) break
       this.thread = result[result.length - 1].thread
     }
+    console.log('runSequence', prev)
 
     return prev
   }
@@ -393,8 +394,8 @@ export class Results {
           ...this.thread,
           blocks: showAction(
             this.action,
-            description.slice(0, description.length - 1),
-            this.thread
+            description.slice(0, description.length - 2),
+            true
           )
         })
         const { permalink } = await props.client.chat.getPermalink({

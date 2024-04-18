@@ -81,7 +81,7 @@ export const Scheduler = (
               console.log(`Found task ${taskId}`)
               const taskData = JSON.parse(await redis.getString(taskId))
               try {
-                console.log(`Passing data for task ${taskId}`, taskData)
+                // console.log(`Passing data for task ${taskId}`, taskData)
                 cleanup = await taskHandler(taskData, taskId)
               } catch (err) {
                 console.log(err)

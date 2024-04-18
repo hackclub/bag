@@ -217,7 +217,8 @@ message CreateTradeRequest {
   string initiator = 3;
   string receiver = 4;
   optional string callbackUrl = 5;
-  optional bool public = 6;
+  optional string callbackMetadata = 6;
+  optional bool public = 7;
 }
 
 message CreateTradeResponse {
@@ -428,6 +429,7 @@ message UpdateTradeRequest {
   repeated Instance add = 5;
   repeated Instance remove = 6;
   optional string callbackUrl = 7;
+  optional string callbackMetadata = 8;
 }
 
 message UpdateTradeResponse {
@@ -498,6 +500,7 @@ message CloseTradeRequest {
   int32 tradeId = 3;
   optional bool cancel = 4;
   optional string callbackUrl = 5;
+  optional string callbackMetadata = 6;
 }
 
 message CloseTradeResponse {
@@ -533,6 +536,7 @@ message RunCraftRequest {
   string identityId = 3;
   int32 recipeId = 4;
   optional string callbackUrl = 5;
+  optional string callbackMetadata = 6;
 }
 
 message RunCraftResponse {

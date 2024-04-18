@@ -21,7 +21,8 @@ export default (router: ConnectRouter) => {
               initiatorIdentityId: req.receiver,
               receiverIdentityId: req.initiator
             }
-          ]
+          ],
+          closed: false
         }
       })
       if (exists) throw new Error('Trade already open')
@@ -155,6 +156,10 @@ export default (router: ConnectRouter) => {
 
       return {
         trades: trades.filter(trade => {
+          console.log(
+            mappedPermissionValues[app.permissions],
+            mappedPermissionValues.WRITE
+          )
           if (!trade.public && app.permissions === PermissionLevels.READ)
             return false
           if (
@@ -181,7 +186,12 @@ export default (router: ConnectRouter) => {
         }
       })
 
-      if (req.cancel && app.specificTrades.find(id => id === trade.id)) {
+      if (
+        req.cancel &&
+        (app.specificTrades.find(id => id === trade.id) ||
+          mappedPermissionValues[app.permissions] >=
+            mappedPermissionValues.WRITE)
+      ) {
         // Can cancel trades that app has permission to without asking
         const canceled = await prisma.trade.delete({
           where: { id: trade.id },

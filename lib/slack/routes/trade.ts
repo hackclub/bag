@@ -797,6 +797,7 @@ slack.action('bot-create-trade', async props => {
       }
     })
 
+    await props.respond('Awesome!')
     if (trade) {
       // Already exists - approve trade!
       await prisma.trade.update({
@@ -806,7 +807,6 @@ slack.action('bot-create-trade', async props => {
         }
       })
     } else {
-      await props.say('Awesome!')
       return await prisma.trade.create({
         data: {
           initiatorIdentityId: req.initiator,
@@ -838,7 +838,10 @@ slack.action('bot-create-trade', async props => {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ trade })
+          body: JSON.stringify({
+            trade,
+            metadata: req.callbackMetadata ? req.callbackMetadata : undefined
+          })
         })
       } catch {}
     }
@@ -1032,7 +1035,12 @@ slack.action('bot-close-trade', async props => {
           'Accept': 'application/json',
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ trade: closed, initiator, receiver })
+        body: JSON.stringify({
+          trade: closed,
+          initiator,
+          receiver,
+          metadata: req.callbackMetadata ? req.callbackMetadata : undefined
+        })
       })
   })
 })
@@ -1282,7 +1290,8 @@ slack.action('bot-update-trade', async props => {
           trade: await prisma.trade.findUnique({
             where: { id: req.tradeId },
             include: { initiatorTrades: true, receiverTrades: true }
-          })
+          }),
+          metadata: req.callbackMetadata ? req.callbackMetadata : undefined
         })
       })
   })

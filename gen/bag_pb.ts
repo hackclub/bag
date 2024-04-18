@@ -1354,7 +1354,12 @@ export class CreateTradeRequest extends Message<CreateTradeRequest> {
   callbackUrl?: string;
 
   /**
-   * @generated from field: optional bool public = 6;
+   * @generated from field: optional string callbackMetadata = 6;
+   */
+  callbackMetadata?: string;
+
+  /**
+   * @generated from field: optional bool public = 7;
    */
   public?: boolean;
 
@@ -1371,7 +1376,8 @@ export class CreateTradeRequest extends Message<CreateTradeRequest> {
     { no: 3, name: "initiator", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "receiver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "callbackUrl", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 6, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 6, name: "callbackMetadata", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 7, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateTradeRequest {
@@ -3087,6 +3093,11 @@ export class UpdateTradeRequest extends Message<UpdateTradeRequest> {
    */
   callbackUrl?: string;
 
+  /**
+   * @generated from field: optional string callbackMetadata = 8;
+   */
+  callbackMetadata?: string;
+
   constructor(data?: PartialMessage<UpdateTradeRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3102,6 +3113,7 @@ export class UpdateTradeRequest extends Message<UpdateTradeRequest> {
     { no: 5, name: "add", kind: "message", T: Instance, repeated: true },
     { no: 6, name: "remove", kind: "message", T: Instance, repeated: true },
     { no: 7, name: "callbackUrl", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 8, name: "callbackMetadata", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateTradeRequest {
@@ -3665,6 +3677,11 @@ export class CloseTradeRequest extends Message<CloseTradeRequest> {
    */
   callbackUrl?: string;
 
+  /**
+   * @generated from field: optional string callbackMetadata = 6;
+   */
+  callbackMetadata?: string;
+
   constructor(data?: PartialMessage<CloseTradeRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3678,6 +3695,7 @@ export class CloseTradeRequest extends Message<CloseTradeRequest> {
     { no: 3, name: "tradeId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 4, name: "cancel", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 5, name: "callbackUrl", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 6, name: "callbackMetadata", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CloseTradeRequest {
@@ -3953,6 +3971,11 @@ export class RunCraftRequest extends Message<RunCraftRequest> {
    */
   callbackUrl?: string;
 
+  /**
+   * @generated from field: optional string callbackMetadata = 6;
+   */
+  callbackMetadata?: string;
+
   constructor(data?: PartialMessage<RunCraftRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3966,6 +3989,7 @@ export class RunCraftRequest extends Message<RunCraftRequest> {
     { no: 3, name: "identityId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "recipeId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 5, name: "callbackUrl", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 6, name: "callbackMetadata", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RunCraftRequest {

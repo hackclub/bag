@@ -1,11 +1,17 @@
 import { log } from '../../analytics'
 import { type IdentityWithInventory, prisma } from '../../db'
 import { mappedPermissionValues } from '../../permissions'
-import { scheduler, random, Results, showAction } from '../../queue/use'
+import {
+  scheduler,
+  random,
+  Results,
+  showAction,
+  runNode
+} from '../../queue/use'
 import { inMaintainers } from '../../utils'
 import slack, { execute, CommandMiddleware } from '../slack'
 
-const ACTION_TEST = ['action-test']
+const ACTION_TEST = ['action-test', 'test888']
 
 const canBeUsed = async (
   user: IdentityWithInventory,
@@ -174,7 +180,8 @@ slack.command('/use', async props => {
         new Results({
           ...possible,
           action,
-          test
+          test,
+          user: props.body.user_id
         })
       ]
 
@@ -202,14 +209,21 @@ slack.command('/use', async props => {
         ).ts
         for (let [i, node] of trees.entries()) {
           node.thread = i === 0 ? { channel, ts } : trees[i - 1].thread
+          node.action = action
+          node.user = props.body.user_id
           if (i === trees.length) node.delay = 0
-          await node.run(
-            props,
-            trees.slice(0, i),
-            description,
-            summary,
-            tag.startsWith('---')
-          )
+          let timestamp = new Date().getTime()
+          if (node.await)
+            timestamp += Array.isArray(node.await)
+              ? random(...node.await)
+              : node.await
+          if (i > 0 && trees[i - 1].delay) {
+            const prev = trees[i - 1]
+            timestamp += Array.isArray(prev.delay)
+              ? random(...prev.delay)
+              : prev.delay
+          }
+          await node.run(slack, trees.slice(0, i), description, summary)
         }
       } else {
         ts = (
@@ -225,8 +239,12 @@ slack.command('/use', async props => {
       let branch = tree.pickBranch()
       branch.thread = tree.thread
       branch.action = tree.action
-      if (!branch.branches.length) branch.delay = 0
-      console.log(branch.await)
+      if (!branch.branch.length) branch.delay = 0
+      let timestamp = new Date().getTime()
+      if (branch.await)
+        timestamp += Array.isArray(branch.await)
+          ? random(...branch.await)
+          : branch.await
       scheduler.schedule(
         {
           action,
@@ -234,10 +252,10 @@ slack.command('/use', async props => {
           branch,
           description,
           summary,
-          tag
+          tag,
+          user: props.body.user_id
         },
-        new Date().getTime() +
-          (Array.isArray(branch.await) ? random(...branch.await) : branch.await)
+        timestamp
       )
     },
     mappedPermissionValues.READ,

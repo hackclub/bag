@@ -1,9 +1,8 @@
+import { prisma } from '../db'
 import web from '../slack/slack'
 import { Scheduler, ms } from './queue'
 import { ActionInstance } from '@prisma/client'
 import { App, type Block, type KnownBlock } from '@slack/bolt'
-
-const delay = ms(0, 0, 5)
 
 export const scheduler = Scheduler(
   'use',
@@ -14,7 +13,8 @@ export const scheduler = Scheduler(
     branch,
     description,
     summary,
-    tag
+    tag,
+    user
   }: {
     action: ActionInstance
     trees: Results[]
@@ -25,17 +25,30 @@ export const scheduler = Scheduler(
       losses: Array<[number, string]>
     }
     tag: string
+    user: string
   }) => {
+    action = await prisma.actionInstance.findUnique({
+      where: { id: action.id }
+    })
+    if (action.done) return false
+
+    let result = new Results({
+      ...branch,
+      action,
+      user
+    })
     try {
-      let results = await branch.run(web, trees, description, summary)
+      let results = await result.run(web, trees, description, summary)
       trees = results
-      if (branch.terminate) return false
+      if (result.terminate) return false
     } catch (error) {
       if (error.code === 'slack_webapi_platform_error')
         // Error triggered by running cancel-use action, so exit
         return false
       console.log(error)
     }
+
+    return true
   },
   async ({
     action,
@@ -43,7 +56,8 @@ export const scheduler = Scheduler(
     branch,
     description,
     summary,
-    tag
+    tag,
+    user
   }: {
     action: ActionInstance
     trees: Results[]
@@ -51,8 +65,9 @@ export const scheduler = Scheduler(
     description: string[]
     summary: { outputs: Array<string>; losses: Array<string> }
     tag: string
+    user: string
   }) => {
-    if (!trees[trees.length - 1].branches.length) {
+    if (!trees[trees.length - 1].branch.length) {
       if (summary.outputs.length)
         description.push(
           `\n*What you got*: ${summary.outputs
@@ -76,11 +91,24 @@ export const scheduler = Scheduler(
       })
     } else {
       // Not over yet - delay appropriately with previous delay and new await
-      let tree = trees[trees.length - 1]
+      let tree = new Results({
+        ...trees[trees.length - 1],
+        action,
+        user
+      })
       let newBranch = tree.pickBranch()
       newBranch.thread = tree.thread
       newBranch.action = tree.action
-      if (!newBranch.branches.length) newBranch.delay = 0
+      if (!newBranch.branch.length) newBranch.delay = 0
+      let timestamp = new Date().getTime()
+      if (branch.delay && !tag.startsWith('---'))
+        timestamp += Array.isArray(branch.delay)
+          ? random(...branch.delay)
+          : branch.delay
+      if (branch.await && !tag.startsWith('---'))
+        timestamp += Array.isArray(branch.await)
+          ? random(...branch.await)
+          : branch.await
       scheduler.schedule(
         {
           action,
@@ -88,19 +116,16 @@ export const scheduler = Scheduler(
           branch: newBranch,
           description,
           summary,
-          tag
+          tag,
+          user
         },
-        new Date().getTime() +
-          (Array.isArray(branch.delay)
-            ? random(...branch.delay)
-            : branch.delay) +
-          (Array.isArray(newBranch.await)
-            ? random(...newBranch.await)
-            : newBranch.await)
+        timestamp
       )
     }
   }
 )
+
+scheduler.start()
 
 export const showAction = (
   action: ActionInstance,
@@ -151,7 +176,7 @@ export class Results {
 
   frequency: number
 
-  branches: Array<Results>
+  branch: Array<Results>
   sequence: Array<Results>
 
   loop: boolean
@@ -161,6 +186,8 @@ export class Results {
   inputs: Array<string>
   outputs: Array<string>
   losses: Array<string>
+
+  user: string
 
   constructor(obj: { [key: string]: any }) {
     this.action = obj.action
@@ -177,6 +204,8 @@ export class Results {
 
     this.frequency = obj.frequency || 0
 
+    this.user = obj.user
+
     this.sequence =
       obj.sequence?.map(
         sequence =>
@@ -184,10 +213,11 @@ export class Results {
             ...sequence,
             thread: this.thread,
             action: this.action,
-            test: this.test
+            test: this.test,
+            user: this.user
           })
       ) || []
-    this.branches =
+    this.branch =
       obj.branch?.map(branch => {
         if (Array.isArray(branch)) {
           // If an entry in a branch array is an array, treat that sub-array as a sequence, using any additional properties on the first node in the array as if they were on the sequence node
@@ -198,12 +228,17 @@ export class Results {
             frequency: initial.frequency,
             thread: this.thread,
             action: this.action,
-            test: this.test
+            test: this.test,
+            user: this.user
           })
         }
         return new Results({
           ...branch,
-          delay: branch.delay || obj.defaultDelay
+          delay: branch.delay || obj.defaultDelay,
+          thread: this.thread,
+          action: this.action,
+          test: this.test,
+          user: this.user
         })
       }) || []
 
@@ -216,14 +251,37 @@ export class Results {
     this.losses = obj.losses || []
   }
 
+  toString() {
+    return JSON.stringify({
+      action: this.action,
+      tag: this.tag,
+      description: this.description,
+      thread: this.thread,
+      test: this.test,
+      goto: this.goto,
+      gotoChildren: this.gotoChildren,
+      terminate: this.terminate,
+      break: this.break,
+      frequency: this.frequency,
+      sequence: this.sequence,
+      branch: this.branch,
+      loop: this.loop,
+      delay: this.delay,
+      await: this.await,
+      inputs: this.inputs,
+      outputs: this.outputs,
+      losses: this.losses
+    })
+  }
+
   pickBranch(): Results {
     // We pick based on a fraction of the sum of all frequencies for the results at this layer
-    const frequencies = this.branches.map(result => result.frequency)
+    const frequencies = this.branch.map(result => result.frequency)
     let total = frequencies.reduce((acc, curr) => acc + curr, 0)
     const random = Math.floor(Math.random() * total)
     for (let [i, frequency] of frequencies.entries()) {
       total -= frequency
-      if (random >= total) return this.branches[i]
+      if (random >= total) return this.branch[i]
     }
   }
 
@@ -231,7 +289,7 @@ export class Results {
     // Search for branch that has tag up to depth
     if (this.tag === tag) return [this]
     let branches = []
-    for (let branch of this.branches) {
+    for (let branch of this.branch) {
       if (branch.tag === tag) {
         branches.push(branch)
         return branches
@@ -246,17 +304,17 @@ export class Results {
             traverse[traverse.length - 1] = sequence
             branches.push(...traverse)
             return branches
-          } else if (curr < depth && sequence.branches.length) {
+          } else if (curr < depth && sequence.branch.length) {
             // Search up to depth
             let traverseSequence = sequence.search(tag, depth, curr + 1)
             if (traverseSequence.length) {
               traverse.push(...traverseSequence)
-              traverse.push(...traverse)
+              branches.push(...traverse)
               return branches
             }
           }
         }
-      } else if (curr < depth && branch.branches.length) {
+      } else if (curr < depth && branch.branch.length) {
         // Search up to depth
         let traverse = branch.search(tag, depth, curr + 1)
         if (traverse.length) {
@@ -297,10 +355,12 @@ export class Results {
     for (let node of this.sequence) {
       node.thread = this.thread
       let result = await node.run(props, prev, description, summary)
-      if (node.branches.length) {
+      if (node.branch.length) {
         // Run branches
         let branch = node.pickBranch()
         branch.thread = this.thread
+        branch.action = this.action
+        branch.user = this.user
         result = await branch.run(props, prev, description, summary)
       }
       if (node.break) break
@@ -341,13 +401,8 @@ export class Results {
           channel: this.thread.channel,
           message_ts: this.thread.ts
         })
-        description.push(
-          `Continued from <${permalink}|the past>:`,
-          `<@${
-            props.context.userId
-          }> ran \`/use ${props.command.text.trim()}\`:`,
-          description[description.length - 1]
-        )
+        const last = description.splice(description.length - 1, 1)
+        description.push(`Continued from <${permalink}|the past>:`, last[0])
         description.splice(0, description.length - 3)
         const { channel, ts } = await props.client.chat.postMessage({
           channel: this.thread.channel,
@@ -375,7 +430,7 @@ export class Results {
       if (!this.test) {
         const existing = await prisma.instance.findFirst({
           where: {
-            identityId: props.body.user_id,
+            identityId: this.user,
             itemId: output
           }
         })
@@ -388,7 +443,7 @@ export class Results {
           await prisma.instance.create({
             data: {
               itemId: output,
-              identityId: props.body.user_id,
+              identityId: this.user,
               quantity: 1,
               public: item.public
             }
@@ -400,7 +455,7 @@ export class Results {
       // Remove losses from user's inventory
       const existing = await prisma.instance.findFirst({
         where: {
-          identityId: props.body.user_id,
+          identityId: this.user,
           itemId: loss
         },
         include: { item: true }
@@ -448,7 +503,7 @@ export class Results {
       const tree = newTree[newTree.length - 1]
       tree.thread = this.thread
       newTree.push(tree)
-      if (tree.branches.length) {
+      if (tree.branch.length) {
         // Add a random child
         const branch = tree.pickBranch()
         branch.thread = this.thread

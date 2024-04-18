@@ -89,6 +89,11 @@ export const scheduler = Scheduler(
         ...trees[trees.length - 1].thread,
         blocks: showAction(action, description, true)
       })
+      await web.client.chat.postEphemeral({
+        channel: trees[trees.length - 1].thread.channel,
+        user,
+        text: `<@${user}> action complete!`
+      })
     } else {
       // Not over yet - delay appropriately with previous delay and new await
       let tree = new Results({
@@ -366,7 +371,6 @@ export class Results {
       if (node.break) break
       this.thread = result[result.length - 1].thread
     }
-    console.log('runSequence', prev)
 
     return prev
   }

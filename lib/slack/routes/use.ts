@@ -5,7 +5,7 @@ import { scheduler, random, Results, showAction } from '../../queue/use'
 import { inMaintainers } from '../../utils'
 import slack, { execute, CommandMiddleware } from '../slack'
 
-const ACTION_TEST = ['action-test', 'test888']
+const ACTION_TEST = ['action-test']
 
 const sleep = async (seconds: number) =>
   new Promise(r => setTimeout(r, seconds * 1000))

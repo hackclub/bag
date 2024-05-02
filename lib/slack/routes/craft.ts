@@ -330,7 +330,7 @@ slack.action('complete-crafting', async props => {
         slack: props.body.user.id,
         craftingId: crafting.id,
         thread: { channel, ts },
-        time: updated.recipe.time || ms(0, 30, 0)
+        time: updated.recipe.time || ms(0, 5, 0)
       },
       new Date().getTime()
     )

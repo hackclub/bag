@@ -15,13 +15,13 @@ import type {
 } from '@slack/bolt'
 import { v4 as uuid } from 'uuid'
 
-slack.command('/bot', async props => {
+slack.command('/rlb-bot', async props => {
   await execute(props, async props => {
     await log('slack-app', `${props.context.userId}-${Date.now()}`, {
       channel: props.body.channel_id,
       user: (await props.client.users.info({ user: props.context.userId }))
         .user,
-      command: `/bot ${props.command.text}`
+      command: `/rlb-bot ${props.command.text}`
     })
 
     const message = props.command.text.trim()

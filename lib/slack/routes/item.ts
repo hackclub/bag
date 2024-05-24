@@ -6,7 +6,7 @@ import slack, { execute } from '../slack'
 import { PermissionLevels, Item, Identity } from '@prisma/client'
 import type { Block, KnownBlock, View } from '@slack/bolt'
 
-slack.command('/item', async props => {
+slack.command('/rlb-item', async props => {
   await execute(props, async props => {
     const message = props.command.text.trim()
     await log('slack-item', `${props.context.userId}-${Date.now()}`, {

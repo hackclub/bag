@@ -4,7 +4,7 @@ import { maintainers } from '../utils'
 // TODO: Set up script to regularly clean database
 async function cleanup() {
   await prisma.crafting.deleteMany({
-    where: { identityId: maintainers.jc.slack }
+    where: { identityId: maintainers.rivques.slack }
   })
 }
 

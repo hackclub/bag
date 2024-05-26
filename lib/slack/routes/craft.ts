@@ -8,7 +8,7 @@ import slack, { execute } from '../slack'
 import views, { showCrafting } from '../views'
 import type { Block, KnownBlock, View } from '@slack/bolt'
 
-slack.command('/rlb-craft', async props => {
+slack.command(`/${process.env.SLASH_COMMAND_PREFIX}craft`, async props => {
   return await execute(
     props,
     async props => {

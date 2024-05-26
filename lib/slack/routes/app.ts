@@ -15,7 +15,7 @@ import type {
 } from '@slack/bolt'
 import { v4 as uuid } from 'uuid'
 
-slack.command('/rlb-bot', async props => {
+slack.command(`/${process.env.SLASH_COMMAND_PREFIX}bot`, async props => {
   await execute(props, async props => {
     await log('slack-app', `${props.context.userId}-${Date.now()}`, {
       channel: props.body.channel_id,

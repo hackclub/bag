@@ -8,7 +8,7 @@ import views from '../views'
 import { Instance } from '@prisma/client'
 import { Block, KnownBlock } from '@slack/bolt'
 
-slack.command('/rlb-bag', async props => {
+slack.command(`/${process.env.SLASH_COMMAND_PREFIX}bag`, async props => {
   await execute(props, async props => {
     await log('slack-bag', `${props.context.userId}-${Date.now()}`, {
       channel: props.body.channel_id,
@@ -16,7 +16,7 @@ slack.command('/rlb-bag', async props => {
         .profile.display_name,
       command: `/bag ${props.command.text}`
     })
-
+    
     try {
       const conversation = await props.client.conversations.info({
         channel: props.body.channel_id

@@ -60,7 +60,7 @@ const canBeUsed = async (
   return true
 }
 
-slack.command('/use', async props => {
+slack.command(`/${process.env.SLASH_COMMAND_PREFIX}use`, async props => {
   await execute(
     props,
     async props => {

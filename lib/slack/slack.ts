@@ -30,7 +30,7 @@ const slack = new App({
   token: config.SLACK_BOT_TOKEN,
   appToken: config.SLACK_APP_TOKEN,
   signingSecret: config.SLACK_SIGNING_SECRET,
-  logLevel: LogLevel.ERROR,
+  logLevel: config.NODE_ENV === 'development' ?  LogLevel.DEBUG : LogLevel.ERROR,
   receiver: new HTTPReceiver({
     signingSecret: config.SLACK_SIGNING_SECRET
   })
@@ -140,8 +140,8 @@ export async function execute(
   } catch (error) {
     console.log(error.code, error)
     await props.client.chat.postMessage({
-      channel: maintainers.jc,
-      user: maintainers.jc,
+      channel: maintainers.rivques,
+      user: maintainers.rivques,
       blocks: views.error(`Oops, there was an error:
 \`\`\`
 ${error}

@@ -6,7 +6,7 @@ import slack, { execute } from '../slack'
 import views from '../views'
 import type { View } from '@slack/bolt'
 
-slack.command('/give', async props => {
+slack.command(`/${process.env.SLASH_COMMAND_PREFIX}give`, async props => {
   await execute(props, async props => {
     const logId = `${props.context.userId}-${Date.now()}`
     await log('slack-give', `${logId}`, {

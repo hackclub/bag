@@ -1,3 +1,5 @@
+const indev = process.env.NODE_ENV === 'development';
+
 import config from '../config'
 import { Client } from '@elastic/elasticsearch'
 import dayjs from 'dayjs'
@@ -12,7 +14,7 @@ declare global {
   var elastic: undefined | ReturnType<typeof elasticClient>
 }
 
-export const elastic = globalThis.elastic ?? elasticClient()
+export const elastic = indev ? undefined : (globalThis.elastic ?? elasticClient())
 
 export const log = async (
   index: string,
@@ -20,6 +22,10 @@ export const log = async (
   document: object,
   update = false
 ) => {
+  if (indev) {
+    console.log('Logging:', index, id, document, update);
+    return;
+  }
   try {
     if (!(await elastic.indices.exists({ index })))
       await elastic.indices.create({ index })

@@ -8,7 +8,7 @@ import views from '../views'
 import { Block, Button, KnownBlock, View } from '@slack/bolt'
 import { exec } from 'child_process'
 
-slack.command('/trade', async props => {
+slack.command(`/${process.env.SLASH_COMMAND_PREFIX}trade`, async props => {
   await execute(props, async props => {
     await log('slack-trade', `${props.context.userId}-${Date.now()}`, {
       channel: props.body.channel_id,

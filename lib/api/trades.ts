@@ -440,6 +440,10 @@ export default (router: ConnectRouter) => {
           throw new Error(
             `Identity doesn't have access to instance ${instance.id}`
           )
+        if (instance.item.tradable === false) // assume items are tradable unless they say otherwise as some items might not have that property
+          throw new Error(
+            `Item isn't tradable`
+          )
         const enough = await quantityLeft(instance.id)
         if (enough < 1)
           throw new Error(`Not enough of instance ${instance.id} to offer`)

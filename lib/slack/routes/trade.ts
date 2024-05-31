@@ -1406,7 +1406,9 @@ const tradeDialog = async (
       )
     }
 
-    if (quantityLeft)
+    if (item.tradable === false) // assume items are tradable unless they say otherwise as some items might not have that property
+      notOffering.push(`x${instance.quantity} ${item.reaction} ${item.name} untradable`)
+    else if (quantityLeft)
       offers.push({
         text: {
           type: 'plain_text',

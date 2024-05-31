@@ -31,6 +31,13 @@ export default (router: ConnectRouter) => {
           throw new Error(
             `Instance ${instance.id} doesn't belong to ${req.identityId}`
           )
+        const item = await prisma.item.findUnique({
+          where: { name: ref.itemId }
+        })
+        if (item.tradable === false) // assume items are tradable unless they say otherwise as some items might not have that property
+          throw new Error(
+            `Item ${item.name} isn't tradable`
+          )
         else if (ref.quantity < instance.quantity)
           throw new Error(`Not enough ${ref.itemId} to give away`)
         instances.push([ref, i])

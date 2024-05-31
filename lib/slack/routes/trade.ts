@@ -893,8 +893,6 @@ slack.action('bot-close-trade', async props => {
       include: { initiatorTrades: true, receiverTrades: true }
     })
 
-    console.log('updated trade: ', trade)
-
     if (!trade.initiatorAgreed || !trade.receiverAgreed)
       return await props.respond(
         'Awesome! Waiting for the other side to accept.'
@@ -1400,13 +1398,15 @@ const tradeDialog = async (
       input => input.instanceId === instance.id
     )
     if (inCrafting) {
-      quantityLeft = inCrafting.quantity
+      quantityLeft -= inCrafting.quantity
       notOffering.push(
         `x${inCrafting.quantity} ${item.reaction} ${item.name} being used for crafting`
       )
     }
 
-    if (quantityLeft)
+    if (item.tradable === false) // assume items are tradable unless they say otherwise as some items might not have that property
+      notOffering.push(`x${instance.quantity} ${item.reaction} ${item.name} untradable`)
+    else if (quantityLeft)
       offers.push({
         text: {
           type: 'plain_text',
@@ -1715,8 +1715,10 @@ const startTrade = async (
         `x${inCrafting.quantity} ${item.reaction} ${item.name} being used for crafting`
       )
     }
-
-    if (quantityLeft)
+    if (item.tradable === false) {// assume items are tradable unless they say otherwise as some items might not have that property
+      notOffering.push(`x${instance.quantity} ${item.reaction} ${item.name} untradable`)
+    }
+    else if (quantityLeft > 0)
       offers.push({
         text: {
           type: 'plain_text',
@@ -1787,7 +1789,7 @@ const startTrade = async (
     ]
   }
 
-  if (notOffering.length)
+  if (notOffering.length){
     view.blocks.push(
       {
         type: 'section',
@@ -1804,6 +1806,6 @@ const startTrade = async (
         }
       }
     )
-
+  }
   return view
 }

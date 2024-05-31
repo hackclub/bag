@@ -228,7 +228,9 @@ const giveDialog = async (
         curr.trades.find(trade => trade.instanceId === instance.id).quantity
       )
     }, instance.quantity)
-    if (quantityLeft)
+    if (item.tradable === false) {
+      notOffering.push(`x${instance.quantity} ${item.reaction} ${instance.itemId} untradable`)
+    } else if (quantityLeft)
       offers.push({
         text: {
           type: 'plain_text',

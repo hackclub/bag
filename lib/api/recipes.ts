@@ -30,7 +30,8 @@ export default (router: ConnectRouter) => {
         // Create recipe
         const newRecipe = await prisma.recipe.create({
           data: {
-            description: recipe.description || 'No description provided.'
+            description: recipe.description || 'No description provided.',
+            time: recipe.time || 60000
           }
         })
         // Add to permission list depending on app permissions
@@ -323,7 +324,7 @@ export default (router: ConnectRouter) => {
         // Update recipe
         const update = await prisma.recipe.update({
           where: { id: req.recipeId },
-          data: { description: recipe.description },
+          data: { description: recipe.description, time: recipe.time },
           include: {
             inputs: true,
             outputs: true,

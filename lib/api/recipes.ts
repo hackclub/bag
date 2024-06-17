@@ -320,7 +320,7 @@ export default (router: ConnectRouter) => {
           throw new Error(
             'Recipe requires at least two inputs and/or at least one output'
           )
-
+        console.log(`Attempting to update recipe id ${req.recipeId} (time: ${recipe.time})`);
         // Update recipe
         const update = await prisma.recipe.update({
           where: { id: req.recipeId },

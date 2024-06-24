@@ -429,6 +429,17 @@ export class App {
       })
     ).done
   }
+
+  async makeOffer(
+    request: RecursivePartial<methods.MakeOfferRequest>
+  ): Promise<boolean> {
+    return App.format(
+      await this.client.makeOffer({
+        ...this.request,
+        ...request
+      })
+    ).success
+  }
 }
 
 export type {

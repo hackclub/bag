@@ -4144,3 +4144,119 @@ export class GetCraftStatusResponse extends Message<GetCraftStatusResponse> {
   }
 }
 
+/**
+ * @generated from message bag.MakeOfferRequest
+ */
+export class MakeOfferRequest extends Message<MakeOfferRequest> {
+  /**
+   * @generated from field: int32 appId = 1;
+   */
+  appId = 0;
+
+  /**
+   * @generated from field: string key = 2;
+   */
+  key = "";
+
+  /**
+   * @generated from field: string sourceIdentityId = 3;
+   */
+  sourceIdentityId = "";
+
+  /**
+   * @generated from field: string targetIdentityId = 4;
+   */
+  targetIdentityId = "";
+
+  /**
+   * @generated from field: repeated bag.Instance offerToGive = 5;
+   */
+  offerToGive: Instance[] = [];
+
+  /**
+   * @generated from field: repeated bag.Instance offerToReceive = 6;
+   */
+  offerToReceive: Instance[] = [];
+
+  /**
+   * @generated from field: optional string callbackUrl = 7;
+   */
+  callbackUrl?: string;
+
+  constructor(data?: PartialMessage<MakeOfferRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bag.MakeOfferRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "appId", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "sourceIdentityId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "targetIdentityId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "offerToGive", kind: "message", T: Instance, repeated: true },
+    { no: 6, name: "offerToReceive", kind: "message", T: Instance, repeated: true },
+    { no: 7, name: "callbackUrl", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MakeOfferRequest {
+    return new MakeOfferRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MakeOfferRequest {
+    return new MakeOfferRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MakeOfferRequest {
+    return new MakeOfferRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MakeOfferRequest | PlainMessage<MakeOfferRequest> | undefined, b: MakeOfferRequest | PlainMessage<MakeOfferRequest> | undefined): boolean {
+    return proto3.util.equals(MakeOfferRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message bag.MakeOfferResponse
+ */
+export class MakeOfferResponse extends Message<MakeOfferResponse> {
+  /**
+   * @generated from field: optional string response = 1;
+   */
+  response?: string;
+
+  /**
+   * @generated from field: bool success = 2;
+   */
+  success = false;
+
+  constructor(data?: PartialMessage<MakeOfferResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bag.MakeOfferResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "response", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "success", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MakeOfferResponse {
+    return new MakeOfferResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MakeOfferResponse {
+    return new MakeOfferResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MakeOfferResponse {
+    return new MakeOfferResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MakeOfferResponse | PlainMessage<MakeOfferResponse> | undefined, b: MakeOfferResponse | PlainMessage<MakeOfferResponse> | undefined): boolean {
+    return proto3.util.equals(MakeOfferResponse, a, b);
+  }
+}
+

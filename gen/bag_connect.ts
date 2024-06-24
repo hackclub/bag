@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CloseTradeRequest, CloseTradeResponse, CreateActionRequest, CreateActionResponse, CreateAppRequest, CreateAppResponse, CreateInstanceRequest, CreateInstanceResponse, CreateInstancesRequest, CreateInstancesResponse, CreateItemRequest, CreateItemResponse, CreateRecipeRequest, CreateRecipeResponse, CreateTradeRequest, CreateTradeResponse, DeleteAppRequest, DeleteAppResponse, DeleteInstanceRequest, DeleteInstanceResponse, DeleteTradeRequest, DeleteTradeResponse, GetActionRequest, GetActionResponse, GetAppRequest, GetAppResponse, GetCraftStatusRequest, GetCraftStatusResponse, GetIdentitiesRequest, GetIdentitiesResponse, GetIdentityRequest, GetIdentityResponse, GetInstanceRequest, GetInstanceResponse, GetInventoryRequest, GetInventoryResponse, GetItemRequest, GetItemResponse, GetItemsRequest, GetItemsResponse, GetRecipeRequest, GetRecipeResponse, GetRecipesRequest, GetRecipesResponse, GetTradeRequest, GetTradeResponse, GetTradesRequest, GetTradesResponse, RunCraftRequest, RunCraftResponse, RunGiveRequest, RunGiveResponse, UpdateActionRequest, UpdateActionResponse, UpdateAppRequest, UpdateAppResponse, UpdateIdentityMetadataRequest, UpdateIdentityMetadataResponse, UpdateInstanceRequest, UpdateInstanceResponse, UpdateItemRequest, UpdateItemResponse, UpdateRecipeRequest, UpdateRecipeResponse, UpdateTradeRequest, UpdateTradeResponse, VerifyKeyRequest, VerifyKeyResponse } from "./bag_pb.js";
+import { CloseTradeRequest, CloseTradeResponse, CreateActionRequest, CreateActionResponse, CreateAppRequest, CreateAppResponse, CreateInstanceRequest, CreateInstanceResponse, CreateInstancesRequest, CreateInstancesResponse, CreateItemRequest, CreateItemResponse, CreateRecipeRequest, CreateRecipeResponse, CreateTradeRequest, CreateTradeResponse, DeleteAppRequest, DeleteAppResponse, DeleteInstanceRequest, DeleteInstanceResponse, DeleteTradeRequest, DeleteTradeResponse, GetActionRequest, GetActionResponse, GetAppRequest, GetAppResponse, GetCraftStatusRequest, GetCraftStatusResponse, GetIdentitiesRequest, GetIdentitiesResponse, GetIdentityRequest, GetIdentityResponse, GetInstanceRequest, GetInstanceResponse, GetInventoryRequest, GetInventoryResponse, GetItemRequest, GetItemResponse, GetItemsRequest, GetItemsResponse, GetRecipeRequest, GetRecipeResponse, GetRecipesRequest, GetRecipesResponse, GetTradeRequest, GetTradeResponse, GetTradesRequest, GetTradesResponse, MakeOfferRequest, MakeOfferResponse, RunCraftRequest, RunCraftResponse, RunGiveRequest, RunGiveResponse, UpdateActionRequest, UpdateActionResponse, UpdateAppRequest, UpdateAppResponse, UpdateIdentityMetadataRequest, UpdateIdentityMetadataResponse, UpdateInstanceRequest, UpdateInstanceResponse, UpdateItemRequest, UpdateItemResponse, UpdateRecipeRequest, UpdateRecipeResponse, UpdateTradeRequest, UpdateTradeResponse, VerifyKeyRequest, VerifyKeyResponse } from "./bag_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -316,6 +316,15 @@ export const BagService = {
       name: "GetCraftStatus",
       I: GetCraftStatusRequest,
       O: GetCraftStatusResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc bag.BagService.MakeOffer
+     */
+    makeOffer: {
+      name: "MakeOffer",
+      I: MakeOfferRequest,
+      O: MakeOfferResponse,
       kind: MethodKind.Unary,
     },
   }

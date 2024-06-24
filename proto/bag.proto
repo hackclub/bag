@@ -37,6 +37,7 @@ service BagService {
   rpc RunGive(RunGiveRequest) returns (RunGiveResponse) {}
   rpc RunCraft(RunCraftRequest) returns (RunCraftResponse) {}
   rpc GetCraftStatus(GetCraftStatusRequest) returns (GetCraftStatusResponse) {}
+  rpc MakeOffer(MakeOfferRequest) returns (MakeOfferResponse) {}
 }
 
 message App {
@@ -553,4 +554,19 @@ message GetCraftStatusRequest {
 message GetCraftStatusResponse {
   optional string response = 1;
   optional bool crafting = 2;
+}
+
+message MakeOfferRequest {
+  int32 appId = 1;
+  string key = 2;
+  string sourceIdentityId = 3;
+  string targetIdentityId = 4;
+  repeated Instance offerToGive = 5;
+  repeated Instance offerToReceive = 6;
+  optional string callbackUrl = 7;
+}
+
+message MakeOfferResponse {
+  optional string response = 1;
+  bool success = 2;
 }

@@ -579,6 +579,29 @@ export default (router: ConnectRouter) => {
         if (quantityLeft > 0) {
           throw new Error(`Not enough of item ${item.name} in source's inventory to offer`)
         }
+        if(quantityLeft < 0) {
+          // we need to split the instance
+          const instance = sourceInstances.pop()
+          const newQuantity = instance.quantity + quantityLeft
+          const newInstance = await prisma.instance.create({
+            data: {
+              identity: {
+                connect: { slack: req.sourceIdentityId }
+              },
+              quantity: -quantityLeft,
+              item: {
+                connect: { name: instance.itemId }
+              }
+            }
+          })
+          sourceInstances.push(newInstance)
+          await prisma.instance.update({
+            where: { id: instance.id },
+            data: {
+              quantity: newQuantity
+            }
+          })
+        }
       }
 
       let targetInstances = [];
@@ -604,6 +627,29 @@ export default (router: ConnectRouter) => {
         }
         if (quantityLeft > 0) {
           throw new Error(`Not enough of item ${item.name} in target's inventory to offer`)
+        }
+        if (quantityLeft < 0) {
+          // we need to split the instance
+          const instance = targetInstances.pop()
+          const newQuantity = instance.quantity + quantityLeft
+          const newInstance = await prisma.instance.create({
+            data: {
+              identity: {
+                connect: { slack: req.targetIdentityId }
+              },
+              quantity: -quantityLeft,
+              item: {
+                connect: { name: instance.itemId }
+              }
+            }
+          })
+          targetInstances.push(newInstance)
+          await prisma.instance.update({
+            where: { id: instance.id },
+            data: {
+              quantity: newQuantity
+            }
+          })
         }
       }
 

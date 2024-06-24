@@ -1362,7 +1362,7 @@ slack.action('accept-offer', async props => {
     if (!receiverHasAllItems) {
       return await props.respond({
         replace_original: false,
-        text: 'One or more items the other person wanted from you are available. Ask the other party to re-send the offer with items you actually have.'
+        text: 'One or more items the other person wanted from you are no longer available. Ask the other party to re-send the offer with items you actually have.'
       })
     }
     // execute the trade: change ownership of the instances, then delete the Offer, then notify the parties.

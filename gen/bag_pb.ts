@@ -781,6 +781,49 @@ export class ActionInstance extends Message<ActionInstance> {
 }
 
 /**
+ * @generated from message bag.OfferItem
+ */
+export class OfferItem extends Message<OfferItem> {
+  /**
+   * @generated from field: optional string itemName = 1;
+   */
+  itemName?: string;
+
+  /**
+   * @generated from field: optional int32 quantity = 2;
+   */
+  quantity?: number;
+
+  constructor(data?: PartialMessage<OfferItem>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bag.OfferItem";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "itemName", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "quantity", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OfferItem {
+    return new OfferItem().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): OfferItem {
+    return new OfferItem().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): OfferItem {
+    return new OfferItem().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: OfferItem | PlainMessage<OfferItem> | undefined, b: OfferItem | PlainMessage<OfferItem> | undefined): boolean {
+    return proto3.util.equals(OfferItem, a, b);
+  }
+}
+
+/**
  * @generated from message bag.CreateInstancesRequest
  */
 export class CreateInstancesRequest extends Message<CreateInstancesRequest> {
@@ -4169,14 +4212,14 @@ export class MakeOfferRequest extends Message<MakeOfferRequest> {
   targetIdentityId = "";
 
   /**
-   * @generated from field: repeated bag.Instance offerToGive = 5;
+   * @generated from field: repeated bag.OfferItem offerToGive = 5;
    */
-  offerToGive: Instance[] = [];
+  offerToGive: OfferItem[] = [];
 
   /**
-   * @generated from field: repeated bag.Instance offerToReceive = 6;
+   * @generated from field: repeated bag.OfferItem offerToReceive = 6;
    */
-  offerToReceive: Instance[] = [];
+  offerToReceive: OfferItem[] = [];
 
   /**
    * @generated from field: optional string callbackUrl = 7;
@@ -4195,8 +4238,8 @@ export class MakeOfferRequest extends Message<MakeOfferRequest> {
     { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "sourceIdentityId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "targetIdentityId", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "offerToGive", kind: "message", T: Instance, repeated: true },
-    { no: 6, name: "offerToReceive", kind: "message", T: Instance, repeated: true },
+    { no: 5, name: "offerToGive", kind: "message", T: OfferItem, repeated: true },
+    { no: 6, name: "offerToReceive", kind: "message", T: OfferItem, repeated: true },
     { no: 7, name: "callbackUrl", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 

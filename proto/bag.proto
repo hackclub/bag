@@ -143,6 +143,11 @@ message ActionInstance {
   optional Action action = 6;
 }
 
+message OfferItem {
+  optional string itemName = 1;
+  optional int32 quantity = 2;
+}
+
 message CreateInstancesRequest {
   int32 appId = 1;
   string key = 2;
@@ -561,8 +566,8 @@ message MakeOfferRequest {
   string key = 2;
   string sourceIdentityId = 3;
   string targetIdentityId = 4;
-  repeated Instance offerToGive = 5;
-  repeated Instance offerToReceive = 6;
+  repeated OfferItem offerToGive = 5;
+  repeated OfferItem offerToReceive = 6;
   optional string callbackUrl = 7;
 }
 

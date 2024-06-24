@@ -554,35 +554,72 @@ export default (router: ConnectRouter) => {
         }
       })
       console.log(`found source and target identities`)
+      // turn item names and quantities into instances
       let sourceInstances = [];
-      for (let instance of req.offerToGive) {
-        const possInstance = sourceIdentity.inventory.find(i => i.id === instance.id)
-        if (!possInstance) {
-          throw new Error(`Instance ${instance.id} (allegedly contains ${instance.quantity}x ${instance.itemId}) not in source inventory`);
+      for (const offerItem of req.offerToGive) {
+        // get the item
+        const item = await prisma.item.findUnique({
+          where: { name: offerItem.itemName }
+        })
+        if (!item) {
+          throw new Error(`Item ${offerItem.itemName} does not exist`)
         }
-        sourceInstances.push(possInstance)
+        // see if the user has enough instances of that item
+        const instances = sourceIdentity.inventory.filter(
+          instance => instance.itemId === item.name
+        )
+        let quantityLeft = offerItem.quantity;
+        for (const instance of instances) {
+          if (quantityLeft <= 0) {
+            break;
+          }
+          quantityLeft -= instance.quantity;
+          sourceInstances.push(instance)
+        }
+        if (quantityLeft > 0) {
+          throw new Error(`Not enough of item ${item.name} in source's inventory to offer`)
+        }
       }
+
       let targetInstances = [];
-      for (let instance of req.offerToReceive) {
-        const possInstance = targetIdentity.inventory.find(i => i.id === instance.id)
-        if (!possInstance) {
-          throw new Error(`Instance ${instance.id} (allegedly contains ${instance.quantity}x ${instance.itemId}) not in target inventory`);
+      for (const offerItem of req.offerToReceive) {
+        // get the item
+        const item = await prisma.item.findUnique({
+          where: { name: offerItem.itemName }
+        })
+        if (!item) {
+          throw new Error(`Item ${offerItem.itemName} does not exist`)
         }
-        targetInstances.push(possInstance)
+        // see if the user has enough instances of that item
+        const instances = targetIdentity.inventory.filter(
+          instance => instance.itemId === item.name
+        )
+        let quantityLeft = offerItem.quantity;
+        for (const instance of instances) {
+          if (quantityLeft <= 0) {
+            break;
+          }
+          quantityLeft -= instance.quantity;
+          targetInstances.push(instance)
+        }
+        if (quantityLeft > 0) {
+          throw new Error(`Not enough of item ${item.name} in target's inventory to offer`)
+        }
       }
+
       console.log(`found all instances in inventories`)
       // add offer to Prisma
       const offer = await prisma.offer.create({
         data: {
           instancesToGive: { // this is prisma wizardry to create the Offer with references to the Instances
-            create: req.offerToGive.map(instance => ({
+            create: sourceInstances.map(instance => ({
               instance: {
                 connect: { id: instance.id }
               }
             }))
           },
           instancesToReceive: {
-            create: req.offerToReceive.map(instance => ({
+            create: targetInstances.map(instance => ({
               instance: {
                 connect: { id: instance.id }
               }

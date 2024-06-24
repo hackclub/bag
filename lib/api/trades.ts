@@ -1,3 +1,4 @@
+import { Instance } from '@hackclub/bag'
 import { BagService } from '../../gen/bag_connect'
 import { TradeWithTrades, prisma } from '../db'
 import { mappedPermissionValues } from '../permissions'
@@ -6,6 +7,7 @@ import { web } from './routing'
 import { ConnectRouter } from '@connectrpc/connect'
 import { PermissionLevels } from '@prisma/client'
 import { Block, KnownBlock } from '@slack/bolt'
+import { MakeOfferRequest } from '../../gen/bag_pb'
 
 export default (router: ConnectRouter) => {
   router.rpc(BagService, BagService.methods.createTrade, async req => {
@@ -518,6 +520,121 @@ export default (router: ConnectRouter) => {
       })
 
       return { initiated: true }
+    })
+  })
+
+  router.rpc(BagService, BagService.methods.makeOffer, async req => {
+    return await execute('make-offer', req, async (req: MakeOfferRequest, app) => {
+      console.log(`attempting to make offer...`)
+      // check that offer can be made
+      // is source identity the owner of the app?
+      // select identities where the app id is in that identity's specificApps
+      const identities = await prisma.identity.findMany({
+        where: {
+          specificApps: {
+            has: app.id
+          }
+        }
+      })
+      console.log(`found ${identities.length} identities with access to app ${app.id}`)
+      if (!identities.find(identity => identity.slack === req.sourceIdentityId)){
+        throw new Error('Identity does not have access to this app')
+      }
+      // does both sides of offer exist in inventories?
+      const sourceIdentity = await prisma.identity.findUnique({
+        where: { slack: req.sourceIdentityId },
+        include: {
+          inventory: true
+        }
+      })
+      const targetIdentity = await prisma.identity.findUnique({
+        where: { slack: req.targetIdentityId },
+        include: {
+          inventory: true
+        }
+      })
+      console.log(`found source and target identities`)
+      let sourceInstances = [];
+      for (let instance of req.offerToGive) {
+        const possInstance = sourceIdentity.inventory.find(i => i.id === instance.id)
+        if (!possInstance) {
+          throw new Error(`Instance ${instance.id} (allegedly contains ${instance.quantity}x ${instance.itemId}) not in source inventory`);
+        }
+        sourceInstances.push(possInstance)
+      }
+      let targetInstances = [];
+      for (let instance of req.offerToReceive) {
+        const possInstance = targetIdentity.inventory.find(i => i.id === instance.id)
+        if (!possInstance) {
+          throw new Error(`Instance ${instance.id} (allegedly contains ${instance.quantity}x ${instance.itemId}) not in target inventory`);
+        }
+        targetInstances.push(possInstance)
+      }
+      console.log(`found all instances in inventories`)
+      // add offer to Prisma
+      const offer = await prisma.offer.create({
+        data: {
+          instancesToGive: { // this is prisma wizardry to create the Offer with references to the Instances
+            create: req.offerToGive.map(instance => ({
+              instance: {
+                connect: { id: instance.id }
+              }
+            }))
+          },
+          instancesToReceive: {
+            create: req.offerToReceive.map(instance => ({
+              instance: {
+                connect: { id: instance.id }
+              }
+            }))
+          },
+          callbackUrl: req.callbackUrl,
+          sourceIdentityId: req.sourceIdentityId,
+          targetIdentityId: req.targetIdentityId
+        }
+      })
+      console.log(`created offer ${offer.id}`)
+      // send message to target identity on Slack
+      await web.chat.postMessage({
+        channel: req.targetIdentityId,
+        text: `You have a new offer from ${req.sourceIdentityId}. Accept or decline:`,
+        blocks: [
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `You have a new offer from ${req.sourceIdentityId}: They give you ${req.offerToGive.length ? sourceInstances.map(instance => `${instance.quantity}x ${instance.itemId}`).join(', ') : '_nothing_'} and you give them ${req.offerToReceive.length ? targetInstances.map(instance => `${instance.quantity}x ${instance.itemId}`).join(', ') : '_nothing_'}. Accept or decline:`
+            }
+          },
+          {
+            type: 'actions',
+            elements: [
+              {
+                type: 'button',
+                text: {
+                  type: 'plain_text',
+                  text: 'Accept'
+                },
+                style: 'primary',
+                action_id: 'accept-offer',
+                value: offer.id.toString()
+              },
+              {
+                type: 'button',
+                text: {
+                  type: 'plain_text',
+                  text: 'Decline'
+                },
+                style: 'danger',
+                action_id: 'decline-offer',
+                value: offer.id.toString()
+              }
+            ]
+          }
+        ]
+      })
+      console.log(`sent message to target identity`)
+      return {success: true}
     })
   })
 }

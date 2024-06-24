@@ -62,16 +62,18 @@ model Item {
 }
 
 model Instance {
-  id         Int             @id @default(autoincrement())
-  itemId     String
-  identityId String?
-  item       Item            @relation(fields: [itemId], references: [name])
-  identity   Identity?       @relation(fields: [identityId], references: [slack])
-  quantity   Int             @default(0)
-  metadata   Json            @default("{}")
-  public     Boolean         @default(true)
-  trades     TradeInstance[]
-  crafting   RecipeItem[]
+  id               Int             @id @default(autoincrement())
+  itemId           String
+  identityId       String?
+  item             Item            @relation(fields: [itemId], references: [name])
+  identity         Identity?       @relation(fields: [identityId], references: [slack])
+  quantity         Int             @default(0)
+  metadata         Json            @default("{}")
+  public           Boolean         @default(true)
+  trades           TradeInstance[]
+  crafting         RecipeItem[]
+  offersToGive    InstanceOfferToGive[]
+  offersToReceive InstanceOfferToReceive[]
 }
 
 model Skill {
@@ -184,4 +186,31 @@ model Logger {
   id       Int          @id @default(autoincrement())
   level    LoggerLevels @default(GENERAL)
   contents String
+}
+
+model Offer {
+  id                 Int        @id @default(autoincrement())
+  sourceIdentityId   String
+  targetIdentityId   String
+  instancesToGive    InstanceOfferToGive[]
+  instancesToReceive InstanceOfferToReceive[]
+  callbackUrl        String?
+}
+
+model InstanceOfferToGive {
+  instanceId Int
+  offerId    Int
+  instance   Instance @relation(fields: [instanceId], references: [id])
+  offer      Offer    @relation(fields: [offerId], references: [id])
+  
+  @@id([instanceId, offerId])
+}
+
+model InstanceOfferToReceive {
+  instanceId Int
+  offerId    Int
+  instance   Instance @relation(fields: [instanceId], references: [id])
+  offer      Offer    @relation(fields: [offerId], references: [id])
+  
+  @@id([instanceId, offerId])
 }

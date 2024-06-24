@@ -219,8 +219,20 @@ const showInventory = async (
   name?: string
 ): Promise<(Block | KnownBlock)[]> => {
   const formatInventory = async (inventory: Instance[]): Promise<string> => {
-    let formatted: string[] = []
+    let condensedInventory: Instance[] = [];
     for (let instance of inventory) {
+      const existing = condensedInventory.find(
+        (item) => item.itemId === instance.itemId
+      )
+      if (existing) {
+        existing.quantity += instance.quantity
+      } else {
+        condensedInventory.push(instance)
+      }
+    }
+
+    let formatted: string[] = []
+    for (let instance of condensedInventory) {
       const item = await prisma.item.findUnique({
         where: {
           name: instance.itemId

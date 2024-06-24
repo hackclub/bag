@@ -1362,7 +1362,7 @@ slack.action('accept-offer', async props => {
     if (!receiverHasAllItems) {
       return await props.respond({
         replace_original: false,
-        text: 'One or more items the other person wanted from you are available. Ask the other party to re-send the offer with items you actually have.'
+        text: 'One or more items the other person wanted from you are no longer available. Ask the other party to re-send the offer with items you actually have.'
       })
     }
     // execute the trade: change ownership of the instances, then delete the Offer, then notify the parties.
@@ -1443,7 +1443,7 @@ slack.action('decline-offer', async props => {
     }
     await props.respond({
       replace_original: true,
-      text: `Trade declined with <@${offer.targetIdentityId}>. (you would have given ${offer.instancesToGive.map(offerLinker => offerLinker.instance).map(instance => `${instance.quantity} of ${instance.itemId}`).join(', ')}; you would have received ${offer.instancesToReceive.map(offerLinker => offerLinker.instance).map(instance => `${instance.quantity} of ${instance.itemId}`).join(', ')}`
+      text: `Trade declined with <@${offer.sourceIdentityId}>. (you would have received ${offer.instancesToGive.map(offerLinker => offerLinker.instance).map(instance => `${instance.quantity} of ${instance.itemId}`).join(', ')}; you would have given ${offer.instancesToReceive.map(offerLinker => offerLinker.instance).map(instance => `${instance.quantity} of ${instance.itemId}`).join(', ')}) `
     })
     await web.chat.postMessage({
       channel: offer.sourceIdentityId,

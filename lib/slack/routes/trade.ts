@@ -1443,7 +1443,7 @@ slack.action('decline-offer', async props => {
     }
     await props.respond({
       replace_original: true,
-      text: `Trade declined with <@${offer.targetIdentityId}>. (you would have given ${offer.instancesToGive.map(offerLinker => offerLinker.instance).map(instance => `${instance.quantity} of ${instance.itemId}`).join(', ')}; you would have received ${offer.instancesToReceive.map(offerLinker => offerLinker.instance).map(instance => `${instance.quantity} of ${instance.itemId}`).join(', ')}`
+      text: `Trade declined with <@${offer.sourceIdentityId}>. (you would have received ${offer.instancesToGive.map(offerLinker => offerLinker.instance).map(instance => `${instance.quantity} of ${instance.itemId}`).join(', ')}; you would have given ${offer.instancesToReceive.map(offerLinker => offerLinker.instance).map(instance => `${instance.quantity} of ${instance.itemId}`).join(', ')}) `
     })
     await web.chat.postMessage({
       channel: offer.sourceIdentityId,

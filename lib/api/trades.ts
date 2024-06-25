@@ -1,13 +1,13 @@
 import { Instance } from '@hackclub/bag'
 import { BagService } from '../../gen/bag_connect'
-import { TradeWithTrades, prisma } from '../db'
+import { IdentityWithInventory, TradeWithTrades, prisma } from '../db'
 import { mappedPermissionValues } from '../permissions'
 import { execute } from './routing'
 import { web } from './routing'
 import { ConnectRouter } from '@connectrpc/connect'
 import { PermissionLevels } from '@prisma/client'
 import { Block, KnownBlock } from '@slack/bolt'
-import { MakeOfferRequest } from '../../gen/bag_pb'
+import { MakeOfferRequest, OfferItem } from '../../gen/bag_pb'
 
 export default (router: ConnectRouter) => {
   router.rpc(BagService, BagService.methods.createTrade, async req => {
@@ -540,140 +540,39 @@ export default (router: ConnectRouter) => {
       if (!identities.find(identity => identity.slack === req.sourceIdentityId)){
         throw new Error('Identity does not have access to this app')
       }
-      // does both sides of offer exist in inventories?
-      const sourceIdentity = await prisma.identity.findUnique({
-        where: { slack: req.sourceIdentityId },
-        include: {
-          inventory: true
-        }
-      })
-      const targetIdentity = await prisma.identity.findUnique({
-        where: { slack: req.targetIdentityId },
-        include: {
-          inventory: true
-        }
-      })
-      console.log(`found source and target identities`)
-      // turn item names and quantities into instances
-      let sourceInstances = [];
-      for (const offerItem of req.offerToGive) {
-        // get the item
+      // make sure that the items they asked for actually exist
+      for (let offerItem of req.offerToGive) {
         const item = await prisma.item.findUnique({
           where: { name: offerItem.itemName }
         })
         if (!item) {
           throw new Error(`Item ${offerItem.itemName} does not exist`)
         }
-        // see if the user has enough instances of that item
-        const instances = sourceIdentity.inventory.filter(
-          instance => instance.itemId === item.name
-        )
-        let quantityLeft = offerItem.quantity;
-        for (const instance of instances) {
-          if (quantityLeft <= 0) {
-            break;
-          }
-          quantityLeft -= instance.quantity;
-          sourceInstances.push(instance)
-        }
-        if (quantityLeft > 0) {
-          throw new Error(`Not enough of item ${item.name} in source's inventory to offer`)
-        }
-        if(quantityLeft < 0) {
-          // we need to split the instance
-          const instance = sourceInstances.pop()
-          const newQuantity = instance.quantity + quantityLeft
-          const newInstance = await prisma.instance.create({
-            data: {
-              identity: {
-                connect: { slack: req.sourceIdentityId }
-              },
-              quantity: -quantityLeft,
-              item: {
-                connect: { name: instance.itemId }
-              }
-            }
-          })
-          sourceInstances.push(newInstance)
-          await prisma.instance.update({
-            where: { id: instance.id },
-            data: {
-              quantity: newQuantity
-            }
-          })
+        if(offerItem.quantity < 1) {
+          throw new Error(`Quantity of item ${offerItem.itemName} must be at least 1`)
         }
       }
-
-      let targetInstances = [];
-      for (const offerItem of req.offerToReceive) {
-        // get the item
+      for (let offerItem of req.offerToReceive) {
         const item = await prisma.item.findUnique({
           where: { name: offerItem.itemName }
         })
         if (!item) {
           throw new Error(`Item ${offerItem.itemName} does not exist`)
         }
-        // see if the user has enough instances of that item
-        const instances = targetIdentity.inventory.filter(
-          instance => instance.itemId === item.name
-        )
-        let quantityLeft = offerItem.quantity;
-        for (const instance of instances) {
-          if (quantityLeft <= 0) {
-            break;
-          }
-          quantityLeft -= instance.quantity;
-          targetInstances.push(instance)
-        }
-        if (quantityLeft > 0) {
-          throw new Error(`Not enough of item ${item.name} in target's inventory to offer`)
-        }
-        if (quantityLeft < 0) {
-          // we need to split the instance
-          const instance = targetInstances.pop()
-          const newQuantity = instance.quantity + quantityLeft
-          const newInstance = await prisma.instance.create({
-            data: {
-              identity: {
-                connect: { slack: req.targetIdentityId }
-              },
-              quantity: -quantityLeft,
-              item: {
-                connect: { name: instance.itemId }
-              }
-            }
-          })
-          targetInstances.push(newInstance)
-          await prisma.instance.update({
-            where: { id: instance.id },
-            data: {
-              quantity: newQuantity
-            }
-          })
+        if(offerItem.quantity < 1) {
+          throw new Error(`Quantity of item ${offerItem.itemName} must be at least 1`)
         }
       }
-
-      console.log(`found all instances in inventories`)
       // add offer to Prisma
       const offer = await prisma.offer.create({
         data: {
-          instancesToGive: { // this is prisma wizardry to create the Offer with references to the Instances
-            create: sourceInstances.map(instance => ({
-              instance: {
-                connect: { id: instance.id }
-              }
-            }))
-          },
-          instancesToReceive: {
-            create: targetInstances.map(instance => ({
-              instance: {
-                connect: { id: instance.id }
-              }
-            }))
-          },
           callbackUrl: req.callbackUrl,
           sourceIdentityId: req.sourceIdentityId,
-          targetIdentityId: req.targetIdentityId
+          targetIdentityId: req.targetIdentityId,
+          itemNamesToGive: req.offerToGive.map(offerItem => offerItem.itemName),
+          itemQuantitiesToGive: req.offerToGive.map(offerItem => offerItem.quantity),
+          itemNamesToReceive: req.offerToReceive.map(offerItem => offerItem.itemName),
+          itemQuantitiesToReceive: req.offerToReceive.map(offerItem => offerItem.quantity)
         }
       })
       console.log(`created offer ${offer.id}`)
@@ -686,7 +585,7 @@ export default (router: ConnectRouter) => {
             type: 'section',
             text: {
               type: 'mrkdwn',
-              text: `You have a new offer from ${req.sourceIdentityId}: They give you ${req.offerToGive.length ? sourceInstances.map(instance => `${instance.quantity}x ${instance.itemId}`).join(', ') : '_nothing_'} and you give them ${req.offerToReceive.length ? targetInstances.map(instance => `${instance.quantity}x ${instance.itemId}`).join(', ') : '_nothing_'}. Accept or decline:`
+              text: `You have a new offer from ${req.sourceIdentityId}: They give you ${req.offerToGive.map(offerItem => `${offerItem.quantity}x ${offerItem.itemName}`).join(', ')}, and you give them ${req.offerToReceive.map(offerItem => `${offerItem.quantity}x ${offerItem.itemName}`).join(', ')}.`
             }
           },
           {

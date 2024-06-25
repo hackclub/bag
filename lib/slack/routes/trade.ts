@@ -1,6 +1,7 @@
+import { Instance } from '@prisma/client'
 import { log } from '../../analytics'
 import { web } from '../../api/routing'
-import { TradeWithTrades, findOrCreateIdentity } from '../../db'
+import { IdentityWithInventory, TradeWithTrades, findOrCreateIdentity } from '../../db'
 import { prisma } from '../../db'
 import { mappedPermissionValues } from '../../permissions'
 import { channelBlacklist, userRegex, channels } from '../../utils'
@@ -1309,20 +1310,9 @@ slack.action('accept-offer', async props => {
       })
     }
     const offer = await prisma.offer.findUnique({
-      where: { id: offerId },
-      include: {
-        instancesToGive: {
-          include: {
-            instance: true
-          }
-        },
-        instancesToReceive: {
-          include: {
-            instance: true
-          }
-        }
+      where: { id: offerId }
       }
-    })
+    )
     if (!offer) {
       return await props.respond({
         replace_original: false,
@@ -1338,55 +1328,101 @@ slack.action('accept-offer', async props => {
       where: { slack: offer.targetIdentityId },
       include: { inventory: true }
     })
-    console.log(`Checking that source ${sourceIdentity.slack} has all items (expecting ${offer.instancesToGive.length}) and receiver ${receiverIdentity.slack} has all items (expecting ${offer.instancesToReceive.length}`)
-    const sourceHasAllItems = offer.instancesToGive.map(offerLinker => offerLinker.instance).every(offerInstance => { // this is O(n^2) at least, but idrc
-      const sourceInstance = sourceIdentity.inventory.find(
-        instance => instance.id === offerInstance.id
-      )
-      console.log(`Checking if source has ${offerInstance.quantity} of ${offerInstance.id}, found ${sourceInstance?.quantity}`)
-      return sourceInstance && sourceInstance.quantity >= offerInstance.quantity
+    console.log(`Checking that source ${sourceIdentity.slack} has all items`)
+    const sourceHasAllItems = offer.itemNamesToGive.every((itemName, index) => {
+      const itemInstances = sourceIdentity.inventory.filter(instance => instance.itemId === itemName)
+      const neededQuantity = offer.itemQuantitiesToGive[index]
+      return itemInstances.reduce((acc, instance) => acc + instance.quantity, 0) >= neededQuantity
     })
-    const receiverHasAllItems = offer.instancesToReceive.map(offerLinker => offerLinker.instance).every(offerInstance => {
-      const receiverInstance = receiverIdentity.inventory.find(
-        instance => instance.id === offerInstance.id
-      )
-      console.log(`Checking if receiver has ${offerInstance.quantity} of ${offerInstance.id}, found ${receiverInstance?.quantity}`)
-      return receiverInstance && receiverInstance.quantity >= offerInstance.quantity
+    console.log(`Checking that receiver ${receiverIdentity.slack} has all items`)
+    const receiverHasAllItems = offer.itemNamesToReceive.every((itemName, index) => {
+      const itemInstances = receiverIdentity.inventory.filter(instance => instance.itemId === itemName)
+      const neededQuantity = offer.itemQuantitiesToReceive[index]
+      return itemInstances.reduce((acc, instance) => acc + instance.quantity, 0) >= neededQuantity
     })
     if (!sourceHasAllItems) {
       return await props.respond({
-        replace_original: false,
-        text: 'One or more items the other person wanted to offer you are no longer available. Ask the other party to re-send the offer with items they actually have.'
+        replace_original: true,
+        text: 'One or more items the other person wanted to offer you are no longer available. Ask them to re-send the offer with items they actually have.'
       })
     }
     if (!receiverHasAllItems) {
       return await props.respond({
-        replace_original: false,
-        text: 'One or more items the other person wanted from you are no longer available. Ask the other party to re-send the offer with items you actually have.'
+        replace_original: true,
+        text: 'One or more items the other person wanted from you are no longer available. Ask them to re-send the offer with items you actually have.'
       })
     }
-    // execute the trade: change ownership of the instances, then delete the Offer, then notify the parties.
-    for (const sourceInstance of offer.instancesToGive.map(offerLinker => offerLinker.instance)) {
-      console.log(`Transferring ${sourceInstance.quantity} of ${sourceInstance.id} from ${sourceIdentity.slack} to ${receiverIdentity.slack}`)
-      await prisma.instance.update({
-        where: { id: sourceInstance.id },
-        data: { identityId: offer.targetIdentityId }
-      })
-    }
-    for (const receiverInstance of offer.instancesToReceive.map(offerLinker => offerLinker.instance)) {
-      console.log(`Transferring ${receiverInstance.quantity} of ${receiverInstance.id} from ${receiverIdentity.slack} to ${sourceIdentity.slack}`)
-      await prisma.instance.update({
-        where: { id: receiverInstance.id },
-        data: { identityId: offer.sourceIdentityId }
-      })
-    }
+    // execute the trade: for each item, consolidate the instances
+    // the Promise.all turns Promise<Instance>[] into Promise<Instance[]>
+    const instancesToGive: Instance[] = await Promise.all(offer.itemNamesToGive.map(async (itemName, index) => await consolidateAndSplitInstances({ itemName, quantity: offer.itemQuantitiesToGive[index] }, sourceIdentity)))
+    const instancesToReceive: Instance[] = await Promise.all(offer.itemNamesToReceive.map(async (itemName, index) => await consolidateAndSplitInstances({ itemName, quantity: offer.itemQuantitiesToReceive[index] }, receiverIdentity)))
+
+    // transfer the items
+    instancesToGive.forEach(async instance => {
+      console.log(`Giving: transferring ${instance.id}: ${instance.quantity} of ${instance.itemId} from ${sourceIdentity.slack} to ${receiverIdentity.slack}`)
+      // delete the instance from the source identity, and create an equivalent instance in the receiver identity
+      await prisma.instance.delete({ where: { id: instance.id } })
+      const existing = receiverIdentity.inventory.find(receiverInstance => receiverInstance.itemId === instance.itemId)
+      if (existing) {
+        await prisma.instance.update({
+          where: { id: existing.id },
+          data: {
+            quantity: existing.quantity + instance.quantity,
+            metadata: instance.metadata
+              ? {
+                  ...(existing.metadata as object),
+                  ...(instance.metadata as object)
+                }
+              : existing.metadata
+          }
+        })
+      } else {
+        await prisma.instance.create({
+          data: {
+            itemId: instance.itemId,
+            identityId: receiverIdentity.slack,
+            quantity: instance.quantity,
+            public: instance.public
+          }
+        })
+      }
+    })
+    instancesToReceive.forEach(async instance => {
+      console.log(`Receiving: transferring ${instance.id}: ${instance.quantity} of ${instance.itemId} from ${receiverIdentity.slack} to ${sourceIdentity.slack}`)
+      // delete the instance from the receiver identity, and create an equivalent instance in the source identity
+      await prisma.instance.delete({ where: { id: instance.id } })
+      const existing = sourceIdentity.inventory.find(sourceInstance => sourceInstance.itemId === instance.itemId)
+      if (existing) {
+        await prisma.instance.update({
+          where: { id: existing.id },
+          data: {
+            quantity: existing.quantity + instance.quantity,
+            metadata: instance.metadata
+              ? {
+                  ...(existing.metadata as object),
+                  ...(instance.metadata as object)
+                }
+              : existing.metadata
+          }
+        })
+      } else {
+        await prisma.instance.create({
+          data: {
+            itemId: instance.itemId,
+            identityId: sourceIdentity.slack,
+            quantity: instance.quantity,
+            public: instance.public
+          }
+        })
+      }
+    })
     await props.respond({
       replace_original: true,
-      text: `Trade completed with <@${offer.targetIdentityId}>! The items have been transferred. (you received ${offer.instancesToGive.map(offerLinker => offerLinker.instance).map(instance => `${instance.quantity} of ${instance.itemId}`).join(', ')}; you gave ${offer.instancesToReceive.map(offerLinker => offerLinker.instance).map(instance => `${instance.quantity} of ${instance.itemId}`).join(', ')})`
+      text: `Trade completed with <@${offer.targetIdentityId}>! The items have been transferred. (you received ${instancesToGive.map(instance => `${instance.quantity} of ${instance.itemId}`).join(', ')}; you gave ${instancesToReceive.map(instance => `${instance.quantity} of ${instance.itemId}`).join(', ')})`
     })
     await web.chat.postMessage({
       channel: offer.sourceIdentityId,
-      text: `Trade with <@${offer.targetIdentityId}> completed! (you gave ${offer.instancesToGive.map(offerLinker => offerLinker.instance).map(instance => `${instance.quantity} of ${instance.itemId}`).join(', ')}; you received ${offer.instancesToReceive.map(offerLinker => offerLinker.instance).map(instance => `${instance.quantity} of ${instance.itemId}`).join(', ')})`
+      text: `Trade with <@${offer.targetIdentityId}> completed! (you gave ${instancesToGive.map(instance => `${instance.quantity} of ${instance.itemId}`).join(', ')}; you received ${instancesToReceive.map(instance => `${instance.quantity} of ${instance.itemId}`).join(', ')})`
     })
     if(offer.callbackUrl){
       try {
@@ -1401,8 +1437,6 @@ slack.action('accept-offer', async props => {
         console.log(`PROBABLY FINE: Error notifying original bot ${offer.sourceIdentityId} of declined trade at callback ${offer.callbackUrl}: ${error}. This is probably an issue with the requesting bot.`)
       }
     }
-    await prisma.instanceOfferToGive.deleteMany({ where: { offerId: offer.id } })
-    await prisma.instanceOfferToReceive.deleteMany({ where: { offerId: offer.id } })
     await prisma.offer.delete({ where: { id: offer.id } })
   })
 })
@@ -1421,19 +1455,6 @@ slack.action('decline-offer', async props => {
     }
     const offer = await prisma.offer.findUnique({
       where: { id: offerId },
-      include: {
-        instancesToGive: {
-          include: {
-            instance: true
-          }
-        },
-        instancesToReceive: {
-          include: {
-            instance: true
-          }
-        
-        }
-      }
     })
     if (!offer) {
       return await props.respond({
@@ -1443,11 +1464,11 @@ slack.action('decline-offer', async props => {
     }
     await props.respond({
       replace_original: true,
-      text: `Trade declined with <@${offer.sourceIdentityId}>. (you would have received ${offer.instancesToGive.map(offerLinker => offerLinker.instance).map(instance => `${instance.quantity} of ${instance.itemId}`).join(', ')}; you would have given ${offer.instancesToReceive.map(offerLinker => offerLinker.instance).map(instance => `${instance.quantity} of ${instance.itemId}`).join(', ')}) `
+      text: `Trade declined with <@${offer.sourceIdentityId}>. (you would have received ${offer.itemNamesToGive.map((itemName, index) => `${offer.itemQuantitiesToGive[index]} of ${itemName}`).join(', ')}; you would have given ${offer.itemNamesToReceive.map((itemName, index) => `${offer.itemQuantitiesToReceive[index]} of ${itemName}`).join(', ')})`
     })
     await web.chat.postMessage({
       channel: offer.sourceIdentityId,
-      text: `<@${offer.targetIdentityId}> declined your offer for a trade (you give ${offer.instancesToGive.map(offerLinker => offerLinker.instance).map(instance => `${instance.quantity} of ${instance.itemId}`).join(', ')}; you receive ${offer.instancesToReceive.map(offerLinker => offerLinker.instance).map(instance => `${instance.quantity} of ${instance.itemId}`).join(', ')})`
+      text: `<@${offer.targetIdentityId}> declined your offer for a trade (you would have given ${offer.itemNamesToGive.map((itemName, index) => `${offer.itemQuantitiesToGive[index]} of ${itemName}`).join(', ')}; you would have received ${offer.itemNamesToReceive.map((itemName, index) => `${offer.itemQuantitiesToReceive[index]} of ${itemName}`).join(', ')})`
     })
     if(offer.callbackUrl){
       try {
@@ -1462,8 +1483,6 @@ slack.action('decline-offer', async props => {
         console.log(`PROBABLY FINE: Error notifying original bot ${offer.sourceIdentityId} of declined trade at callback ${offer.callbackUrl}: ${error}. This is probably an issue with the requesting bot.`)
       }
     }
-    await prisma.instanceOfferToGive.deleteMany({ where: { offerId: offer.id } })
-    await prisma.instanceOfferToReceive.deleteMany({ where: { offerId: offer.id } })
     await prisma.offer.delete({ where: { id: offer.id } })
   })
 })
@@ -1981,4 +2000,48 @@ const startTrade = async (
     )
   }
   return view
+}
+
+
+async function consolidateAndSplitInstances(offerItem: {quantity: number, itemName: string}, targetIdentity: IdentityWithInventory): Promise<Instance> {
+  // for a given item, consolidate all instances of that item in someone's inventory into one instance, then split it into the requested quantity, if needed
+  const instances = targetIdentity.inventory.filter(
+    instance => instance.itemId === offerItem.itemName
+  )
+  let totalQuantity = instances.reduce((acc, instance) => acc + instance.quantity, 0)
+  if (totalQuantity < offerItem.quantity) {
+    return null
+  }
+  const secondInstanceQuantity = totalQuantity - offerItem.quantity
+  let result;
+  // consolidate: delete all but 1 instances, then update the quantity of that instance
+  instances.forEach(async (instance, index) => {  // there's probably a better way to do this
+    if (index === 0) {
+      result = await prisma.instance.update({
+        where: { id: instance.id },
+        data: {
+          quantity: offerItem.quantity
+        }
+      })
+    } else {
+      await prisma.instance.delete({
+        where: { id: instance.id }
+      })
+    }
+  });
+  // split: create a new instance with the remaining quantity
+  if (secondInstanceQuantity > 0) {
+    await prisma.instance.create({
+      data: {
+        identity: {
+          connect: { slack: targetIdentity.slack }
+        },
+        quantity: secondInstanceQuantity,
+        item: {
+          connect: { name: offerItem.itemName }
+        }
+      }
+    })
+  }
+  return result
 }

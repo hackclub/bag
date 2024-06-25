@@ -72,8 +72,6 @@ model Instance {
   public           Boolean         @default(true)
   trades           TradeInstance[]
   crafting         RecipeItem[]
-  offersToGive    InstanceOfferToGive[]
-  offersToReceive InstanceOfferToReceive[]
 }
 
 model Skill {
@@ -192,25 +190,9 @@ model Offer {
   id                 Int        @id @default(autoincrement())
   sourceIdentityId   String
   targetIdentityId   String
-  instancesToGive    InstanceOfferToGive[]
-  instancesToReceive InstanceOfferToReceive[]
+  itemNamesToGive    String[] // INVARIANT: the length of this array is equal to the length of itemQuantitiesToGive
+  itemQuantitiesToGive Int[] // this is kinda hacky, but it seems like other ways of doing this would be even worse
+  itemNamesToReceive  String[]
+  itemQuantitiesToReceive Int[]
   callbackUrl        String?
-}
-
-model InstanceOfferToGive {
-  instanceId Int
-  offerId    Int
-  instance   Instance @relation(fields: [instanceId], references: [id])
-  offer      Offer    @relation(fields: [offerId], references: [id])
-  
-  @@id([instanceId, offerId])
-}
-
-model InstanceOfferToReceive {
-  instanceId Int
-  offerId    Int
-  instance   Instance @relation(fields: [instanceId], references: [id])
-  offer      Offer    @relation(fields: [offerId], references: [id])
-  
-  @@id([instanceId, offerId])
 }

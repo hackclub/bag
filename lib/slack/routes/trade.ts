@@ -1358,7 +1358,7 @@ slack.action('accept-offer', async props => {
     const instancesToReceive: Instance[] = await Promise.all(offer.itemNamesToReceive.map(async (itemName, index) => await consolidateAndSplitInstances({ itemName, quantity: offer.itemQuantitiesToReceive[index] }, receiverIdentity)))
 
     // transfer the items
-    instancesToGive.forEach(async instance => {
+    await instancesToGive.forEach(async instance => {
       console.log(`Giving: transferring ${instance.id}: ${instance.quantity} of ${instance.itemId} from ${sourceIdentity.slack} to ${receiverIdentity.slack}`)
       console.log("GIVE SANITY");
       // delete the instance from the source identity, and create an equivalent instance in the receiver identity
@@ -1400,7 +1400,7 @@ slack.action('accept-offer', async props => {
         })
       }
     })
-    instancesToReceive.forEach(async instance => {
+    await instancesToReceive.forEach(async instance => {
       console.log(`Receiving: transferring ${instance.id}: ${instance.quantity} of ${instance.itemId} from ${receiverIdentity.slack} to ${sourceIdentity.slack}`)
       console.log("RECEIVE NO SANITY");
       // delete the instance from the receiver identity, and create an equivalent instance in the source identity
@@ -2041,7 +2041,7 @@ async function consolidateAndSplitInstances(offerItem: {quantity: number, itemNa
   const secondInstanceQuantity = totalQuantity - offerItem.quantity
   let result;
   // consolidate: delete all but 1 instances, then update the quantity of that instance
-  instances.forEach(async (instance, index) => {  // there's probably a better way to do this
+  await instances.forEach(async (instance, index) => {  // there's probably a better way to do this
     if (index === 0) {
       result = await prisma.instance.update({
         where: { id: instance.id },

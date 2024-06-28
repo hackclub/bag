@@ -1363,6 +1363,8 @@ slack.action('accept-offer', async props => {
       // delete the instance from the source identity, and create an equivalent instance in the receiver identity
       await prisma.instance.delete({ where: { id: instance.id } })
       const existing = receiverIdentity.inventory.find(receiverInstance => receiverInstance.itemId === instance.itemId)
+      console.log("might have found existing: ");
+      console.log(existing);
       if (existing) {
         await prisma.instance.update({
           where: { id: existing.id },
@@ -1392,6 +1394,8 @@ slack.action('accept-offer', async props => {
       // delete the instance from the receiver identity, and create an equivalent instance in the source identity
       await prisma.instance.delete({ where: { id: instance.id } })
       const existing = sourceIdentity.inventory.find(sourceInstance => sourceInstance.itemId === instance.itemId)
+      console.log("might have found existing: ");
+      console.log(existing);
       if (existing) {
         await prisma.instance.update({
           where: { id: existing.id },

@@ -1360,6 +1360,7 @@ slack.action('accept-offer', async props => {
     // transfer the items
     instancesToGive.forEach(async instance => {
       console.log(`Giving: transferring ${instance.id}: ${instance.quantity} of ${instance.itemId} from ${sourceIdentity.slack} to ${receiverIdentity.slack}`)
+      console.log("GIVE SANITY");
       // delete the instance from the source identity, and create an equivalent instance in the receiver identity
       await prisma.instance.delete({ where: { id: instance.id } })
       console.log("deleted instance");
@@ -1401,6 +1402,7 @@ slack.action('accept-offer', async props => {
     })
     instancesToReceive.forEach(async instance => {
       console.log(`Receiving: transferring ${instance.id}: ${instance.quantity} of ${instance.itemId} from ${receiverIdentity.slack} to ${sourceIdentity.slack}`)
+      console.log("RECEIVE NO SANITY");
       // delete the instance from the receiver identity, and create an equivalent instance in the source identity
       await prisma.instance.delete({ where: { id: instance.id } })
       console.log("deleted instance");

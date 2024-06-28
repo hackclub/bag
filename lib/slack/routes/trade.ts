@@ -1362,10 +1362,19 @@ slack.action('accept-offer', async props => {
       console.log(`Giving: transferring ${instance.id}: ${instance.quantity} of ${instance.itemId} from ${sourceIdentity.slack} to ${receiverIdentity.slack}`)
       // delete the instance from the source identity, and create an equivalent instance in the receiver identity
       await prisma.instance.delete({ where: { id: instance.id } })
+      console.log("deleted instance");
       const existing = receiverIdentity.inventory.find(receiverInstance => receiverInstance.itemId === instance.itemId)
       console.log("might have found existing: ");
       console.log(existing);
       if (existing) {
+        console.log("updating existing instance")
+        console.log(existing.id)
+        console.log(existing.quantity)
+        console.log(existing.metadata)
+        console.log("instance")
+        console.log(instance.id)
+        console.log(instance.quantity)
+        console.log(instance.metadata)
         await prisma.instance.update({
           where: { id: existing.id },
           data: {
@@ -1379,6 +1388,7 @@ slack.action('accept-offer', async props => {
           }
         })
       } else {
+        console.log("creating new instance for receiver")
         await prisma.instance.create({
           data: {
             itemId: instance.itemId,
@@ -1393,10 +1403,19 @@ slack.action('accept-offer', async props => {
       console.log(`Receiving: transferring ${instance.id}: ${instance.quantity} of ${instance.itemId} from ${receiverIdentity.slack} to ${sourceIdentity.slack}`)
       // delete the instance from the receiver identity, and create an equivalent instance in the source identity
       await prisma.instance.delete({ where: { id: instance.id } })
+      console.log("deleted instance");
       const existing = sourceIdentity.inventory.find(sourceInstance => sourceInstance.itemId === instance.itemId)
       console.log("might have found existing: ");
       console.log(existing);
       if (existing) {
+        console.log("updating existing instance")
+        console.log(existing.id)
+        console.log(existing.quantity)
+        console.log(existing.metadata)
+        console.log("instance")
+        console.log(instance.id)
+        console.log(instance.quantity)
+        console.log(instance.metadata)
         await prisma.instance.update({
           where: { id: existing.id },
           data: {
@@ -1410,6 +1429,7 @@ slack.action('accept-offer', async props => {
           }
         })
       } else {
+        console.log("creating new instance for receiver")
         await prisma.instance.create({
           data: {
             itemId: instance.itemId,

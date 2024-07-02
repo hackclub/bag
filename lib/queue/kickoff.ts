@@ -19,7 +19,7 @@ export const scheduler = Scheduler(
         query: JSON.stringify({})
       })
     ).filter(item => {
-      if (item.metadata.rarity >= 0.4) return true
+      if (JSON.parse(item.metadata).rarity >= 0.4) return true
       return false
     })
 
@@ -27,7 +27,7 @@ export const scheduler = Scheduler(
 
     for (let item of items.sort((a, b) => (Math.random() < 0.5 ? 1 : -1))) {
       const prob = Math.random()
-      if (prob < item.metadata.rarity) {
+      if (prob < JSON.parse(item.metadata).rarity) {
         let note
         switch (day) {
           case 2:
@@ -82,14 +82,14 @@ export async function kickoff(slack: string) {
       query: JSON.stringify({})
     })
   ).filter(item => {
-    if (item.metadata.rarity >= 0.4) return true
+    if (JSON.parse(item.metadata).rarity >= 0.4) return true
     return false
   })
 
   let instances = []
   for (let item of items.sort((a, b) => (Math.random() < 0.5 ? 1 : -1))) {
     const prob = Math.random()
-    if (prob < item.metadata.rarity) {
+    if (prob < JSON.parse(item.metadata).rarity) {
       // Give it to them!
       instances.push({
         itemId: item.name,

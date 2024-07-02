@@ -40,7 +40,14 @@ export const scheduler = Scheduler(
     try {
       let results = await result.run(web, trees, description, summary)
       trees = results
-      if (result.terminate) return false
+      if (result.terminate){
+        // console.log(`TERMINATE from ${action.id}`)
+        prisma.actionInstance.update({
+          where: { id: action.id },
+          data: { done: true }
+        })
+        return true // true will run the cleanup, which will display the action summary
+      }
     } catch (error) {
       if (error.code === 'slack_webapi_platform_error')
         // Error triggered by running cancel-use action, so exit
@@ -67,7 +74,10 @@ export const scheduler = Scheduler(
     tag: string
     user: string
   }) => {
-    if (!trees[trees.length - 1].branch.length) {
+    const actionInstance = await prisma.actionInstance.findUnique({
+      where: { id: action.id }
+    })
+    if (!trees[trees.length - 1].branch.length || actionInstance.done) {
       if (summary.outputs.length)
         description.push(
           `\n*What you got*: ${summary.outputs

@@ -1356,7 +1356,10 @@ slack.action('accept-offer', async props => {
     // the Promise.all turns Promise<Instance>[] into Promise<Instance[]>
     const instancesToGive: Instance[] = await Promise.all(offer.itemNamesToGive.map(async (itemName, index) => await consolidateAndSplitInstances({ itemName, quantity: offer.itemQuantitiesToGive[index] }, sourceIdentity)))
     const instancesToReceive: Instance[] = await Promise.all(offer.itemNamesToReceive.map(async (itemName, index) => await consolidateAndSplitInstances({ itemName, quantity: offer.itemQuantitiesToReceive[index] }, receiverIdentity)))
-
+    console.log("instancesToGive:")
+    console.log(JSON.stringify(instancesToGive, null, 2))
+    console.log("instancesToReceive:")
+    console.log(JSON.stringify(instancesToReceive, null, 2))
     // transfer the items
     await instancesToGive.forEach(async instance => {
       console.log(`Giving: transferring ${instance.id}: ${instance.quantity} of ${instance.itemId} from ${sourceIdentity.slack} to ${receiverIdentity.slack}`)

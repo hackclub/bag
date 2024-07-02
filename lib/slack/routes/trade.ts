@@ -1354,8 +1354,17 @@ slack.action('accept-offer', async props => {
     }
     // execute the trade: for each item, consolidate the instances
     // the Promise.all turns Promise<Instance>[] into Promise<Instance[]>
-    const instancesToGive: Instance[] = await Promise.all(offer.itemNamesToGive.map(async (itemName, index) => await consolidateAndSplitInstances({ itemName, quantity: offer.itemQuantitiesToGive[index] }, sourceIdentity)))
-    const instancesToReceive: Instance[] = await Promise.all(offer.itemNamesToReceive.map(async (itemName, index) => await consolidateAndSplitInstances({ itemName, quantity: offer.itemQuantitiesToReceive[index] }, receiverIdentity)))
+    const instancesToGive: Instance[] = await Promise.all(offer.itemNamesToGive.map(async (itemName, index) => {
+      console.log(`Consolidating and splitting instances for ${itemName} (${index} of ${offer.itemNamesToGive.length}. (length equality: ${offer.itemNamesToGive.length == offer.itemQuantitiesToGive.length})`)
+      console.log(`Expecting to give ${offer.itemQuantitiesToGive[index]}`)
+      return await consolidateAndSplitInstances({ itemName, quantity: offer.itemQuantitiesToGive[index] }, sourceIdentity)
+    }))
+    const instancesToReceive: Instance[] = await Promise.all(offer.itemNamesToReceive.map(async (itemName, index) => {
+      console.log(`Consolidating and splitting instances for ${itemName} (${index} of ${offer.itemNamesToReceive.length}. (length equality: ${offer.itemNamesToReceive.length == offer.itemQuantitiesToReceive.length})`)
+      console.log(`Expecting to receive ${offer.itemQuantitiesToReceive[index]}`)
+      return await consolidateAndSplitInstances({ itemName, quantity: offer.itemQuantitiesToReceive[index] }, receiverIdentity)
+    }))
+
     console.log("instancesToGive:")
     console.log(JSON.stringify(instancesToGive, null, 2))
     console.log("instancesToReceive:")

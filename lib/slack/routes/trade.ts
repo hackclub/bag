@@ -2049,6 +2049,8 @@ async function consolidateAndSplitInstances(offerItem: {quantity: number, itemNa
           quantity: offerItem.quantity
         }
       })
+      console.log(`Consolidation result (at index ${index}, with ID ${instance.id}, of ${instances.length} total instances:`);
+      console.log(JSON.stringify(instance, null, 2))
     } else {
       await prisma.instance.delete({
         where: { id: instance.id }

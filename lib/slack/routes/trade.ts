@@ -2047,6 +2047,7 @@ async function consolidateAndSplitInstances(offerItem: {quantity: number, itemNa
     instance => instance.itemId === offerItem.itemName
   )
   let totalQuantity = instances.reduce((acc, instance) => acc + instance.quantity, 0)
+  console.log(`Consolidating and splitting instances for ${offerItem.itemName} (target quantity: ${offerItem.quantity}). Quantity in inventory: ${totalQuantity} (from ${instances.length} instances)`)
   const secondInstanceQuantity = totalQuantity - offerItem.quantity
   let result;
   // consolidate: delete all but 1 instances, then update the quantity of that instance

@@ -2052,6 +2052,7 @@ async function consolidateAndSplitInstances(offerItem: {quantity: number, itemNa
   let result;
   // consolidate: delete all but 1 instances, then update the quantity of that instance
   await instances.forEach(async (instance, index) => {  // there's probably a better way to do this
+    console.log(`now evaluating instance ${instance.id} (index ${index} of ${instances.length}). it's ${instance.quantity} of ${instance.itemId} (${offerItem.itemName})`)
     if (index === 0) {
       result = await prisma.instance.update({
         where: { id: instance.id },

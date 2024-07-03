@@ -1374,6 +1374,11 @@ slack.action('accept-offer', async props => {
       console.log(`Giving: transferring ${instance.id}: ${instance.quantity} of ${instance.itemId} from ${sourceIdentity.slack} to ${receiverIdentity.slack}`)
       console.log("GIVE SANITY");
       // delete the instance from the source identity, and create an equivalent instance in the receiver identity
+      await prisma.tradeInstance.deleteMany({
+        where: {
+          instanceId: instance.id
+        }
+      });
       await prisma.instance.delete({ where: { id: instance.id } })
       console.log("deleted instance");
       const existing = receiverIdentity.inventory.find(receiverInstance => receiverInstance.itemId === instance.itemId)
@@ -1416,6 +1421,11 @@ slack.action('accept-offer', async props => {
       console.log(`Receiving: transferring ${instance.id}: ${instance.quantity} of ${instance.itemId} from ${receiverIdentity.slack} to ${sourceIdentity.slack}`)
       console.log("RECEIVE NO SANITY");
       // delete the instance from the receiver identity, and create an equivalent instance in the source identity
+      await prisma.tradeInstance.deleteMany({
+        where: {
+          instanceId: instance.id
+        }
+      });
       await prisma.instance.delete({ where: { id: instance.id } })
       console.log("deleted instance");
       const existing = sourceIdentity.inventory.find(sourceInstance => sourceInstance.itemId === instance.itemId)
@@ -2063,6 +2073,11 @@ async function consolidateAndSplitInstances(offerItem: {quantity: number, itemNa
       console.log(`Consolidation result (at index ${index}, with ID ${instance.id}, of ${instances.length} total instances:`);
       console.log(JSON.stringify(instance, null, 2));
     } else {
+      await prisma.tradeInstance.deleteMany({
+        where: {
+          instanceId: instance.id
+        }
+      });
       await prisma.instance.delete({
         where: { id: instance.id }
       });

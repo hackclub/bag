@@ -526,6 +526,9 @@ export default (router: ConnectRouter) => {
   router.rpc(BagService, BagService.methods.makeOffer, async req => {
     return await execute('make-offer', req, async (req: MakeOfferRequest, app) => {
       console.log(`attempting to make offer...`)
+      if (req.sourceIdentityId == req.targetIdentityId) {
+        throw new Error('Source and target identities must be different (you can\'t trade with yourself')
+      }
       // check that offer can be made
       // is source identity the owner of the app?
       // select identities where the app id is in that identity's specificApps

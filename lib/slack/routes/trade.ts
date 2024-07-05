@@ -1466,7 +1466,7 @@ slack.action('accept-offer', async props => {
     })
     await props.respond({
       replace_original: true,
-      text: `Trade completed with <@${offer.targetIdentityId}>! The items have been transferred. (you received ${instancesToGive.map(instance => `${instance.quantity} of ${instance.itemId}`).join(', ')}; you gave ${instancesToReceive.map(instance => `${instance.quantity} of ${instance.itemId}`).join(', ')})`
+      text: `Trade completed with <@${offer.sourceIdentityId}> (or a bot of theirs)! The items have been transferred. (you received ${instancesToGive.map(instance => `${instance.quantity} of ${instance.itemId}`).join(', ')}; you gave ${instancesToReceive.map(instance => `${instance.quantity} of ${instance.itemId}`).join(', ')})`
     })
     await web.chat.postMessage({
       channel: offer.sourceIdentityId,

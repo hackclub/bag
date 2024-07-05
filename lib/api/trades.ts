@@ -579,13 +579,13 @@ export default (router: ConnectRouter) => {
       // send message to target identity on Slack
       await web.chat.postMessage({
         channel: req.targetIdentityId,
-        text: `You have a new offer from ${req.sourceIdentityId}. Accept or decline:`,
+        text: `You have a new offer from <@${req.sourceIdentityId}> (or a bot of theirs). Accept or decline:`,
         blocks: [
           {
             type: 'section',
             text: {
               type: 'mrkdwn',
-              text: `You have a new offer from ${req.sourceIdentityId}: They give you ${req.offerToGive.map(offerItem => `${offerItem.quantity}x ${offerItem.itemName}`).join(', ')}, and you give them ${req.offerToReceive.map(offerItem => `${offerItem.quantity}x ${offerItem.itemName}`).join(', ')}.`
+              text: `You have a new offer from <@${req.sourceIdentityId}> (or a bot of theirs): They give you ${req.offerToGive.map(offerItem => `${offerItem.quantity}x ${offerItem.itemName}`).join(', ')}, and you give them ${req.offerToReceive.map(offerItem => `${offerItem.quantity}x ${offerItem.itemName}`).join(', ')}.`
             }
           },
           {

@@ -21,7 +21,7 @@ export const channelBlacklist = parse(channelsYaml)
 
 export const channels = {
   approvals: 'C06EB2Y3YAE',
-  lounge: 'C0266FRGV'
+  lounge: 'C06GA0PSXC5'
 }
 
 export const getKeyByValue = (obj, value) =>

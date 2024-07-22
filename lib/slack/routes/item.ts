@@ -270,10 +270,10 @@ const getItem = async (
             .map(recipe => {
               let inputs = recipe.inputs
                 .map(input => input.recipeItem.reaction.repeat(input.quantity))
-                .join('')
+                .join(' ')
               let tools = recipe.tools
                 .map(tool => tool.recipeItem.reaction.repeat(tool.quantity))
-                .join('')
+                .join(' ')
               let outputs = recipe.outputs
                 .map(
                   output =>

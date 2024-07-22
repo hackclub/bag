@@ -268,11 +268,11 @@ const getItem = async (
           `Ways to make this:\n\n` +
           recipes
             .map(recipe => {
-              let inputs = recipe.inputs
-                .map(input => input.recipeItem.reaction.repeat(input.quantity))
+              let inputs = recipe.inputs // repeat with a space between to avoid a bug in slack mobile
+                .map(input => (input.recipeItem.reaction + ' ').repeat(input.quantity))
                 .join(' ')
               let tools = recipe.tools
-                .map(tool => tool.recipeItem.reaction.repeat(tool.quantity))
+                .map(tool => (tool.recipeItem.reaction + ' ').repeat(tool.quantity))
                 .join(' ')
               let outputs = recipe.outputs
                 .map(
@@ -312,6 +312,8 @@ const getItem = async (
         }
       ]
     })
+  console.log(`Blocks for ${item.name}:`)
+  console.log(JSON.stringify(blocks, null, 2))
   return blocks
 }
 

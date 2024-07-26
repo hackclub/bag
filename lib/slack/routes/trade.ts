@@ -7,7 +7,7 @@ import { mappedPermissionValues } from '../../permissions'
 import { channelBlacklist, userRegex, channels } from '../../utils'
 import slack, { execute } from '../slack'
 import views from '../views'
-import { Block, BlockElementAction, Button, ButtonAction, KnownBlock, View } from '@slack/bolt'
+import { Block, BlockAction, BlockElementAction, Button, ButtonAction, KnownBlock, View } from '@slack/bolt'
 import { exec } from 'child_process'
 
 slack.command(`/${process.env.SLASH_COMMAND_PREFIX}trade`, async props => {
@@ -214,7 +214,8 @@ slack.action('edit-offer', async props => {
       view: viewLoading
     })
 
-    const dialogView =  await tradeDialog(props.body.user.id, tradeId, { channel, ts })
+    const external_id = (Math.random() + 1).toString(36).substring(2); // a 10-char alphanumeric string
+    const dialogView =  await tradeDialog(props.body.user.id, tradeId, external_id,{ channel, ts })
 
     console.log(`Updating view for ${props.body.user.id}-${tradeId}. View: ${JSON.stringify(dialogView, null, 2)}`)
     // @ts-expect-error
@@ -665,10 +666,12 @@ slack.action('remove-trade', async props => {
       )
     })
 
+    const external_id = (props.body as BlockAction).view.external_id
+
     // @ts-expect-error
     await props.client.views.update({
-      external_id: `${props.body.user.id}-${tradeId}`,
-      view: await tradeDialog(props.body.user.id, tradeId, { channel, ts })
+      external_id: external_id,
+      view: await tradeDialog(props.body.user.id, tradeId, external_id, { channel, ts })
     })
   })
 })
@@ -1544,7 +1547,8 @@ slack.action('decline-offer', async props => {
 const tradeDialog = async (
   userId: string,
   tradeId: number,
-  thread?: { channel: string; ts: string }
+  external_id: string,
+  thread?: { channel: string; ts: string },
 ): Promise<View> => {
   const user = await prisma.identity.findUnique({
     where: {
@@ -1691,7 +1695,7 @@ const tradeDialog = async (
     },
     type: 'modal',
     private_metadata: JSON.stringify({ tradeId, ...thread }),
-    external_id: `${user.slack}-${tradeId}`,
+    external_id,
     blocks: [
       {
         type: 'section',

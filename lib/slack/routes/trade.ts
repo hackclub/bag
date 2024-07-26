@@ -203,18 +203,24 @@ slack.action('edit-offer', async props => {
         replace_original: false,
         text: "Woah woah woah! Trade already confirmed, you can't make any more edits."
       })
+    
+    const viewLoading = views.loadingDialog('Edit trade')
+    console.log(`Opening loading view for ${props.body.user.id}-${tradeId}. View: ${JSON.stringify(viewLoading, null, 2)}`)
 
     // @ts-expect-error
     const { view } = await props.client.views.open({
       // @ts-expect-error
       trigger_id: props.body.trigger_id,
-      view: views.loadingDialog('Edit trade')
+      view: viewLoading
     })
 
+    const dialogView =  await tradeDialog(props.body.user.id, tradeId, { channel, ts })
+
+    console.log(`Updating view for ${props.body.user.id}-${tradeId}. View: ${JSON.stringify(dialogView, null, 2)}`)
     // @ts-expect-error
     await props.client.views.update({
       view_id: view.id,
-      view: await tradeDialog(props.body.user.id, tradeId, { channel, ts })
+      view: dialogView
     })
   })
 })

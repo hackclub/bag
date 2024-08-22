@@ -482,7 +482,7 @@ const craftingDialog = async (
             type: 'plain_text',
             text: 'Item'
           },
-          options: views.sortDropdown(possible)
+          options: views.sortDropdown(possible.slice(0, Math.min(possible.length, 99)))
         },
         label: {
           type: 'plain_text',

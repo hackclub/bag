@@ -270,7 +270,7 @@ const showInventory = async (
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: text.join('')
+        text: text.join('').substring(0, 2999) // Slack has a 3000 character limit
       }
     },
     {

@@ -277,7 +277,7 @@ const giveDialog = async (
             type: 'plain_text',
             text: 'Choose a item'
           },
-          options: offers
+          options: offers.slice(0, Math.min(offers.length, 99))
         },
         label: {
           type: 'plain_text',

@@ -1724,7 +1724,8 @@ const tradeDialog = async (
             type: 'plain_text',
             text: 'Add an item'
           },
-          options: views.sortDropdown(offers)
+          // no more than 99 offers viewable
+          options: views.sortDropdown(offers.slice(0, Math.min(99, offers.length)))
         },
         label: {
           type: 'plain_text',
@@ -2015,7 +2016,7 @@ const startTrade = async (
             type: 'plain_text',
             text: 'Choose a item'
           },
-          options: views.sortDropdown(offers)
+          options: views.sortDropdown(offers.slice(0, Math.min(99, offers.length)))
         },
         label: {
           type: 'plain_text',

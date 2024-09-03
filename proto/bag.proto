@@ -569,6 +569,7 @@ message MakeOfferRequest {
   repeated OfferItem offerToGive = 5;
   repeated OfferItem offerToReceive = 6;
   optional string callbackUrl = 7;
+  optional string slackIdToDm = 8;
 }
 
 message MakeOfferResponse {

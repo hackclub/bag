@@ -195,4 +195,5 @@ model Offer {
   itemNamesToReceive  String[]
   itemQuantitiesToReceive Int[]
   callbackUrl        String?
+  slackIdToDm        String?
 }

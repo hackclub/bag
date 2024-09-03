@@ -4226,6 +4226,11 @@ export class MakeOfferRequest extends Message<MakeOfferRequest> {
    */
   callbackUrl?: string;
 
+  /**
+   * @generated from field: optional string slackIdToDm = 8;
+   */
+  slackIdToDm?: string;
+
   constructor(data?: PartialMessage<MakeOfferRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4241,6 +4246,7 @@ export class MakeOfferRequest extends Message<MakeOfferRequest> {
     { no: 5, name: "offerToGive", kind: "message", T: OfferItem, repeated: true },
     { no: 6, name: "offerToReceive", kind: "message", T: OfferItem, repeated: true },
     { no: 7, name: "callbackUrl", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 8, name: "slackIdToDm", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MakeOfferRequest {

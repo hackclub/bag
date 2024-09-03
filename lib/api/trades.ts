@@ -541,7 +541,7 @@ export default (router: ConnectRouter) => {
       })
       console.log(`found ${identities.length} identities with access to app ${app.id}`)
       if (!identities.find(identity => identity.slack === req.sourceIdentityId)){
-        throw new Error('Identity does not have access to this app')
+        throw new Error(`This app cannot access the inventory of ${req.sourceIdentityId}. (By default an app can only access its owner's inventory. This can be changed by asking nicely in the Slack.)`)
       }
       // make sure that the items they asked for actually exist
       for (let offerItem of req.offerToGive) {
@@ -570,6 +570,7 @@ export default (router: ConnectRouter) => {
       const offer = await prisma.offer.create({
         data: {
           callbackUrl: req.callbackUrl,
+          slackIdToDm: req.slackIdToDm,
           sourceIdentityId: req.sourceIdentityId,
           targetIdentityId: req.targetIdentityId,
           itemNamesToGive: req.offerToGive.map(offerItem => offerItem.itemName),

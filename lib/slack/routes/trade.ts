@@ -1491,7 +1491,26 @@ slack.action('accept-offer', async props => {
           body: JSON.stringify({ accepted: true })
         }) // tell the original bot that the trade was completed
       } catch (error) {
-        console.log(`PROBABLY FINE: Error notifying original bot ${offer.sourceIdentityId} of declined trade at callback ${offer.callbackUrl}: ${error}. This is probably an issue with the requesting bot.`)
+        console.log(`PROBABLY FINE: Error notifying original bot ${offer.sourceIdentityId} of accepted trade at callback ${offer.callbackUrl}: ${error}. This is probably an issue with the requesting bot.`)
+      }
+    }
+    if (offer.slackIdToDm){
+      try {
+        await web.chat.postMessage({
+          channel: offer.slackIdToDm,
+          text: JSON.stringify({
+            sourceIdentityId: offer.sourceIdentityId,
+            targetIdentityId: offer.targetIdentityId,
+            itemNamesToGive: offer.itemNamesToGive,
+            itemQuantitiesToGive: offer.itemQuantitiesToGive,
+            itemNamesToReceive: offer.itemNamesToReceive,
+            itemQuantitiesToReceive: offer.itemQuantitiesToReceive,
+            callbackUrl: offer.callbackUrl,
+            accepted: true
+          }, null, 2)
+        })
+      } catch (error) {
+        console.log(`PROBABLY FINE: Error notifying original bot ${offer.sourceIdentityId} of accepted trade at DM target ${offer.slackIdToDm}: ${error}. This is probably an issue with the requesting bot.`)
       }
     }
     await prisma.offer.delete({ where: { id: offer.id } })
@@ -1538,6 +1557,25 @@ slack.action('decline-offer', async props => {
         }) // tell the original bot that the trade was declined
       } catch (error) {
         console.log(`PROBABLY FINE: Error notifying original bot ${offer.sourceIdentityId} of declined trade at callback ${offer.callbackUrl}: ${error}. This is probably an issue with the requesting bot.`)
+      }
+    }
+    if (offer.slackIdToDm){
+      try {
+        await web.chat.postMessage({
+          channel: offer.slackIdToDm,
+          text: JSON.stringify({
+            sourceIdentityId: offer.sourceIdentityId,
+            targetIdentityId: offer.targetIdentityId,
+            itemNamesToGive: offer.itemNamesToGive,
+            itemQuantitiesToGive: offer.itemQuantitiesToGive,
+            itemNamesToReceive: offer.itemNamesToReceive,
+            itemQuantitiesToReceive: offer.itemQuantitiesToReceive,
+            callbackUrl: offer.callbackUrl,
+            accepted: false
+          }, null, 2)
+        })
+      } catch (error) {
+        console.log(`PROBABLY FINE: Error notifying original bot ${offer.sourceIdentityId} of declined trade at DM target ${offer.slackIdToDm}: ${error}. This is probably an issue with the requesting bot.`)
       }
     }
     await prisma.offer.delete({ where: { id: offer.id } })

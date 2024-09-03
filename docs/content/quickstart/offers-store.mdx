@@ -1,0 +1,39 @@
+---
+title: Building a store bot
+order: 1
+---
+We're going to build a bot that gives you an automated storefront to sell your stuff!
+We'll use the [Bag store template](https://github.com/rivques/bag-store-template) to do so. The rest of this guide is adapted from the template's README.
+
+## Prerequisites
+* A [Nest](https://hackclub.app/) account. Follow the [Quickstart](https://guides.hackclub.app/index.php/Quickstart) to get an account if you don't have one already.
+* An editor. I reccomend VS Code with the Remote SSH extension, but you could use something like `nano` or `vim` if you're more hardcore than me.
+## Sign into your Nest account
+(if you're not using VS Code, connection to Nest is beyond the scope of this guide. I trust you.)
+
+Open VS Code, install the Remote SSH extenson and click the blue >< symbol in the bottom left corner. Click "Connect current window to host," then "Add new SSH host." Enter `ssh NESTUSERNAME@NESTUSERNAME.hackclub.app`, replacing NESTUSERNAME with your Nest username. Hit enter, then enter again, then click "connect" in the notification in the bottom-right corner. A new window will open. Select "Linux" on the prompt, then "Continue". You should now find yourself logged into Nest.
+## Template and clone this repository
+Head to https://github.com/rivques/bag-store-template. Click "Use this template" in the top right, then "Create a new repository." Change "repository name" to whatever you'd like the name of your NPC to be, and hit "Create repository." Once your repository is created, hit the big green "Code" button, then copy the url. Head back into VS Code and hit ``Ctrl+`​`` (that's the backtick) to bring up a terminal. Type `git clone URL`, replacing URL with what you just copied, and hit enter. Finally, open the folder from VS Code by heading to `File->Open Folder`, then selecting the repository you just cloned.
+## Install dependencies
+In the terminal, type `npm i` and hit enter.
+## Create config.json
+Copy the `config.json.example` file on the left sidebar and rename it to `config.json`. This is where all of your API keys will go, as well as settings like what you'll be selling. We'll fill it up over the next few steps.
+## Set up Slack app
+First, we need to get ourselves a Slack app. Head to the [Your Slack Apps](https://api.slack.com/apps) page and hit "Create New App," then "From App Manifest." Pick Hack Club as the workspace, then paste the contents of `slack_maifest.json` into the window. Change `YOUR BOT NAME` to whatever your bot is called and hit Next, then Create. Click the big green Install to Workspace button and install it into Hack Club. Once you're back on the Basic Information page, scroll down to App Tokens and hit Generate Token and Scopes. Name the token Socket Mode and give it the `connections:write`. Hit the Generate button and then copy the resulting token. Paste it in SLACK_APP_TOKEN in `config.json`. Next, head to the OAuth and Permissions section of the app settings and copy your bot user token. Paste it in SLACK_BOT_TOKEN. Finally, open up Slack, click on your profile picture in the bottom left corner, and hit Profile. Click the 3 vertical dots in your profile, then Copy Member ID. Paste this in the "YOUR_USER_ID" section of `config.json`.  
+## Set up Bag app
+Next, we need to register an app with Bag. Head to the Slack and run /bot somewhere. Enter your bot's name, then choose "public" and "read," and hit "create."
+
+Bag should immediately DM you an app ID and app token. Put the app ID in your `config.json` file next to `"BAG_APP_ID": `. Put the app token in to `BAG_APP_KEY`, replacing the example key. While you're in the Slack, click on your profile picture in the bottom left, then click "profile." Select the three vertical dots in the menu that pops up, then pick "Copy member ID." Paste this next to `YOUR_USER_ID` in the `config.json` file.
+## Choose your character
+Now, you can make this bot your own. Tweak the `greetingText` to sound like your shopkeeper. Change `itemsToSell` to fit what you want to sell. Note: This will pull out of your inventory, so don't stock something you don't want to sell! Also, the `id`s in `itemsToSell` are the actual internal Bag item ids, which means they're usually capitalized, spaced words like `Fancy Pants` or `Pickaxe`. If you're getting item not found errors, make sure you've done that (and also feel free to ask in the Slack if you need help).
+## Test it
+Now, it's time to start your bot. In the terminal, run `npm start`. Head to #market and give your bot a mention (add it to the channel if prompted, then ping it again), and make sure it works.
+## Set up to run forever
+Open bag-store.service. Replace where it says YOUR_DIRECTORY_HERE with the directory you're working in. (it'll probably look something like `/home/yournestusername/yourrepositoryname`.) Then, run the following in the terminal, one by one:
+```
+cp bag-store.service ~/.config/systemd/user/bag-store.service
+systemctl daemon-reload
+systemctl --user enable bag-store
+systemctl --user start bag-store
+```
+This should start the bot for good.

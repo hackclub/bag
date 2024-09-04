@@ -1,4 +1,4 @@
-import { Instance } from '@prisma/client'
+import { Instance, Offer } from '@prisma/client'
 import { log } from '../../analytics'
 import { web } from '../../api/routing'
 import { IdentityWithInventory, TradeWithTrades, findOrCreateIdentity } from '../../db'
@@ -1350,12 +1350,14 @@ slack.action('accept-offer', async props => {
       return itemInstances.reduce((acc, instance) => acc + instance.quantity, 0) >= neededQuantity
     })
     if (!sourceHasAllItems) {
+      await notifyOfOfferFailure(offer, "source_insufficient_items")
       return await props.respond({
         replace_original: true,
         text: 'One or more items the other person wanted to offer you are no longer available. Ask them to re-send the offer with items they actually have.'
       })
     }
     if (!receiverHasAllItems) {
+      await notifyOfOfferFailure(offer, "target_insufficient_items")
       return await props.respond({
         replace_original: true,
         text: 'One or more items the other person wanted from you are no longer available. Ask them to re-send the offer with items you actually have.'
@@ -1546,41 +1548,46 @@ slack.action('decline-offer', async props => {
       channel: offer.sourceIdentityId,
       text: `<@${offer.targetIdentityId}> declined your offer for a trade (you would have given ${offer.itemNamesToGive.map((itemName, index) => `${offer.itemQuantitiesToGive[index]} of ${itemName}`).join(', ')}; you would have received ${offer.itemNamesToReceive.map((itemName, index) => `${offer.itemQuantitiesToReceive[index]} of ${itemName}`).join(', ')})`
     })
-    if(offer.callbackUrl){
-      try {
-        await fetch(offer.callbackUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ accepted: false })
-        }) // tell the original bot that the trade was declined
-      } catch (error) {
-        console.log(`PROBABLY FINE: Error notifying original bot ${offer.sourceIdentityId} of declined trade at callback ${offer.callbackUrl}: ${error}. This is probably an issue with the requesting bot.`)
-      }
-    }
-    if (offer.slackIdToDm){
-      try {
-        await web.chat.postMessage({
-          channel: offer.slackIdToDm,
-          text: JSON.stringify({
-            sourceIdentityId: offer.sourceIdentityId,
-            targetIdentityId: offer.targetIdentityId,
-            itemNamesToGive: offer.itemNamesToGive,
-            itemQuantitiesToGive: offer.itemQuantitiesToGive,
-            itemNamesToReceive: offer.itemNamesToReceive,
-            itemQuantitiesToReceive: offer.itemQuantitiesToReceive,
-            callbackUrl: offer.callbackUrl,
-            accepted: false
-          }, null, 2)
-        })
-      } catch (error) {
-        console.log(`PROBABLY FINE: Error notifying original bot ${offer.sourceIdentityId} of declined trade at DM target ${offer.slackIdToDm}: ${error}. This is probably an issue with the requesting bot.`)
-      }
-    }
+    await notifyOfOfferFailure(offer, 'user_declined')
     await prisma.offer.delete({ where: { id: offer.id } })
   })
 })
+
+async function notifyOfOfferFailure(offer: Offer, error: string) {
+  if(offer.callbackUrl){
+    try {
+      await fetch(offer.callbackUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ accepted: false, reason: error })
+      }) // tell the original bot that the trade was declined
+    } catch (error) {
+      console.log(`PROBABLY FINE: Error notifying original bot ${offer.sourceIdentityId} of declined trade at callback ${offer.callbackUrl}: ${error}. This is probably an issue with the requesting bot.`)
+    }
+  }
+  if (offer.slackIdToDm){
+    try {
+      await web.chat.postMessage({
+        channel: offer.slackIdToDm,
+        text: JSON.stringify({
+          sourceIdentityId: offer.sourceIdentityId,
+          targetIdentityId: offer.targetIdentityId,
+          itemNamesToGive: offer.itemNamesToGive,
+          itemQuantitiesToGive: offer.itemQuantitiesToGive,
+          itemNamesToReceive: offer.itemNamesToReceive,
+          itemQuantitiesToReceive: offer.itemQuantitiesToReceive,
+          callbackUrl: offer.callbackUrl,
+          accepted: false,
+          reason: error
+        }, null, 2)
+      })
+    } catch (error) {
+      console.log(`PROBABLY FINE: Error notifying original bot ${offer.sourceIdentityId} of declined trade at DM target ${offer.slackIdToDm}: ${error}. This is probably an issue with the requesting bot.`)
+    }
+  }
+}
 
 const tradeDialog = async (
   userId: string,
